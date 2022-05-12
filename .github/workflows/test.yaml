@@ -30,3 +30,7 @@ jobs:
       - name: Run tests
         shell: bash
         run: make test
+
+      - name: Build WASM filter
+        shell: bash
+        run: make build
