@@ -18,17 +18,17 @@ import (
 
 func TestHttpHeaders_OnHttpRequestHeaders(t *testing.T) {
 	type testCase struct {
-		requestURI     string
+		path           string
 		expectedAction types.Action
 	}
 
 	for name, tCase := range map[string]testCase{
 		"not matching URL": {
-			requestURI:     "/",
+			path:           "/",
 			expectedAction: types.ActionContinue,
 		},
 		"matching URL": {
-			requestURI:     "/admin",
+			path:           "/admin",
 			expectedAction: types.ActionPause,
 		},
 	} {
@@ -38,7 +38,7 @@ func TestHttpHeaders_OnHttpRequestHeaders(t *testing.T) {
 				WithVMContext(&vmContext{}).
 				WithPluginConfiguration([]byte(`
 					{
-						"rules" : "SecRuleEngine On\nSecRule REQUEST_URI \"@streqr /admin\" \"id:101,phase:1,t:lowercase,deny\""
+						"rules" : "SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
 					}	
 				`))
 			host, reset := proxytest.NewHostEmulator(opt)
@@ -49,8 +49,8 @@ func TestHttpHeaders_OnHttpRequestHeaders(t *testing.T) {
 			// Initialize http context.
 			id := host.InitializeHttpContext()
 
-			// Call OnHttpResponseHeaders.
-			hs := [][2]string{{"REQUEST_URI", tCase.requestURI}}
+			// Call OnHttpRequestHeaders.
+			hs := [][2]string{{":path", tCase.path}, {":method", "GET"}}
 			action := host.CallOnRequestHeaders(id, hs, false)
 			require.Equal(t, tCase.expectedAction, action)
 

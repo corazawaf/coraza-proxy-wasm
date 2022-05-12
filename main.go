@@ -98,6 +98,20 @@ type httpHeaders struct {
 func (ctx *httpHeaders) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
 	tx := ctx.waf.NewTransaction()
 
+	path, err := proxywasm.GetHttpRequestHeader(":path")
+	if err != nil {
+		proxywasm.LogCriticalf("failed to get path header: %v", err)
+		return types.ActionContinue
+	}
+
+	method, err := proxywasm.GetHttpRequestHeader(":method")
+	if err != nil {
+		proxywasm.LogCriticalf("failed to get method header: %v", err)
+		return types.ActionContinue
+	}
+
+	tx.ProcessURI(path, method, "1.1") // TODO use the right version
+
 	hs, err := proxywasm.GetHttpRequestHeaders()
 	if err != nil {
 		proxywasm.LogCriticalf("failed to get request headers: %v", err)
