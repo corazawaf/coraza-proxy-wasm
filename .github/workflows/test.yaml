@@ -39,6 +39,7 @@ jobs:
       - name: "Install latest `git`"
         run: |
           apt purge git -y
+          apt-get update && apt-get install -y software-properties-common
           add-apt-repository ppa:git-core/ppa -y
           # apt update fails to fetch some repo due to cert failure. Skip them.
           apt update || true; apt install -y --no-install-recommends \
