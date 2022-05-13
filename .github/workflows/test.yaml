@@ -89,6 +89,10 @@ jobs:
             build/
           key: cache-build-${{ github.sha }}
 
+      - name: "Verify build"
+        shell: bash
+        run: test -f build/main.wasm
+
       - name: "Spin up server and envoy"
         shell: bash
         run: |
