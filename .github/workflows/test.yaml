@@ -1,4 +1,4 @@
-name: CI check
+name: CI
 on:
   push:
     branches:
@@ -61,3 +61,41 @@ jobs:
       - name: Build WASM filter
         shell: bash
         run: make build
+
+      - name: "Cache generated .wasm file"
+        uses: actions/cache@v3
+        with:
+          path: |
+            build/
+          key: cache-build-${{ github.sha }}
+
+  test-e2e:
+    runs-on: ubuntu-20.04
+    needs: build
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: "Install func-e"
+        shell: bash
+        run: curl https://func-e.io/install.sh | bash -s -- -b /usr/local/bin
+
+      - name: "Restore the wasm files cache"
+        uses: actions/cache@v3
+        with:
+          path: |
+            build/
+          key: cache-build-${{ github.sha }}
+
+      - name: "Spin up server and envoy"
+        shell: bash
+        run: |
+          docker run --rm -d -p 8000:10080 jcchavezs/httpmole -response-status=200 &
+          func-e run -c e2e/envoy-config.yaml --log-level info --component-log-level wasm:debug &
+
+      - name: "Run tests"
+        shell: bash
+        run: |
+          ./e2e/tests.sh
