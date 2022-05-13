@@ -59,11 +59,11 @@ jobs:
           go-version: "1.18.1"
 
       - name: "Cache generated .wasm file"
-        uses: actions/cache@v3
+        uses: actions/cache@v2
         with:
           path: |
-            build/
-          key: cache-build-${{ github.sha }}
+            build/main.wasm
+          key: ${{ runner.os }}-cache-build-${{ github.sha }}
 
       - name: Build WASM filter
         shell: bash
@@ -83,11 +83,11 @@ jobs:
         run: curl https://func-e.io/install.sh | bash -s -- -b /usr/local/bin
 
       - name: "Restore the wasm files cache"
-        uses: actions/cache@v3
+        uses: actions/cache@v2
         with:
           path: |
-            build/
-          key: cache-build-${{ github.sha }}
+            build/main.wasm
+          key: ${{ runner.os }}-cache-build-${{ github.sha }}
 
       - name: "Verify build"
         shell: bash
