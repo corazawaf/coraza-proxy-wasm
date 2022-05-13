@@ -39,7 +39,7 @@ jobs:
       - name: "Install latest `git`"
         run: |
           apt purge git -y
-          apt-get update && apt-get install -y software-properties-common
+          apt-get update && apt-get install -y software-properties-common make
           add-apt-repository ppa:git-core/ppa -y
           # apt update fails to fetch some repo due to cert failure. Skip them.
           apt update || true; apt install -y --no-install-recommends \
@@ -57,10 +57,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: "1.18.1"
-
-      # TinyGo's release container does not have Make command.
-      - name: Install Make
-        run: apt install make
 
       - name: Build WASM filter
         shell: bash
