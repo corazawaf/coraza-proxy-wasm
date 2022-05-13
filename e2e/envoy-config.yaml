@@ -40,7 +40,7 @@ static_resources:
                           vm_id: "my_vm_id"
                           code:
                             local:
-                              filename: "./bin/main.wasm"
+                              filename: "./build/main.wasm"
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
