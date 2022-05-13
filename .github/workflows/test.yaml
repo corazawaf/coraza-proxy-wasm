@@ -58,16 +58,16 @@ jobs:
         with:
           go-version: "1.18.1"
 
-      - name: Build WASM filter
-        shell: bash
-        run: make build
-
       - name: "Cache generated .wasm file"
         uses: actions/cache@v3
         with:
           path: |
             build/
           key: cache-build-${{ github.sha }}
+
+      - name: Build WASM filter
+        shell: bash
+        run: make build
 
   e2e-test:
     runs-on: ubuntu-20.04
