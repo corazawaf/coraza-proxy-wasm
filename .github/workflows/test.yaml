@@ -60,7 +60,7 @@ jobs:
       - name: Install TinyGo
         run: |
           wget https://github.com/tinygo-org/tinygo/releases/download/v${TINYGO_VERSION}/tinygo_${TINYGO_VERSION}_amd64.deb
-          dpkg -i tinygo_${TINYGO_VERSION}_amd64.deb
+          sudo dpkg -i tinygo_${TINYGO_VERSION}_amd64.deb
           export PATH=$PATH:/usr/local/bin
 
       - name: "Cache generated .wasm file"
