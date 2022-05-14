@@ -27,7 +27,7 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
                       config:
-                        name: "my_plugin"
+                        name: "coraza-filter"
                         root_id: ""
                         configuration:
                           "@type": "type.googleapis.com/google.protobuf.StringValue"
