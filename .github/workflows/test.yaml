@@ -26,7 +26,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v1
         with:
-          go-version: ${GO_VERSION}
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Run tests
         shell: bash
@@ -58,7 +58,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: ${GO_VERSION}
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Install TinyGo
         run: |
