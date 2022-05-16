@@ -74,6 +74,20 @@ jobs:
         shell: bash
         run: make build
 
+      - name: Install WASM
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install Cargo
+        uses: actions-rs/cargo@v1
+        with:
+          command: install wasm-tools
+
+      - name: Parse WASM output
+        shell: bash
+        run: wasm-tools parse build/main.wasm
+
   e2e-test:
     runs-on: ubuntu-20.04
     needs: build
