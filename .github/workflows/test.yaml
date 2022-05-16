@@ -85,9 +85,17 @@ jobs:
           command: install
           args: wasm-tools
 
+      - name: Validate WASM output
+        shell: bash
+        run: wasm-tools validate build/main.wasm
+
       - name: Parse WASM output
         shell: bash
         run: wasm-tools parse build/main.wasm
+
+      - name: Dump WASM output
+        shell: bash
+        run: wasm-tools dump build/main.wasm
 
   e2e-test:
     runs-on: ubuntu-20.04

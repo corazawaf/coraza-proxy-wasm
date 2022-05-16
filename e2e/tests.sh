@@ -5,20 +5,20 @@
 step=1
 total_steps=3
 max_retries=10 #seconds for the server reachability timeout
-application_url="http://localhost:8000"
-envoy_url_unfiltered="http://localhost:8001/home"
-envoy_url_filtered="http://localhost:8001/admin"
+health_url="http://localhost:8000"
+unfiltered_url="http://localhost:8001/home"
+filtered_url="http://localhost:8001/admin"
 
 # Testing if the server is up
 echo "[$step/$total_steps] Testing application reachability"
 status_code="000"
 while [[ "$status_code" -eq "000" ]]; do
-  status_code=$(curl --write-out "%{http_code}" --silent --output /dev/null $application_url)
+  status_code=$(curl --write-out "%{http_code}" --silent --output /dev/null $health_url)
   sleep 1
-  echo -ne "[Wait] Waiting for response from $application_url. Timeout: ${max_retries}s   \r"
+  echo -ne "[Wait] Waiting for response from $health_url. Timeout: ${max_retries}s   \r"
   ((max_retries-=1))
   if [[ "$max_retries" -eq 0 ]] ; then
-    echo "[Fail] Timeout waiting for response from $application_url, make sure the server is running."
+    echo "[Fail] Timeout waiting for response from $health_url, make sure the server is running."
     exit 1
   fi
 done
@@ -27,9 +27,9 @@ echo -e "\n[Ok] Got status code $status_code, expected 200. Ready to start."
 # Testing envoy container reachability with an unfiltered request
 ((step+=1))
 echo "[$step/$total_steps] Testing true negative request"
-status_code=$(curl --write-out "%{http_code}" --silent --output /dev/null $envoy_url_unfiltered)
+status_code=$(curl --write-out "%{http_code}" --silent --output /dev/null $unfiltered_url)
 if [[ "$status_code" -ne 200 ]] ; then
-  echo "[Fail] Unexpected response with code $status_code from $envoy_url_unfiltered"
+  echo "[Fail] Unexpected response with code $status_code from $unfiltered_url"
   exit 1
 fi
 echo "[Ok] Got status code $status_code, expected 200"
@@ -37,9 +37,9 @@ echo "[Ok] Got status code $status_code, expected 200"
 # Testing filtered request
 ((step+=1))
 echo "[$step/$total_steps] Testing true positive request"
-status_code=$(curl --write-out "%{http_code}" --silent --output /dev/null $envoy_url_filtered)
+status_code=$(curl --write-out "%{http_code}" --silent --output /dev/null $filtered_url)
 if [[ "$status_code" -ne 403 ]] ; then
-  echo "[Fail] Unexpected response with code $status_code from $envoy_url_filtered"
+  echo "[Fail] Unexpected response with code $status_code from $filtered_url"
   exit 1
 fi
 echo "[Ok] Got status code $status_code, expected 403"
