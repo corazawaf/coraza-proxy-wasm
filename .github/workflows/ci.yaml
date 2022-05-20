@@ -127,6 +127,11 @@ jobs:
     runs-on: ubuntu-20.04
     needs: e2e-test
     steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
       - name: "Restore the wasm files cache"
         uses: actions/cache@v2
         with:
@@ -149,6 +154,6 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
-          context: "."
+          context: .
           push: ${{ github.event_name == 'push' }}
           tags: jcchavezs/coraza-wasm-filter:latest
