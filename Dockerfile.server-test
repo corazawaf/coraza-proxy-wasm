@@ -1,0 +1,38 @@
+FROM ubuntu as func-e-downloader
+
+RUN apt update && apt -y install curl
+
+RUN curl https://func-e.io/install.sh | bash -s -- -b /usr/local/bin
+
+FROM tinygo/tinygo as build-stage
+
+RUN apt-get install -y build-essential curl
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+RUN ~/.cargo/bin/cargo install wasm-tools
+
+WORKDIR /usr/src/wasm-filter
+
+COPY coraza coraza
+COPY go.mod go.mod
+COPY go.sum go.sum
+
+RUN go mod download
+
+COPY main.go main.go
+COPY Makefile Makefile
+
+RUN make build
+
+RUN ~/.cargo/bin/wasm-tools validate build/main.wasm
+RUN ~/.cargo/bin/wasm-tools dump build/main.wasm > build/main.wasm.dump
+
+FROM func-e-downloader as run-stage
+
+WORKDIR /usr/bin/wasm-filter
+
+COPY --from=build-stage /usr/src/wasm-filter/build ./build
+COPY e2e/envoy-config.yaml envoy-config.yaml
+
+ENTRYPOINT ["/usr/local/bin/func-e", "run", "-c envoy-config.yaml", "--log-level info", "--component-log-level wasm:debug"]

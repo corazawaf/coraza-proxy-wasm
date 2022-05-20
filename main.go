@@ -110,7 +110,7 @@ func (ctx *httpHeaders) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		return types.ActionContinue
 	}
 
-	tx.ProcessURI(path, method, "1.1") // TODO use the right version
+	tx.ProcessURI(path, method, "1.1") // TODO use the right HTTP version
 
 	hs, err := proxywasm.GetHttpRequestHeaders()
 	if err != nil {
@@ -124,8 +124,16 @@ func (ctx *httpHeaders) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	interruption := tx.ProcessRequestHeaders()
 	if interruption != nil {
-		proxywasm.LogInfof("%d interrupted: %v", ctx.contextID, interruption)
-		return types.ActionPause
+		proxywasm.LogInfof("%d interrupted, action %q", ctx.contextID, interruption.Action)
+		statusCode := interruption.Status
+		if statusCode == 0 {
+			statusCode = 403
+		}
+
+		if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, -1); err != nil {
+			panic(err)
+		}
+		return types.ActionContinue
 	}
 
 	return types.ActionContinue

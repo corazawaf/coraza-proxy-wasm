@@ -124,10 +124,40 @@ jobs:
       - name: "Spin up server and envoy"
         shell: bash
         run: |
-          docker run --rm -d -p 8000:10080 jcchavezs/httpmole -response-status=200 &
           func-e run -c e2e/envoy-config.yaml --log-level info --component-log-level wasm:debug &
 
       - name: "Run tests"
         shell: bash
         run: |
           ./e2e/tests.sh
+
+  package:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-20.04
+    needs: e2e-test
+    steps:
+      - name: "Restore the wasm files cache"
+        uses: actions/cache@v2
+        with:
+          path: |
+            build/main.wasm
+          key: ${{ runner.os }}-cache-build-${{ github.sha }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: "."
+          push: ${{ github.event_name == 'push' }}
+          tags: jcchavezs/coraza-wasm-filter:latest

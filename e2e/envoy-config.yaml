@@ -12,16 +12,14 @@ static_resources:
                 stat_prefix: ingress_http
                 codec_type: auto
                 route_config:
-                  name: local_route
                   virtual_hosts:
-                    - name: local_service
+                    - name: local_route
                       domains:
                         - "*"
                       routes:
-                        - match:
-                            prefix: "/"
-                          route:
-                            cluster: web_service
+                        - match: { prefix: "/" }
+                          direct_response:
+                            status: 200
                 http_filters:
                   - name: envoy.filters.http.wasm
                     typed_config:
@@ -44,17 +42,3 @@ static_resources:
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-
-  clusters:
-    - name: web_service
-      type: strict_dns
-      lb_policy: round_robin
-      load_assignment:
-        cluster_name: service1
-        endpoints:
-          - lb_endpoints:
-              - endpoint:
-                  address:
-                    socket_address:
-                      address: 127.0.0.1
-                      port_value: 8000

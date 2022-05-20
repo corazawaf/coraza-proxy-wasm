@@ -29,7 +29,7 @@ func TestHttpHeaders_OnHttpRequestHeaders(t *testing.T) {
 		},
 		"matching URL": {
 			path:           "/admin",
-			expectedAction: types.ActionPause,
+			expectedAction: types.ActionContinue,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
