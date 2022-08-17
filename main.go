@@ -1,10 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/corazawaf/coraza/v2"
-	"github.com/corazawaf/coraza/v2/seclang"
+	"github.com/corazawaf/coraza/v3"
+	"github.com/corazawaf/coraza/v3/seclang"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 	"github.com/tidwall/gjson"
@@ -96,7 +97,7 @@ type httpHeaders struct {
 
 // Override types.DefaultHttpContext.
 func (ctx *httpHeaders) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
-	tx := ctx.waf.NewTransaction()
+	tx := ctx.waf.NewTransaction(context.Background())
 
 	path, err := proxywasm.GetHttpRequestHeader(":path")
 	if err != nil {

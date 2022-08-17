@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/proxytest"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 )
@@ -20,16 +19,19 @@ func TestHttpHeaders_OnHttpRequestHeaders(t *testing.T) {
 	type testCase struct {
 		path           string
 		expectedAction types.Action
+		responded403   bool
 	}
 
 	for name, tCase := range map[string]testCase{
 		"not matching URL": {
 			path:           "/",
 			expectedAction: types.ActionContinue,
+			responded403:   false,
 		},
 		"matching URL": {
 			path:           "/admin",
 			expectedAction: types.ActionContinue,
+			responded403:   true,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -56,6 +58,11 @@ func TestHttpHeaders_OnHttpRequestHeaders(t *testing.T) {
 
 			// Call OnHttpStreamDone.
 			host.CompleteHttpContext(id)
+
+			if tCase.responded403 {
+				resp := host.GetSentLocalResponse(id)
+				require.EqualValues(t, 403, resp.StatusCode)
+			}
 		})
 	}
 }
