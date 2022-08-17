@@ -48,25 +48,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-tinygo-
 
-      - name: Run tests
+      - name: Run unit tests
         run: make test
 
       - name: Build WASM filter
         run: make build
 
-      - name: "Install func-e"
-        shell: bash
-        run: curl https://func-e.io/install.sh | bash -s -- -b /usr/local/bin
-
-      - name: "Spin up server and envoy"
-        shell: bash
-        run: |
-          func-e run -c e2e/envoy-config.yaml --log-level info --component-log-level wasm:debug &
-
-      - name: "Run tests"
-        shell: bash
-        run: |
-          ./e2e/tests.sh
+      - name: Run e2e tests
+        working-directory: e2e
+        run: docker-compose up --abort-on-container-exit
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
