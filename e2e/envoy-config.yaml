@@ -31,7 +31,7 @@ static_resources:
                           "@type": "type.googleapis.com/google.protobuf.StringValue"
                           value: |
                             {
-                              "rules":"SecDebugLogLevel 5 \nSecDebugLog modsec.log \nSecRuleEngine On \nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
+                              "rules":"SecRuleEngine On \nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
                             }
                         vm_config:
                           runtime: "envoy.wasm.runtime.v8"
