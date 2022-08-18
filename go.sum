@@ -1,5 +1,6 @@
-github.com/corazawaf/coraza/v3 v3.0.0-20220816155047-a86760516fd9 h1:StT0O9ZPmihr25eJeFvWFkHfyLEaqd41vg8CYAE6qHY=
-github.com/corazawaf/coraza/v3 v3.0.0-20220816155047-a86760516fd9/go.mod h1:HW14DrTnueAukBpS06YbaY46FtVI3L1v4MElDD+aKCk=
+github.com/anuraaga/go-modsecurity v0.0.0-20220816070944-f36055ce7d5d/go.mod h1:7jguE759ADzy2EkxGRXigiC0ER1Yq2IFk2qNtwgzc7U=
+github.com/corazawaf/coraza/v3 v3.0.0-20220818013656-f749c07295aa h1:VcGQMo37Il7VWGGaTKfDs+/1BaJaDEFiwuq6N39uKDg=
+github.com/corazawaf/coraza/v3 v3.0.0-20220818013656-f749c07295aa/go.mod h1:WhAgJsa8yn/1Yx25VbLaRmPLOUAT0vkA5TzlVOkXsMc=
 github.com/corazawaf/libinjection-go v0.0.0-20220207031228-44e9c4250eb5 h1:SukhxLQRRBM3nJFEUF+ePG7l0JTWAvaxaG/o6X/FQVY=
 github.com/corazawaf/libinjection-go v0.0.0-20220207031228-44e9c4250eb5/go.mod h1:OP4TM7xdJ2skyXqNX1AN1wN5nNZEmJNuWbNPOItn7aw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -12,6 +13,8 @@ github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORN
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
+github.com/magefile/mage v1.13.0 h1:XtLJl8bcCM7EFoO8FyH8XK3t7G5hQAeK+i4tq+veT9M=
+github.com/magefile/mage v1.13.0/go.mod h1:z5UZb/iS3GoOSn0JgWuiw7dxlurVYTu+/jHXqQg881A=
 github.com/miekg/dns v1.1.25/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
 github.com/miekg/dns v1.1.50 h1:DQUfb9uc6smULcREF09Uc+/Gd46YWqJd5DbpPE9xkcA=
 github.com/miekg/dns v1.1.50/go.mod h1:e3IlAVfNqAllflbibAZEWOXOQ+Ynzk/dDozDxY7XnME=

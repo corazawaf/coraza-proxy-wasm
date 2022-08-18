@@ -6,6 +6,7 @@ CONTAINER_NAME=$(ARTIFACT_NAME)-build
 build:
 	mkdir -p ./build
 	tinygo build -o build/mainraw.wasm -scheduler=none -target=wasi ./main.go
+	wasm2wat build/mainraw.wasm -o build/mainraw.wat
 # Removes unused code, which is important since compiled unused code may import unavailable host functions
 	wasm-opt -Os -c build/mainraw.wasm -o build/mainopt.wasm
 # Unfortuantely the imports themselves are left due to potential use with call_indirect. Hack away missing functions

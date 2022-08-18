@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/corazawaf/coraza/v3"
 	"github.com/corazawaf/coraza/v3/seclang"
+	ctypes "github.com/corazawaf/coraza/v3/types"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 	"github.com/tidwall/gjson"
@@ -23,15 +25,15 @@ type vmContext struct {
 
 // Override types.DefaultVMContext.
 func (*vmContext) NewPluginContext(contextID uint32) types.PluginContext {
-	return &pluginContext{}
+	return &corazaPlugin{}
 }
 
-type pluginContext struct {
+type corazaPlugin struct {
 	// Embed the default plugin context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultPluginContext
 
-	configuration pluginConfiguration
+	waf *coraza.Waf
 }
 
 // pluginConfiguration is a type to represent an example configuration for this wasm plugin.
@@ -40,7 +42,7 @@ type pluginConfiguration struct {
 }
 
 // Override types.DefaultPluginContext.
-func (ctx *pluginContext) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
+func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
 	data, err := proxywasm.GetPluginConfiguration()
 	if err != nil && err != types.ErrorStatusNotFound {
 		proxywasm.LogCriticalf("error reading plugin configuration: %v", err)
@@ -51,7 +53,21 @@ func (ctx *pluginContext) OnPluginStart(pluginConfigurationSize int) types.OnPlu
 		proxywasm.LogCriticalf("error parsing plugin configuration: %v", err)
 		return types.OnPluginStartStatusFailed
 	}
-	ctx.configuration = config
+
+	// First we initialize our waf and our seclang parser
+	waf := coraza.NewWaf()
+	parser, err := seclang.NewParser(waf)
+	if err != nil {
+		proxywasm.LogCriticalf("failed to create seclang parser: %v", err)
+	}
+
+	err = parser.FromString(config.rules)
+	if err != nil {
+		proxywasm.LogCriticalf("failed to parse rules: %v", err)
+	}
+
+	ctx.waf = waf
+
 	return types.OnPluginStartStatusOK
 }
 
@@ -71,34 +87,23 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 }
 
 // Override types.DefaultPluginContext.
-func (ctx *pluginContext) NewHttpContext(contextID uint32) types.HttpContext {
-	// First we initialize our waf and our seclang parser
-	waf := coraza.NewWaf()
-	parser, err := seclang.NewParser(waf)
-	if err != nil {
-		proxywasm.LogCriticalf("failed to create seclang parser: %v", err)
-	}
-
-	err = parser.FromString(ctx.configuration.rules)
-	if err != nil {
-		proxywasm.LogCriticalf("failed to parse rules: %v", err)
-	}
-
-	return &httpHeaders{contextID: contextID, waf: waf}
+func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
+	return &httpContext{contextID: contextID, tx: ctx.waf.NewTransaction(context.Background())}
 }
 
-type httpHeaders struct {
+type httpContext struct {
 	// Embed the default http context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultHttpContext
 	contextID uint32
-	waf       *coraza.Waf
+	tx        *coraza.Transaction
 }
 
 // Override types.DefaultHttpContext.
-func (ctx *httpHeaders) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
-	tx := ctx.waf.NewTransaction(context.Background())
+func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
+	tx := ctx.tx
 
+	// TODO(anuraaga): Do these work with HTTP/1?
 	path, err := proxywasm.GetHttpRequestHeader(":path")
 	if err != nil {
 		proxywasm.LogCriticalf("failed to get path header: %v", err)
@@ -111,7 +116,7 @@ func (ctx *httpHeaders) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		return types.ActionContinue
 	}
 
-	tx.ProcessURI(path, method, "1.1") // TODO use the right HTTP version
+	tx.ProcessURI(path, method, "2.0") // TODO use the right HTTP version
 
 	hs, err := proxywasm.GetHttpRequestHeaders()
 	if err != nil {
@@ -125,15 +130,103 @@ func (ctx *httpHeaders) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	interruption := tx.ProcessRequestHeaders()
 	if interruption != nil {
-		proxywasm.LogInfof("%d interrupted, action %q", ctx.contextID, interruption.Action)
-		statusCode := interruption.Status
-		if statusCode == 0 {
-			statusCode = 403
-		}
+		ctx.handleInterruption(interruption)
+		return types.ActionContinue
+	}
 
-		if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, -1); err != nil {
-			panic(err)
-		}
+	return types.ActionContinue
+}
+
+func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.Action {
+	tx := ctx.tx
+
+	body, err := proxywasm.GetHttpRequestBody(0, bodySize)
+	if err != nil {
+		proxywasm.LogCriticalf("failed to get request body: %v", err)
+		return types.ActionContinue
+	}
+
+	_, err = tx.RequestBodyBuffer.Write(body)
+	if err != nil {
+		proxywasm.LogCriticalf("failed to read request body: %v", err)
+		return types.ActionContinue
+	}
+
+	if !endOfStream {
+		return types.ActionContinue
+	}
+
+	interruption, err := tx.ProcessRequestBody()
+	if err != nil {
+		proxywasm.LogCriticalf("failed to process request body: %v", err)
+		return types.ActionContinue
+	}
+	if interruption != nil {
+		ctx.handleInterruption(interruption)
+		return types.ActionContinue
+	}
+
+	return types.ActionContinue
+}
+
+func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
+	tx := ctx.tx
+
+	status, err := proxywasm.GetHttpResponseHeader(":status")
+	if err != nil {
+		proxywasm.LogCriticalf("failed to get status header: %v", err)
+		return types.ActionContinue
+	}
+	code, err := strconv.Atoi(status)
+	if err != nil {
+		code = 0
+	}
+
+	hs, err := proxywasm.GetHttpResponseHeaders()
+	if err != nil {
+		proxywasm.LogCriticalf("failed to get response headers: %v", err)
+		return types.ActionContinue
+	}
+
+	for _, h := range hs {
+		tx.AddResponseHeader(h[0], h[1])
+	}
+
+	interruption := tx.ProcessResponseHeaders(code, "2.0")
+	if interruption != nil {
+		ctx.handleInterruption(interruption)
+		return types.ActionContinue
+	}
+
+	return types.ActionContinue
+}
+
+func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types.Action {
+	tx := ctx.tx
+
+	body, err := proxywasm.GetHttpResponseBody(0, bodySize)
+	if err != nil {
+		proxywasm.LogCriticalf("failed to get response body: %v", err)
+		return types.ActionContinue
+	}
+
+	_, err = tx.ResponseBodyBuffer.Write(body)
+	if err != nil {
+		proxywasm.LogCriticalf("failed to read response body: %v", err)
+		return types.ActionContinue
+	}
+
+	if !endOfStream {
+		return types.ActionContinue
+	}
+
+	interruption, err := tx.ProcessResponseBody()
+	if err != nil {
+		proxywasm.LogCriticalf("failed to process response body: %v", err)
+		return types.ActionContinue
+	}
+	if interruption != nil {
+		ctx.handleInterruption(interruption)
 		return types.ActionContinue
 	}
 
@@ -141,6 +234,20 @@ func (ctx *httpHeaders) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 }
 
 // Override types.DefaultHttpContext.
-func (ctx *httpHeaders) OnHttpStreamDone() {
+func (ctx *httpContext) OnHttpStreamDone() {
+	ctx.tx.ProcessLogging()
+	_ = ctx.tx.Clean()
 	proxywasm.LogInfof("%d finished", ctx.contextID)
+}
+
+func (ctx *httpContext) handleInterruption(interruption *ctypes.Interruption) {
+	proxywasm.LogInfof("%d interrupted, action %q", ctx.contextID, interruption.Action)
+	statusCode := interruption.Status
+	if statusCode == 0 {
+		statusCode = 403
+	}
+
+	if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, -1); err != nil {
+		panic(err)
+	}
 }

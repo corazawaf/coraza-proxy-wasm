@@ -3,7 +3,7 @@ module github.com/jcchavezs/coraza-wasm-filter
 go 1.17
 
 require (
-	github.com/corazawaf/coraza/v3 v3.0.0-20220816155047-a86760516fd9
+	github.com/corazawaf/coraza/v3 v3.0.0-20220818013656-f749c07295aa
 	github.com/stretchr/testify v1.7.1
 	github.com/tetratelabs/proxy-wasm-go-sdk v0.18.1-0.20220510133519-6240ca761207
 	github.com/tidwall/gjson v1.14.2
@@ -13,6 +13,7 @@ require (
 	github.com/corazawaf/libinjection-go v0.0.0-20220207031228-44e9c4250eb5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/magefile/mage v1.13.0 // indirect
 	github.com/petar-dambovaliev/aho-corasick v0.0.0-20211021192214-5ab2d9280aa9 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
