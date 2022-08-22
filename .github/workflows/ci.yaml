@@ -48,11 +48,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-tinygo-
 
-      - name: Run unit tests
-        run: make test
-
       - name: Build WASM filter
         run: make build
+
+      - name: Run unit tests
+        run: make test
 
       - name: Run e2e tests
         working-directory: e2e

@@ -8,6 +8,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -16,52 +18,75 @@ import (
 )
 
 func TestHttpHeaders_OnHttpRequestHeaders(t *testing.T) {
-	type testCase struct {
+	tests := []struct {
+		name           string
 		path           string
 		expectedAction types.Action
 		responded403   bool
-	}
-
-	for name, tCase := range map[string]testCase{
-		"not matching URL": {
+	}{
+		{
+			name:           "not matching URL",
 			path:           "/",
 			expectedAction: types.ActionContinue,
 			responded403:   false,
 		},
-		"matching URL": {
+		{
+			name:           "matching URL",
 			path:           "/admin",
 			expectedAction: types.ActionContinue,
 			responded403:   true,
 		},
-	} {
-		t.Run(name, func(t *testing.T) {
-			opt := proxytest.
-				NewEmulatorOption().
-				WithVMContext(&vmContext{}).
-				WithPluginConfiguration([]byte(`
+	}
+
+	for _, runner := range []string{"go", "wasm"} {
+		t.Run(runner, func(t *testing.T) {
+			var vm types.VMContext
+			switch runner {
+			case "go":
+				vm = &vmContext{}
+			case "wasm":
+				wasm, err := os.ReadFile(filepath.Join("build", "main.wasm"))
+				if err != nil {
+					t.Skip("wasm not found")
+				}
+				v, err := proxytest.NewWasmVMContext(wasm)
+				require.NoError(t, err)
+				vm = v
+			}
+
+			for _, tc := range tests {
+				tt := tc
+
+				t.Run(tt.name, func(t *testing.T) {
+					opt := proxytest.
+						NewEmulatorOption().
+						WithVMContext(vm).
+						WithPluginConfiguration([]byte(`
 					{
 						"rules" : "SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
 					}	
 				`))
-			host, reset := proxytest.NewHostEmulator(opt)
-			defer reset()
+					host, reset := proxytest.NewHostEmulator(opt)
+					defer reset()
 
-			require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+					require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
 
-			// Initialize http context.
-			id := host.InitializeHttpContext()
+					// Initialize http context.
+					id := host.InitializeHttpContext()
 
-			// Call OnHttpRequestHeaders.
-			hs := [][2]string{{":path", tCase.path}, {":method", "GET"}}
-			action := host.CallOnRequestHeaders(id, hs, false)
-			require.Equal(t, tCase.expectedAction, action)
+					// Call OnHttpRequestHeaders.
+					hs := [][2]string{{":path", tt.path}, {":method", "GET"}}
+					action := host.CallOnRequestHeaders(id, hs, false)
+					require.Equal(t, tt.expectedAction, action)
 
-			// Call OnHttpStreamDone.
-			host.CompleteHttpContext(id)
+					// Call OnHttpStreamDone.
+					host.CompleteHttpContext(id)
 
-			if tCase.responded403 {
-				resp := host.GetSentLocalResponse(id)
-				require.EqualValues(t, 403, resp.StatusCode)
+					if tt.responded403 {
+						resp := host.GetSentLocalResponse(id)
+						require.EqualValues(t, 403, resp.StatusCode)
+					}
+				})
 			}
 		})
 	}
