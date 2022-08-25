@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/corazawaf/coraza/v3 v3.0.0-20220818013656-f749c07295aa
 	github.com/stretchr/testify v1.7.1
-	github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220823044833-fcfdccc01500
+	github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220825081430-0fa40edeb849
 	github.com/tidwall/gjson v1.14.2
 )
 

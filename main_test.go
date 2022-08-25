@@ -6,8 +6,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,77 +17,219 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 )
 
-func TestHttpHeaders_OnHttpRequestHeaders(t *testing.T) {
+func TestLifecycle(t *testing.T) {
+	reqHdrs := [][2]string{
+		{":path", "/hello"},
+		{":method", "GET"},
+		{":authority", "localhost"},
+		{"User-Agent", "gotest"},
+		{"Content-Type", "application/x-www-form-urlencoded"},
+		{"Content-Length", "32"},
+	}
+	reqBody := []byte(`animal=bear&food=honey&name=pooh`)
+	respHdrs := [][2]string{
+		{":status", "200"},
+		{"Server", "gotest"},
+		{"Content-Length", "11"},
+		{"Content-Type", "text/plain"},
+	}
+	respBody := []byte(`Hello, yogi!`)
+
 	tests := []struct {
-		name           string
-		path           string
-		expectedAction types.Action
-		responded403   bool
+		name         string
+		rules        string
+		responded403 bool
 	}{
 		{
-			name:           "not matching URL",
-			path:           "/",
-			expectedAction: types.ActionContinue,
-			responded403:   false,
+			name: "url accepted",
+			rules: `
+SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\"
+`,
+			responded403: false,
 		},
 		{
-			name:           "matching URL",
-			path:           "/admin",
-			expectedAction: types.ActionContinue,
-			responded403:   true,
+			name: "url denied",
+			rules: `
+SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:1,t:lowercase,deny\"
+`,
+			responded403: true,
+		},
+		{
+			name: "method accepted",
+			rules: `
+SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq post\" \"id:101,phase:1,t:lowercase,deny\"
+`,
+			responded403: false,
+		},
+		{
+			name: "method denied",
+			rules: `
+SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq get\" \"id:101,phase:1,t:lowercase,deny\"
+`,
+			responded403: true,
+		},
+		{
+			name: "request header name accepted",
+			rules: `
+SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq accept-encoding\" \"id:101,phase:1,t:lowercase,deny\"
+`,
+			responded403: false,
+		},
+		{
+			name: "request header name denied",
+			rules: `
+SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq user-agent\" \"id:101,phase:1,t:lowercase,deny\"
+`,
+			responded403: true,
+		},
+		{
+			name: "request header value accepted",
+			rules: `
+SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq rusttest\" \"id:101,phase:1,t:lowercase,deny\"
+`,
+			responded403: false,
+		},
+		{
+			name: "request header value denied",
+			rules: `
+SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq gotest\" \"id:101,phase:1,t:lowercase,deny\"
+`,
+			responded403: true,
+		},
+		{
+			name: "request body accepted",
+			rules: `
+SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=yogi\" \"id:101,phase:2,t:lowercase,deny\"
+`,
+			responded403: false,
+		},
+		{
+			name: "request body denied",
+			rules: `
+SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=pooh\" \"id:101,phase:2,t:lowercase,deny\"
+`,
+			responded403: true,
+		},
+		{
+			name: "status accepted",
+			rules: `
+SecRuleEngine On\nSecRule RESPONSE_STATUS \"500\" \"id:101,phase:3,t:lowercase,deny\"
+`,
+			responded403: false,
+		},
+		{
+			name: "status denied",
+			rules: `
+SecRuleEngine On\nSecRule RESPONSE_STATUS \"200\" \"id:101,phase:3,t:lowercase,deny\"
+`,
+			responded403: true,
+		},
+		{
+			name: "response header name accepted",
+			rules: `
+SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq transfer-encoding\" \"id:101,phase:3,t:lowercase,deny\"
+`,
+			responded403: false,
+		},
+		{
+			name: "response header name denied",
+			rules: `
+SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq server\" \"id:101,phase:3,t:lowercase,deny\"
+`,
+			responded403: true,
+		},
+		{
+			name: "response header value accepted",
+			rules: `
+SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq rusttest\" \"id:101,phase:3,t:lowercase,deny\"
+`,
+			responded403: false,
+		},
+		{
+			name: "response header value denied",
+			rules: `
+SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq gotest\" \"id:101,phase:3,t:lowercase,deny\"
+`,
+			responded403: true,
+		},
+		{
+			name: "response body accepted",
+			rules: `
+SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains pooh\" \"id:101,phase:4,t:lowercase,deny\"
+`,
+			responded403: false,
+		},
+		{
+			name: "response body denied",
+			rules: `
+SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains yogi\" \"id:101,phase:4,t:lowercase,deny\"
+`,
+			responded403: true,
 		},
 	}
 
-	for _, runner := range []string{"go", "wasm"} {
-		t.Run(runner, func(t *testing.T) {
-			var vm types.VMContext
-			switch runner {
-			case "go":
-				vm = &vmContext{}
-			case "wasm":
-				wasm, err := os.ReadFile(filepath.Join("build", "main.wasm"))
-				if err != nil {
-					t.Skip("wasm not found")
-				}
-				v, err := proxytest.NewWasmVMContext(wasm)
-				require.NoError(t, err)
-				vm = v
-			}
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+		for _, tc := range tests {
+			tt := tc
 
-			for _, tc := range tests {
-				tt := tc
-
-				t.Run(tt.name, func(t *testing.T) {
-					opt := proxytest.
-						NewEmulatorOption().
-						WithVMContext(vm).
-						WithPluginConfiguration([]byte(`
+			t.Run(tt.name, func(t *testing.T) {
+				opt := proxytest.
+					NewEmulatorOption().
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte(fmt.Sprintf(`
 					{
-						"rules" : "SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
+						"rules" : "%s"
 					}	
-				`))
-					host, reset := proxytest.NewHostEmulator(opt)
-					defer reset()
+				`, strings.TrimSpace(tt.rules))))
 
-					require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+				host, reset := proxytest.NewHostEmulator(opt)
+				defer reset()
 
-					// Initialize http context.
-					id := host.InitializeHttpContext()
+				require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
 
-					// Call OnHttpRequestHeaders.
-					hs := [][2]string{{":path", tt.path}, {":method", "GET"}}
-					action := host.CallOnRequestHeaders(id, hs, false)
-					require.Equal(t, tt.expectedAction, action)
+				id := host.InitializeHttpContext()
 
-					// Call OnHttpStreamDone.
-					host.CompleteHttpContext(id)
+				action := host.CallOnRequestHeaders(id, reqHdrs, false)
+				require.Equal(t, types.ActionContinue, action)
 
-					if tt.responded403 {
-						resp := host.GetSentLocalResponse(id)
-						require.EqualValues(t, 403, resp.StatusCode)
-					}
-				})
-			}
-		})
-	}
+				action = host.CallOnRequestBody(id, reqBody, true)
+				require.Equal(t, types.ActionContinue, action)
+
+				action = host.CallOnResponseHeaders(id, respHdrs, false)
+				require.Equal(t, types.ActionContinue, action)
+
+				action = host.CallOnResponseBody(id, respBody, true)
+
+				// Call OnHttpStreamDone.
+				host.CompleteHttpContext(id)
+
+				pluginResp := host.GetSentLocalResponse(id)
+				if tt.responded403 {
+					require.NotNil(t, pluginResp)
+					require.EqualValues(t, 403, pluginResp.StatusCode)
+				} else {
+					require.Nil(t, pluginResp)
+				}
+			})
+		}
+	})
+}
+
+func vmTest(t *testing.T, f func(*testing.T, types.VMContext)) {
+	t.Helper()
+
+	t.Run("go", func(t *testing.T) {
+		f(t, &vmContext{})
+	})
+
+	t.Run("wasm", func(t *testing.T) {
+		wasm, err := os.ReadFile(filepath.Join("build", "main.wasm"))
+		if err != nil {
+			t.Skip("wasm not found")
+		}
+		v, err := proxytest.NewWasmVMContext(wasm)
+		require.NoError(t, err)
+		defer v.Close()
+		f(t, v)
+	})
 }

@@ -59,11 +59,13 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	parser, err := seclang.NewParser(waf)
 	if err != nil {
 		proxywasm.LogCriticalf("failed to create seclang parser: %v", err)
+		return types.OnPluginStartStatusFailed
 	}
 
 	err = parser.FromString(config.rules)
 	if err != nil {
 		proxywasm.LogCriticalf("failed to parse rules: %v", err)
+		return types.OnPluginStartStatusFailed
 	}
 
 	ctx.waf = waf
