@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright 2022 The OWASP Coraza contributors
+# SPDX-License-Identifier: Apache-2.0
+
 
 # Copied from https://github.com/jcchavezs/modsecurity-wasm-filter-e2e/blob/master/tests.sh
 

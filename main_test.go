@@ -1,3 +1,6 @@
+// Copyright 2022 The OWASP Coraza contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // These tests are supposed to run with `proxytest` build tag, and this way we can leverage the testing framework in "proxytest" package.
 // The framework emulates the expected behavior of Envoyproxy, and you can test your extensions without running Envoy and with
 // the standard Go CLI. To run tests, simply run
@@ -199,6 +202,7 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains yo
 				require.Equal(t, types.ActionContinue, action)
 
 				action = host.CallOnResponseBody(id, respBody, true)
+				require.Equal(t, types.ActionContinue, action)
 
 				// Call OnHttpStreamDone.
 				host.CompleteHttpContext(id)
