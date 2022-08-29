@@ -6,7 +6,7 @@ require (
 	github.com/corazawaf/coraza/v3 v3.0.0-20220818013656-f749c07295aa
 	github.com/magefile/mage v1.13.0
 	github.com/stretchr/testify v1.7.1
-	github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220825081430-0fa40edeb849
+	github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220829035735-38b446650d06
 	github.com/tidwall/gjson v1.14.2
 )
 

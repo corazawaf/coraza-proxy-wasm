@@ -107,9 +107,16 @@ SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=yogi\" \"
 			responded403: false,
 		},
 		{
-			name: "request body denied",
+			name: "request body denied, end of body",
 			rules: `
 SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=pooh\" \"id:101,phase:2,t:lowercase,deny\"
+`,
+			responded403: true,
+		},
+		{
+			name: "request body denied, start of body",
+			rules: `
+SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
 `,
 			responded403: true,
 		},
@@ -163,9 +170,16 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains po
 			responded403: false,
 		},
 		{
-			name: "response body denied",
+			name: "response body denied, end of body",
 			rules: `
 SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains yogi\" \"id:101,phase:4,t:lowercase,deny\"
+`,
+			responded403: true,
+		},
+		{
+			name: "response body denied, start of body",
+			rules: `
+SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
 `,
 			responded403: true,
 		},
@@ -195,14 +209,34 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains yo
 				action := host.CallOnRequestHeaders(id, reqHdrs, false)
 				require.Equal(t, types.ActionContinue, action)
 
-				action = host.CallOnRequestBody(id, reqBody, true)
-				require.Equal(t, types.ActionContinue, action)
+				// Stream bodies in chunks of 5
+
+				for i := 0; i < len(reqBody); i += 5 {
+					eos := i+5 >= len(reqBody)
+					var body []byte
+					if eos {
+						body = reqBody[i:]
+					} else {
+						body = reqBody[i : i+5]
+					}
+					action = host.CallOnRequestBody(id, body, eos)
+					require.Equal(t, types.ActionContinue, action)
+				}
 
 				action = host.CallOnResponseHeaders(id, respHdrs, false)
 				require.Equal(t, types.ActionContinue, action)
 
-				action = host.CallOnResponseBody(id, respBody, true)
-				require.Equal(t, types.ActionContinue, action)
+				for i := 0; i < len(respBody); i += 5 {
+					eos := i+5 >= len(respBody)
+					var body []byte
+					if eos {
+						body = respBody[i:]
+					} else {
+						body = respBody[i : i+5]
+					}
+					action = host.CallOnResponseBody(id, body, eos)
+					require.Equal(t, types.ActionContinue, action)
+				}
 
 				// Call OnHttpStreamDone.
 				host.CompleteHttpContext(id)
