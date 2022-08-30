@@ -432,6 +432,98 @@ func TestEmptyBody(t *testing.T) {
 	})
 }
 
+func TestLogError(t *testing.T) {
+	reqHdrs := [][2]string{
+		{":path", "/hello"},
+		{":method", "GET"},
+		{":authority", "localhost"},
+		{"X-CRS-Test", "for the win!"},
+	}
+
+	tests := []struct {
+		severity int
+		logs     func(host proxytest.HostEmulator) []string
+	}{
+		{
+			severity: 0,
+			logs: func(host proxytest.HostEmulator) []string {
+				return host.GetCriticalLogs()
+			},
+		},
+		{
+			severity: 1,
+			logs: func(host proxytest.HostEmulator) []string {
+				return host.GetCriticalLogs()
+			},
+		},
+		{
+			severity: 2,
+			logs: func(host proxytest.HostEmulator) []string {
+				return host.GetCriticalLogs()
+			},
+		},
+		{
+			severity: 3,
+			logs: func(host proxytest.HostEmulator) []string {
+				return host.GetErrorLogs()
+			},
+		},
+		{
+			severity: 4,
+			logs: func(host proxytest.HostEmulator) []string {
+				return host.GetWarnLogs()
+			},
+		},
+		{
+			severity: 5,
+			logs: func(host proxytest.HostEmulator) []string {
+				return host.GetInfoLogs()
+			},
+		},
+		{
+			severity: 6,
+			logs: func(host proxytest.HostEmulator) []string {
+				return host.GetInfoLogs()
+			},
+		},
+		{
+			severity: 7,
+			logs: func(host proxytest.HostEmulator) []string {
+				return host.GetDebugLogs()
+			},
+		},
+	}
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+		for _, tc := range tests {
+			tt := tc
+			t.Run(fmt.Sprintf("%d", tt.severity), func(t *testing.T) {
+				conf := fmt.Sprintf(`
+{
+	"rules" : "SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:%d,msg:'%%{MATCHED_VAR}',pass,t:none\""
+}
+`, tt.severity)
+
+				opt := proxytest.
+					NewEmulatorOption().
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte(strings.TrimSpace(conf)))
+
+				host, reset := proxytest.NewHostEmulator(opt)
+				defer reset()
+
+				require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+
+				id := host.InitializeHttpContext()
+				action := host.CallOnRequestHeaders(id, reqHdrs, false)
+				require.Equal(t, types.ActionContinue, action)
+
+				logs := strings.Join(tt.logs(host), "\n")
+				require.Contains(t, logs, "for the win!")
+			})
+		}
+	})
+}
+
 func vmTest(t *testing.T, f func(*testing.T, types.VMContext)) {
 	t.Helper()
 

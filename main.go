@@ -59,6 +59,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 	// First we initialize our waf and our seclang parser
 	waf := coraza.NewWaf()
+	waf.SetErrorLogCb(logError)
 
 	// TinyGo compilation will prevent buffering request body to files anyways, so this is
 	// effectively no-op but make clear our expectations.
@@ -268,5 +269,27 @@ func (ctx *httpContext) handleInterruption(interruption *ctypes.Interruption) {
 
 	if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, -1); err != nil {
 		panic(err)
+	}
+}
+
+func logError(error ctypes.MatchedRule) {
+	msg := error.ErrorLog(0)
+	switch error.Rule.Severity {
+	case ctypes.RuleSeverityEmergency:
+		proxywasm.LogCritical(msg)
+	case ctypes.RuleSeverityAlert:
+		proxywasm.LogCritical(msg)
+	case ctypes.RuleSeverityCritical:
+		proxywasm.LogCritical(msg)
+	case ctypes.RuleSeverityError:
+		proxywasm.LogError(msg)
+	case ctypes.RuleSeverityWarning:
+		proxywasm.LogWarn(msg)
+	case ctypes.RuleSeverityNotice:
+		proxywasm.LogInfo(msg)
+	case ctypes.RuleSeverityInfo:
+		proxywasm.LogInfo(msg)
+	case ctypes.RuleSeverityDebug:
+		proxywasm.LogDebug(msg)
 	}
 }
