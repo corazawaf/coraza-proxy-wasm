@@ -59,6 +59,12 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 	// First we initialize our waf and our seclang parser
 	waf := coraza.NewWaf()
+
+	// TinyGo compilation will prevent buffering request body to files anyways, so this is
+	// effectively no-op but make clear our expectations.
+	// TODO(anuraaga): Make this configurable in plugin configuration.
+	waf.RequestBodyLimit = waf.RequestBodyInMemoryLimit
+
 	parser, err := seclang.NewParser(waf)
 	if err != nil {
 		proxywasm.LogCriticalf("failed to create seclang parser: %v", err)
@@ -82,11 +88,15 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 	}
 	config := &pluginConfiguration{}
 	if !gjson.ValidBytes(data) {
-		return pluginConfiguration{}, fmt.Errorf("the plugin configuration is not a valid json: %q", string(data))
+		return pluginConfiguration{}, fmt.Errorf("invalid json: %q", string(data))
 	}
 
 	jsonData := gjson.ParseBytes(data)
-	config.rules = jsonData.Get("rules").String()
+	rules := jsonData.Get("rules")
+	if !rules.Exists() {
+		return pluginConfiguration{}, fmt.Errorf("missing rules: %q", string(data))
+	}
+	config.rules = rules.String()
 
 	return *config, nil
 }

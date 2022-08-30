@@ -44,6 +44,11 @@ func TestLifecycle(t *testing.T) {
 		responded403 bool
 	}{
 		{
+			name:         "no rules",
+			rules:        ``,
+			responded403: false,
+		},
+		{
 			name: "url accepted",
 			rules: `
 SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\"
@@ -190,14 +195,18 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 			tt := tc
 
 			t.Run(tt.name, func(t *testing.T) {
-				opt := proxytest.
-					NewEmulatorOption().
-					WithVMContext(vm).
-					WithPluginConfiguration([]byte(fmt.Sprintf(`
+				conf := ""
+				if tt.rules != "" {
+					conf = fmt.Sprintf(`
 					{
 						"rules" : "%s"
 					}	
-				`, strings.TrimSpace(tt.rules))))
+				`, strings.TrimSpace(tt.rules))
+				}
+				opt := proxytest.
+					NewEmulatorOption().
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte(conf))
 
 				host, reset := proxytest.NewHostEmulator(opt)
 				defer reset()
@@ -248,6 +257,58 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 				} else {
 					require.Nil(t, pluginResp)
 				}
+			})
+		}
+	})
+}
+
+func TestBadConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		conf string
+		msg  string
+	}{
+		{
+			name: "bad json",
+			conf: "{",
+			msg:  `error parsing plugin configuration: invalid json: "{"`,
+		},
+		{
+			name: "no rules",
+			conf: `
+	{
+		"sules" : "SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
+	}
+`,
+			msg: "error parsing plugin configuration: missing rules: ",
+		},
+		{
+			name: "bad rules",
+			conf: `
+	{
+		"rules" : "SecRuleEngine On\nSecRul REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
+	}
+`,
+			msg: "failed to parse rules: ",
+		},
+	}
+
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+		for _, tc := range tests {
+			tt := tc
+			t.Run(tt.name, func(t *testing.T) {
+				opt := proxytest.
+					NewEmulatorOption().
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte(strings.TrimSpace(tt.conf)))
+
+				host, reset := proxytest.NewHostEmulator(opt)
+				defer reset()
+
+				require.Equal(t, types.OnPluginStartStatusFailed, host.StartPlugin())
+
+				logs := strings.Join(host.GetCriticalLogs(), "\n")
+				require.Contains(t, logs, tt.msg)
 			})
 		}
 	})
