@@ -121,13 +121,13 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	// TODO(anuraaga): Do these work with HTTP/1?
 	path, err := proxywasm.GetHttpRequestHeader(":path")
 	if err != nil {
-		proxywasm.LogCriticalf("failed to get path header: %v", err)
+		proxywasm.LogCriticalf("failed to get :path: %v", err)
 		return types.ActionContinue
 	}
 
 	method, err := proxywasm.GetHttpRequestHeader(":method")
 	if err != nil {
-		proxywasm.LogCriticalf("failed to get method header: %v", err)
+		proxywasm.LogCriticalf("failed to get :method: %v", err)
 		return types.ActionContinue
 	}
 
@@ -155,16 +155,18 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.Action {
 	tx := ctx.tx
 
-	body, err := proxywasm.GetHttpRequestBody(0, bodySize)
-	if err != nil {
-		proxywasm.LogCriticalf("failed to get request body: %v", err)
-		return types.ActionContinue
-	}
+	if bodySize > 0 {
+		body, err := proxywasm.GetHttpRequestBody(0, bodySize)
+		if err != nil {
+			proxywasm.LogCriticalf("failed to get request body: %v", err)
+			return types.ActionContinue
+		}
 
-	_, err = tx.RequestBodyBuffer.Write(body)
-	if err != nil {
-		proxywasm.LogCriticalf("failed to read request body: %v", err)
-		return types.ActionContinue
+		_, err = tx.RequestBodyBuffer.Write(body)
+		if err != nil {
+			proxywasm.LogCriticalf("failed to read request body: %v", err)
+			return types.ActionContinue
+		}
 	}
 
 	if !endOfStream {
@@ -189,7 +191,7 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 
 	status, err := proxywasm.GetHttpResponseHeader(":status")
 	if err != nil {
-		proxywasm.LogCriticalf("failed to get status header: %v", err)
+		proxywasm.LogCriticalf("failed to get :status: %v", err)
 		return types.ActionContinue
 	}
 	code, err := strconv.Atoi(status)
@@ -219,16 +221,18 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types.Action {
 	tx := ctx.tx
 
-	body, err := proxywasm.GetHttpResponseBody(0, bodySize)
-	if err != nil {
-		proxywasm.LogCriticalf("failed to get response body: %v", err)
-		return types.ActionContinue
-	}
+	if bodySize > 0 {
+		body, err := proxywasm.GetHttpResponseBody(0, bodySize)
+		if err != nil {
+			proxywasm.LogCriticalf("failed to get response body: %v", err)
+			return types.ActionContinue
+		}
 
-	_, err = tx.ResponseBodyBuffer.Write(body)
-	if err != nil {
-		proxywasm.LogCriticalf("failed to read response body: %v", err)
-		return types.ActionContinue
+		_, err = tx.ResponseBodyBuffer.Write(body)
+		if err != nil {
+			proxywasm.LogCriticalf("failed to read response body: %v", err)
+			return types.ActionContinue
+		}
 	}
 
 	if !endOfStream {

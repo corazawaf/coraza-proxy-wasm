@@ -314,6 +314,124 @@ func TestBadConfig(t *testing.T) {
 	})
 }
 
+func TestBadRequest(t *testing.T) {
+	tests := []struct {
+		name    string
+		reqHdrs [][2]string
+		msg     string
+	}{
+		{
+			name: "missing path",
+			reqHdrs: [][2]string{
+				{":method", "GET"},
+			},
+			msg: "failed to get :path",
+		},
+		{
+			name: "missing method",
+			reqHdrs: [][2]string{
+				{":path", "/hello"},
+			},
+			msg: "failed to get :method",
+		},
+	}
+
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+		for _, tc := range tests {
+			tt := tc
+			t.Run(tt.name, func(t *testing.T) {
+				opt := proxytest.
+					NewEmulatorOption().
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte{})
+
+				host, reset := proxytest.NewHostEmulator(opt)
+				defer reset()
+
+				require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+
+				id := host.InitializeHttpContext()
+
+				action := host.CallOnRequestHeaders(id, tt.reqHdrs, false)
+				require.Equal(t, types.ActionContinue, action)
+
+				logs := strings.Join(host.GetCriticalLogs(), "\n")
+				require.Contains(t, logs, tt.msg)
+			})
+		}
+	})
+}
+
+func TestBadResponse(t *testing.T) {
+	tests := []struct {
+		name     string
+		respHdrs [][2]string
+		msg      string
+	}{
+		{
+			name: "missing path",
+			respHdrs: [][2]string{
+				{"content-length", "12"},
+			},
+			msg: "failed to get :status",
+		},
+	}
+
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+		for _, tc := range tests {
+			tt := tc
+			t.Run(tt.name, func(t *testing.T) {
+				opt := proxytest.
+					NewEmulatorOption().
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte{})
+
+				host, reset := proxytest.NewHostEmulator(opt)
+				defer reset()
+
+				require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+
+				id := host.InitializeHttpContext()
+
+				action := host.CallOnResponseHeaders(id, tt.respHdrs, false)
+				require.Equal(t, types.ActionContinue, action)
+
+				logs := strings.Join(host.GetCriticalLogs(), "\n")
+				require.Contains(t, logs, tt.msg)
+			})
+		}
+	})
+}
+
+func TestEmptyBody(t *testing.T) {
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+		opt := proxytest.
+			NewEmulatorOption().
+			WithVMContext(vm).
+			WithPluginConfiguration([]byte{})
+
+		host, reset := proxytest.NewHostEmulator(opt)
+		defer reset()
+
+		require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+
+		id := host.InitializeHttpContext()
+
+		action := host.CallOnRequestBody(id, []byte{}, false)
+		require.Equal(t, types.ActionContinue, action)
+		action = host.CallOnRequestBody(id, []byte{}, true)
+		require.Equal(t, types.ActionContinue, action)
+
+		action = host.CallOnResponseBody(id, []byte{}, false)
+		require.Equal(t, types.ActionContinue, action)
+		action = host.CallOnResponseBody(id, []byte{}, true)
+		require.Equal(t, types.ActionContinue, action)
+
+		logs := strings.Join(host.GetCriticalLogs(), "\n")
+		require.Empty(t, logs)
+	})
+}
+
 func vmTest(t *testing.T, f func(*testing.T, types.VMContext)) {
 	t.Helper()
 
