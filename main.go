@@ -60,6 +60,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	// First we initialize our waf and our seclang parser
 	waf := coraza.NewWaf()
 	waf.SetErrorLogCb(logError)
+	waf.Logger = &debugLogger{}
 
 	// TinyGo compilation will prevent buffering request body to files anyways, so this is
 	// effectively no-op but make clear our expectations.

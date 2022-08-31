@@ -104,7 +104,7 @@ func Build() error {
 	if err := os.MkdirAll("build", 0755); err != nil {
 		return err
 	}
-	if err := sh.RunV("tinygo", "build", "-o", "build/mainraw.wasm", "-scheduler=none", "-target=wasi", "./main.go"); err != nil {
+	if err := sh.RunV("tinygo", "build", "-o", "build/mainraw.wasm", "-scheduler=none", "-target=wasi", "."); err != nil {
 		return err
 	}
 	if err := sh.RunV("wasm2wat", "build/mainraw.wasm", "-o", "build/mainraw.wat"); err != nil {
