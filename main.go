@@ -5,7 +5,9 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"strconv"
 
 	"github.com/corazawaf/coraza/v3"
@@ -15,6 +17,9 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 	"github.com/tidwall/gjson"
 )
+
+//go:embed custom_rules
+var crs embed.FS
 
 func main() {
 	proxywasm.SetVMContext(&vmContext{})
@@ -41,7 +46,8 @@ type corazaPlugin struct {
 
 // pluginConfiguration is a type to represent an example configuration for this wasm plugin.
 type pluginConfiguration struct {
-	rules string
+	rules      string
+	includeCRS bool
 }
 
 // Override types.DefaultPluginContext.
@@ -79,28 +85,57 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		return types.OnPluginStartStatusFailed
 	}
 
+	if config.includeCRS {
+		err = fs.WalkDir(crs, ".", func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if d.IsDir() {
+				return nil
+			}
+
+			f, _ := crs.ReadFile(path)
+			if err := parser.FromString(string(f)); err != nil {
+				return fmt.Errorf("%s: %v", path, err)
+			}
+
+			return nil
+		})
+		if err != nil {
+			proxywasm.LogCriticalf("failed to parse core rule set: %v", err)
+			return types.OnPluginStartStatusFailed
+		}
+	}
+
 	ctx.waf = waf
 
 	return types.OnPluginStartStatusOK
 }
 
 func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
-	if len(data) == 0 {
-		return pluginConfiguration{}, nil
+	config := pluginConfiguration{
+		includeCRS: true,
 	}
-	config := &pluginConfiguration{}
+	if len(data) == 0 {
+		return config, nil
+	}
 	if !gjson.ValidBytes(data) {
 		return pluginConfiguration{}, fmt.Errorf("invalid json: %q", string(data))
 	}
 
 	jsonData := gjson.ParseBytes(data)
 	rules := jsonData.Get("rules")
-	if !rules.Exists() {
-		return pluginConfiguration{}, fmt.Errorf("missing rules: %q", string(data))
+	if rules.Exists() {
+		config.rules = rules.String()
 	}
-	config.rules = rules.String()
 
-	return *config, nil
+	includeCRS := jsonData.Get("include_core_rule_set")
+	if includeCRS.Exists() && !includeCRS.Bool() {
+		config.includeCRS = false
+	}
+
+	return config, nil
 }
 
 // Override types.DefaultPluginContext.

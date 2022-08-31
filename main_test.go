@@ -20,6 +20,10 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 )
 
+const emptyConf = `{
+  "include_core_rule_set": false
+}`
+
 func TestLifecycle(t *testing.T) {
 	reqHdrs := [][2]string{
 		{":path", "/hello"},
@@ -195,14 +199,12 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 			tt := tc
 
 			t.Run(tt.name, func(t *testing.T) {
-				conf := ""
-				if tt.rules != "" {
-					conf = fmt.Sprintf(`
+				conf := fmt.Sprintf(`
 					{
-						"rules" : "%s"
+						"rules" : "%s",
+						"include_core_rule_set": false
 					}	
 				`, strings.TrimSpace(tt.rules))
-				}
 				opt := proxytest.
 					NewEmulatorOption().
 					WithVMContext(vm).
@@ -274,15 +276,6 @@ func TestBadConfig(t *testing.T) {
 			msg:  `error parsing plugin configuration: invalid json: "{"`,
 		},
 		{
-			name: "no rules",
-			conf: `
-	{
-		"sules" : "SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
-	}
-`,
-			msg: "error parsing plugin configuration: missing rules: ",
-		},
-		{
 			name: "bad rules",
 			conf: `
 	{
@@ -343,7 +336,7 @@ func TestBadRequest(t *testing.T) {
 				opt := proxytest.
 					NewEmulatorOption().
 					WithVMContext(vm).
-					WithPluginConfiguration([]byte{})
+					WithPluginConfiguration([]byte(emptyConf))
 
 				host, reset := proxytest.NewHostEmulator(opt)
 				defer reset()
@@ -384,7 +377,7 @@ func TestBadResponse(t *testing.T) {
 				opt := proxytest.
 					NewEmulatorOption().
 					WithVMContext(vm).
-					WithPluginConfiguration([]byte{})
+					WithPluginConfiguration([]byte(emptyConf))
 
 				host, reset := proxytest.NewHostEmulator(opt)
 				defer reset()
@@ -408,7 +401,7 @@ func TestEmptyBody(t *testing.T) {
 		opt := proxytest.
 			NewEmulatorOption().
 			WithVMContext(vm).
-			WithPluginConfiguration([]byte{})
+			WithPluginConfiguration([]byte(emptyConf))
 
 		host, reset := proxytest.NewHostEmulator(opt)
 		defer reset()
@@ -499,7 +492,8 @@ func TestLogError(t *testing.T) {
 			t.Run(fmt.Sprintf("%d", tt.severity), func(t *testing.T) {
 				conf := fmt.Sprintf(`
 {
-	"rules" : "SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:%d,msg:'%%{MATCHED_VAR}',pass,t:none\""
+	"rules" : "SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:%d,msg:'%%{MATCHED_VAR}',pass,t:none\"",
+	"include_core_rule_set": false
 }
 `, tt.severity)
 
@@ -521,6 +515,23 @@ func TestLogError(t *testing.T) {
 				require.Contains(t, logs, "for the win!")
 			})
 		}
+	})
+}
+
+func TestParseCRS(t *testing.T) {
+	if os.Getenv("CRS_TEST") == "" {
+		t.Skip("CRS_TEST is not set")
+	}
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+		opt := proxytest.
+			NewEmulatorOption().
+			WithVMContext(vm).
+			WithPluginConfiguration([]byte{})
+
+		host, reset := proxytest.NewHostEmulator(opt)
+		defer reset()
+
+		require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
 	})
 }
 
