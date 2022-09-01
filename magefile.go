@@ -139,4 +139,12 @@ func E2e() error {
 	return sh.RunV("docker-compose", "--file", "e2e/docker-compose.yml", "up", "--abort-on-container-exit")
 }
 
+// Ftw runs ftw tests with a built plugin and Envoy. Requires docker-compose.
+func Ftw() error {
+	if err := sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "build"); err != nil {
+		return err
+	}
+	return sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "run", "--rm", "ftw")
+}
+
 var Default = Build

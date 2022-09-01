@@ -168,7 +168,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		return types.ActionContinue
 	}
 
-	tx.ProcessURI(path, method, "2.0") // TODO use the right HTTP version
+	tx.ProcessURI(path, method, "HTTP/2.0") // TODO use the right HTTP version
 
 	hs, err := proxywasm.GetHttpRequestHeaders()
 	if err != nil {
@@ -182,8 +182,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	interruption := tx.ProcessRequestHeaders()
 	if interruption != nil {
-		ctx.handleInterruption(interruption)
-		return types.ActionContinue
+		return ctx.handleInterruption(interruption)
 	}
 
 	return types.ActionContinue
@@ -216,8 +215,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		return types.ActionContinue
 	}
 	if interruption != nil {
-		ctx.handleInterruption(interruption)
-		return types.ActionContinue
+		return ctx.handleInterruption(interruption)
 	}
 
 	return types.ActionContinue
@@ -246,10 +244,9 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 		tx.AddResponseHeader(h[0], h[1])
 	}
 
-	interruption := tx.ProcessResponseHeaders(code, "2.0")
+	interruption := tx.ProcessResponseHeaders(code, "HTTP/2.0")
 	if interruption != nil {
-		ctx.handleInterruption(interruption)
-		return types.ActionContinue
+		return ctx.handleInterruption(interruption)
 	}
 
 	return types.ActionContinue
@@ -276,13 +273,11 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		return types.ActionContinue
 	}
 
-	interruption, err := tx.ProcessResponseBody()
+	// We have already sent response headers so cannot now send an unauthorized response.
+	// The error will have been logged by Coraza though.
+	_, err := tx.ProcessResponseBody()
 	if err != nil {
 		proxywasm.LogCriticalf("failed to process response body: %v", err)
-		return types.ActionContinue
-	}
-	if interruption != nil {
-		ctx.handleInterruption(interruption)
 		return types.ActionContinue
 	}
 
@@ -296,7 +291,7 @@ func (ctx *httpContext) OnHttpStreamDone() {
 	proxywasm.LogInfof("%d finished", ctx.contextID)
 }
 
-func (ctx *httpContext) handleInterruption(interruption *ctypes.Interruption) {
+func (ctx *httpContext) handleInterruption(interruption *ctypes.Interruption) types.Action {
 	proxywasm.LogInfof("%d interrupted, action %q", ctx.contextID, interruption.Action)
 	statusCode := interruption.Status
 	if statusCode == 0 {
@@ -306,6 +301,8 @@ func (ctx *httpContext) handleInterruption(interruption *ctypes.Interruption) {
 	if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, -1); err != nil {
 		panic(err)
 	}
+
+	return types.ActionPause
 }
 
 func logError(error ctypes.MatchedRule) {
