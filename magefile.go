@@ -144,6 +144,9 @@ func Ftw() error {
 	if err := sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "build"); err != nil {
 		return err
 	}
+	defer func() {
+		_ = sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "down", "-v")
+	}()
 	return sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "run", "--rm", "ftw")
 }
 

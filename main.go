@@ -147,15 +147,19 @@ type httpContext struct {
 	// Embed the default http context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultHttpContext
-	contextID uint32
-	tx        *coraza.Transaction
+	contextID    uint32
+	tx           *coraza.Transaction
+	httpProtocol string
 }
 
 // Override types.DefaultHttpContext.
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
 	tx := ctx.tx
 
-	// TODO(anuraaga): Do these work with HTTP/1?
+	// This currently relies on Envoy's behavior of mapping all requests to HTTP/2 semantics
+	// and its request properties, but they may not be true of other proxies implementing
+	// proxy-wasm.
+
 	path, err := proxywasm.GetHttpRequestHeader(":path")
 	if err != nil {
 		proxywasm.LogCriticalf("failed to get :path: %v", err)
@@ -168,7 +172,16 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		return types.ActionContinue
 	}
 
-	tx.ProcessURI(path, method, "HTTP/2.0") // TODO use the right HTTP version
+	protocol, err := proxywasm.GetProperty([]string{"request", "protocol"})
+	if err != nil {
+		// TODO(anuraaga): HTTP protocol is commonly required in WAF rules, we should probably
+		// fail fast here, but proxytest does not support properties yet.
+		protocol = []byte("HTTP/2.0")
+	}
+
+	ctx.httpProtocol = string(protocol)
+
+	tx.ProcessURI(path, method, ctx.httpProtocol)
 
 	hs, err := proxywasm.GetHttpRequestHeaders()
 	if err != nil {
@@ -244,7 +257,7 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 		tx.AddResponseHeader(h[0], h[1])
 	}
 
-	interruption := tx.ProcessResponseHeaders(code, "HTTP/2.0")
+	interruption := tx.ProcessResponseHeaders(code, ctx.httpProtocol)
 	if interruption != nil {
 		return ctx.handleInterruption(interruption)
 	}
