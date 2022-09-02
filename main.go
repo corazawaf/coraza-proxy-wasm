@@ -147,9 +147,11 @@ type httpContext struct {
 	// Embed the default http context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultHttpContext
-	contextID    uint32
-	tx           *coraza.Transaction
-	httpProtocol string
+	contextID             uint32
+	tx                    *coraza.Transaction
+	httpProtocol          string
+	processedRequestBody  bool
+	processedResponseBody bool
 }
 
 // Override types.DefaultHttpContext.
@@ -193,6 +195,12 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		tx.AddRequestHeader(h[0], h[1])
 	}
 
+	// CRS rules tend to expect Host even with HTTP/2
+	authority, err := proxywasm.GetHttpRequestHeader(":authority")
+	if err == nil {
+		tx.AddRequestHeader("Host", authority)
+	}
+
 	interruption := tx.ProcessRequestHeaders()
 	if interruption != nil {
 		return ctx.handleInterruption(interruption)
@@ -222,6 +230,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		return types.ActionContinue
 	}
 
+	ctx.processedRequestBody = true
 	interruption, err := tx.ProcessRequestBody()
 	if err != nil {
 		proxywasm.LogCriticalf("failed to process request body: %v", err)
@@ -236,6 +245,20 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 
 func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
 	tx := ctx.tx
+
+	// Requests without body won't call OnHttpRequestBody, but there are rules in the request body
+	// phase that still need to be executed. If they haven't been executed yet, now is the time.
+	if !ctx.processedRequestBody {
+		ctx.processedRequestBody = true
+		interruption, err := tx.ProcessRequestBody()
+		if err != nil {
+			proxywasm.LogCriticalf("failed to process request body: %v", err)
+			return types.ActionContinue
+		}
+		if interruption != nil {
+			return ctx.handleInterruption(interruption)
+		}
+	}
 
 	status, err := proxywasm.GetHttpResponseHeader(":status")
 	if err != nil {
@@ -288,6 +311,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 
 	// We have already sent response headers so cannot now send an unauthorized response.
 	// The error will have been logged by Coraza though.
+	ctx.processedResponseBody = true
 	_, err := tx.ProcessResponseBody()
 	if err != nil {
 		proxywasm.LogCriticalf("failed to process response body: %v", err)
@@ -299,6 +323,18 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 
 // Override types.DefaultHttpContext.
 func (ctx *httpContext) OnHttpStreamDone() {
+	tx := ctx.tx
+
+	// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
+	// phase that still need to be executed. If they haven't been executed yet, now is the time.
+	if !ctx.processedResponseBody {
+		ctx.processedResponseBody = true
+		_, err := tx.ProcessResponseBody()
+		if err != nil {
+			proxywasm.LogCriticalf("failed to process response body: %v", err)
+		}
+	}
+
 	ctx.tx.ProcessLogging()
 	_ = ctx.tx.Clean()
 	proxywasm.LogInfof("%d finished", ctx.contextID)

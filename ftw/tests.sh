@@ -31,4 +31,4 @@ echo -e "\n[Ok] Got status code $status_code, expected 200. Ready to start."
 
 # Protocol violations often get treated by Envoy itself, exclude them for now while investigating
 # what works. Also currently HTTP/1.0 seems to have an issue so we exclude any tests using it.
-go-ftw run -d coreruleset/tests/regression/tests --config ftw.yml --exclude '920.*|921.*|93.*|True.*|94.*|95.*'
+go-ftw run -d coreruleset/tests/regression/tests --config ftw.yml --exclude '920.*|9323.*'
