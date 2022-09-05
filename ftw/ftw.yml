@@ -1,7 +1,7 @@
 ---
 # For caddy configuration see the next file, Caddyfile
 # Just type: go-ftw run -d ./coreruleset/tests/regression --config .ftw.yaml
-logfile: '/home/envoy/logs/envoy.log'
+logfile: '/home/envoy/logs/ftw.log'
 testoverride:
   input:
     dest_addr: envoy
