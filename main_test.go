@@ -716,18 +716,38 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:4,t:lower
 func vmTest(t *testing.T, f func(*testing.T, types.VMContext)) {
 	t.Helper()
 
-	t.Run("go", func(t *testing.T) {
-		f(t, &vmContext{})
-	})
+	var runInGo, runInWASM, forceWASM bool
+	switch os.Getenv("TEST_RUNTIME") {
+	case "go":
+		runInGo = true
+	case "wasm":
+		runInWASM = true
+		forceWASM = true
+	default:
+		runInGo = true
+		runInWASM = true
+	}
 
-	t.Run("wasm", func(t *testing.T) {
-		wasm, err := os.ReadFile(filepath.Join("build", "main.wasm"))
-		if err != nil {
-			t.Skip("wasm not found")
-		}
-		v, err := proxytest.NewWasmVMContext(wasm)
-		require.NoError(t, err)
-		defer v.Close()
-		f(t, v)
-	})
+	if runInGo {
+		t.Run("go", func(t *testing.T) {
+			f(t, &vmContext{})
+		})
+	}
+
+	if runInWASM {
+		t.Run("wasm", func(t *testing.T) {
+			buildPath := filepath.Join("build", "main.wasm")
+			wasm, err := os.ReadFile(buildPath)
+			if err != nil {
+				if forceWASM {
+					t.Fatalf("failed to run tests in wasm: %s not found", buildPath)
+				}
+				t.Skip("wasm not found")
+			}
+			v, err := proxytest.NewWasmVMContext(wasm)
+			require.NoError(t, err)
+			defer v.Close()
+			f(t, v)
+		})
+	}
 }
