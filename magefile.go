@@ -99,8 +99,23 @@ func Check() {
 	mg.SerialDeps(Lint, Test)
 }
 
+func CheckBuildTools() error {
+	if err := sh.Run("tinygo", "version"); err != nil {
+		return errors.New("missing build tool tinygo (https://tinygo.org/getting-started/install/)")
+	}
+
+	wabtTools := []string{"wasm2wat", "wasm-opt", "wasm2wat"}
+	for _, t := range wabtTools {
+		if err := sh.Run(t, "--version"); err != nil {
+			return fmt.Errorf("missing build tool %q, we recommend you to install wabt (https://github.com/WebAssembly/wabt)", t)
+		}
+	}
+	return nil
+}
+
 // Build builds the Coraza wasm plugin.
 func Build() error {
+	mg.Deps(CheckBuildTools)
 	if err := os.MkdirAll("build", 0755); err != nil {
 		return err
 	}
