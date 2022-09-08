@@ -34,7 +34,10 @@ static_resources:
                           "@type": "type.googleapis.com/google.protobuf.StringValue"
                           value: |
                             {
-                              "rules":"SecRuleEngine On \nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
+                              "rules": [
+                                {"inline": "SecRuleEngine On \nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
+                                {"include": "OWASP_CRS"}
+                              ]
                             }
                         vm_config:
                           runtime: "envoy.wasm.runtime.v8"

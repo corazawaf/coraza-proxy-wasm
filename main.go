@@ -6,7 +6,6 @@ package main
 import (
 	"context"
 	"embed"
-	"fmt"
 	"io/fs"
 	"strconv"
 
@@ -15,7 +14,6 @@ import (
 	ctypes "github.com/corazawaf/coraza/v3/types"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
-	"github.com/tidwall/gjson"
 )
 
 //go:embed custom_rules
@@ -42,12 +40,6 @@ type corazaPlugin struct {
 	types.DefaultPluginContext
 
 	waf *coraza.Waf
-}
-
-// pluginConfiguration is a type to represent an example configuration for this wasm plugin.
-type pluginConfiguration struct {
-	rules      string
-	includeCRS bool
 }
 
 // Override types.DefaultPluginContext.
@@ -79,63 +71,27 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		return types.OnPluginStartStatusFailed
 	}
 
-	err = parser.FromString(config.rules)
+	crs, err := fs.Sub(crs, "custom_rules")
+	if err != nil {
+		proxywasm.LogCriticalf("failed to access CRS filesystem: %v", err)
+		return types.OnPluginStartStatusFailed
+	}
+
+	rules, err := resolveIncludes(config.rules, crs)
+	if err != nil {
+		proxywasm.LogCriticalf("failed to load embedded rules: %v", err)
+		return types.OnPluginStartStatusFailed
+	}
+
+	err = parser.FromString(rules)
 	if err != nil {
 		proxywasm.LogCriticalf("failed to parse rules: %v", err)
 		return types.OnPluginStartStatusFailed
 	}
 
-	if config.includeCRS {
-		err = fs.WalkDir(crs, ".", func(path string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if d.IsDir() {
-				return nil
-			}
-
-			f, _ := crs.ReadFile(path)
-			if err := parser.FromString(string(f)); err != nil {
-				return fmt.Errorf("%s: %v", path, err)
-			}
-
-			return nil
-		})
-		if err != nil {
-			proxywasm.LogCriticalf("failed to parse core rule set: %v", err)
-			return types.OnPluginStartStatusFailed
-		}
-	}
-
 	ctx.waf = waf
 
 	return types.OnPluginStartStatusOK
-}
-
-func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
-	config := pluginConfiguration{
-		includeCRS: true,
-	}
-	if len(data) == 0 {
-		return config, nil
-	}
-	if !gjson.ValidBytes(data) {
-		return pluginConfiguration{}, fmt.Errorf("invalid json: %q", string(data))
-	}
-
-	jsonData := gjson.ParseBytes(data)
-	rules := jsonData.Get("rules")
-	if rules.Exists() {
-		config.rules = rules.String()
-	}
-
-	includeCRS := jsonData.Get("include_core_rule_set")
-	if includeCRS.Exists() && !includeCRS.Bool() {
-		config.includeCRS = false
-	}
-
-	return config, nil
 }
 
 // Override types.DefaultPluginContext.

@@ -20,10 +20,6 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 )
 
-const emptyConf = `{
-  "include_core_rule_set": false
-}`
-
 func TestLifecycle(t *testing.T) {
 	reqHdrs := [][2]string{
 		{":path", "/hello"},
@@ -44,7 +40,7 @@ func TestLifecycle(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		rules              string
+		inlineRules        string
 		requestHdrsAction  types.Action
 		requestBodyAction  types.Action
 		responseHdrsAction types.Action
@@ -52,7 +48,7 @@ func TestLifecycle(t *testing.T) {
 	}{
 		{
 			name:               "no rules",
-			rules:              ``,
+			inlineRules:        ``,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -60,7 +56,7 @@ func TestLifecycle(t *testing.T) {
 		},
 		{
 			name: "url accepted",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -70,7 +66,7 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lower
 		},
 		{
 			name: "url denied",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:1,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionPause,
@@ -80,7 +76,7 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:1,t:lower
 		},
 		{
 			name: "method accepted",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq post\" \"id:101,phase:1,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -90,7 +86,7 @@ SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq post\" \"id:101,phase:1,t:lowe
 		},
 		{
 			name: "method denied",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq get\" \"id:101,phase:1,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionPause,
@@ -100,7 +96,7 @@ SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq get\" \"id:101,phase:1,t:lower
 		},
 		{
 			name: "request header name accepted",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq accept-encoding\" \"id:101,phase:1,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -110,7 +106,7 @@ SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq accept-encoding\" \"id:
 		},
 		{
 			name: "request header name denied",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq user-agent\" \"id:101,phase:1,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionPause,
@@ -120,7 +116,7 @@ SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq user-agent\" \"id:101,p
 		},
 		{
 			name: "request header value accepted",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq rusttest\" \"id:101,phase:1,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -130,7 +126,7 @@ SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq rusttest\" \"id:10
 		},
 		{
 			name: "request header value denied",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq gotest\" \"id:101,phase:1,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionPause,
@@ -140,7 +136,7 @@ SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq gotest\" \"id:101,
 		},
 		{
 			name: "request body accepted",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=yogi\" \"id:101,phase:2,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -150,7 +146,7 @@ SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=yogi\" \"
 		},
 		{
 			name: "request body denied, end of body",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=pooh\" \"id:101,phase:2,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -160,7 +156,7 @@ SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=pooh\" \"
 		},
 		{
 			name: "request body denied, start of body",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -170,7 +166,7 @@ SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"animal=bear\" 
 		},
 		{
 			name: "status accepted",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule RESPONSE_STATUS \"500\" \"id:101,phase:3,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -180,7 +176,7 @@ SecRuleEngine On\nSecRule RESPONSE_STATUS \"500\" \"id:101,phase:3,t:lowercase,d
 		},
 		{
 			name: "status denied",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule RESPONSE_STATUS \"200\" \"id:101,phase:3,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -190,7 +186,7 @@ SecRuleEngine On\nSecRule RESPONSE_STATUS \"200\" \"id:101,phase:3,t:lowercase,d
 		},
 		{
 			name: "response header name accepted",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq transfer-encoding\" \"id:101,phase:3,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -200,7 +196,7 @@ SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq transfer-encoding\" \"
 		},
 		{
 			name: "response header name denied",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq server\" \"id:101,phase:3,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -210,7 +206,7 @@ SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq server\" \"id:101,phas
 		},
 		{
 			name: "response header value accepted",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq rusttest\" \"id:101,phase:3,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -220,7 +216,7 @@ SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq rusttest\" \"id:101,p
 		},
 		{
 			name: "response header value denied",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq gotest\" \"id:101,phase:3,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -230,7 +226,7 @@ SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq gotest\" \"id:101,pha
 		},
 		{
 			name: "response body accepted",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains pooh\" \"id:101,phase:4,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -240,7 +236,7 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains po
 		},
 		{
 			name: "response body denied, end of body",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains yogi\" \"id:101,phase:4,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -250,7 +246,7 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains yo
 		},
 		{
 			name: "response body denied, start of body",
-			rules: `
+			inlineRules: `
 SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionContinue,
@@ -265,12 +261,14 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 			tt := tc
 
 			t.Run(tt.name, func(t *testing.T) {
-				conf := fmt.Sprintf(`
-					{
-						"rules" : "%s",
-						"include_core_rule_set": false
+				conf := `{}`
+				if inlineRules := strings.TrimSpace(tt.inlineRules); inlineRules != "" {
+					conf = fmt.Sprintf(`
+					{ 
+						"rules": [ { "inline": "%s" } ]
 					}	
-				`, strings.TrimSpace(tt.rules))
+				`, inlineRules)
+				}
 				opt := proxytest.
 					NewEmulatorOption().
 					WithVMContext(vm).
@@ -352,16 +350,7 @@ func TestBadConfig(t *testing.T) {
 		{
 			name: "bad json",
 			conf: "{",
-			msg:  `error parsing plugin configuration: invalid json: "{"`,
-		},
-		{
-			name: "bad rules",
-			conf: `
-	{
-		"rules" : "SecRuleEngine On\nSecRul REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
-	}
-`,
-			msg: "failed to parse rules: ",
+			msg:  `error parsing plugin configuration:`,
 		},
 	}
 
@@ -372,7 +361,7 @@ func TestBadConfig(t *testing.T) {
 				opt := proxytest.
 					NewEmulatorOption().
 					WithVMContext(vm).
-					WithPluginConfiguration([]byte(strings.TrimSpace(tt.conf)))
+					WithPluginConfiguration([]byte(tt.conf))
 
 				host, reset := proxytest.NewHostEmulator(opt)
 				defer reset()
@@ -414,8 +403,7 @@ func TestBadRequest(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				opt := proxytest.
 					NewEmulatorOption().
-					WithVMContext(vm).
-					WithPluginConfiguration([]byte(emptyConf))
+					WithVMContext(vm)
 
 				host, reset := proxytest.NewHostEmulator(opt)
 				defer reset()
@@ -455,8 +443,7 @@ func TestBadResponse(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				opt := proxytest.
 					NewEmulatorOption().
-					WithVMContext(vm).
-					WithPluginConfiguration([]byte(emptyConf))
+					WithVMContext(vm)
 
 				host, reset := proxytest.NewHostEmulator(opt)
 				defer reset()
@@ -479,8 +466,7 @@ func TestEmptyBody(t *testing.T) {
 	vmTest(t, func(t *testing.T, vm types.VMContext) {
 		opt := proxytest.
 			NewEmulatorOption().
-			WithVMContext(vm).
-			WithPluginConfiguration([]byte(emptyConf))
+			WithVMContext(vm)
 
 		host, reset := proxytest.NewHostEmulator(opt)
 		defer reset()
@@ -568,11 +554,10 @@ func TestLogError(t *testing.T) {
 	vmTest(t, func(t *testing.T, vm types.VMContext) {
 		for _, tc := range tests {
 			tt := tc
-			t.Run(fmt.Sprintf("%d", tt.severity), func(t *testing.T) {
+			t.Run(fmt.Sprintf("severity %d", tt.severity), func(t *testing.T) {
 				conf := fmt.Sprintf(`
 {
-	"rules" : "SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:%d,msg:'%%{MATCHED_VAR}',pass,t:none\"",
-	"include_core_rule_set": false
+	"rules" : [{"inline": "SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:%d,msg:'%%{MATCHED_VAR}',pass,t:none\""}]
 }
 `, tt.severity)
 
@@ -601,11 +586,12 @@ func TestParseCRS(t *testing.T) {
 	if os.Getenv("CRS_TEST") == "" {
 		t.Skip("CRS_TEST is not set")
 	}
+
 	vmTest(t, func(t *testing.T, vm types.VMContext) {
 		opt := proxytest.
 			NewEmulatorOption().
 			WithVMContext(vm).
-			WithPluginConfiguration([]byte{})
+			WithPluginConfiguration([]byte(`{ "rules": [ {"include": "OWASP_CRS"} ] }`))
 
 		host, reset := proxytest.NewHostEmulator(opt)
 		defer reset()
@@ -675,10 +661,7 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:4,t:lower
 
 			t.Run(tt.name, func(t *testing.T) {
 				conf := fmt.Sprintf(`
-					{
-						"rules" : "%s",
-						"include_core_rule_set": false
-					}
+					{ "rules": [ {"inline": "%s"} ] }
 				`, strings.TrimSpace(tt.rules))
 				opt := proxytest.
 					NewEmulatorOption().
@@ -721,7 +704,8 @@ func vmTest(t *testing.T, f func(*testing.T, types.VMContext)) {
 	})
 
 	t.Run("wasm", func(t *testing.T) {
-		wasm, err := os.ReadFile(filepath.Join("build", "main.wasm"))
+		buildPath := filepath.Join("build", "main.wasm")
+		wasm, err := os.ReadFile(buildPath)
 		if err != nil {
 			t.Skip("wasm not found")
 		}
