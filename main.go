@@ -16,7 +16,7 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 )
 
-//go:embed custom_rules
+//go:embed rules
 var crs embed.FS
 
 func main() {
@@ -39,7 +39,7 @@ type corazaPlugin struct {
 	// so that we don't need to reimplement all the methods.
 	types.DefaultPluginContext
 
-	waf *coraza.Waf
+	waf *coraza.WAF
 }
 
 // Override types.DefaultPluginContext.
@@ -56,7 +56,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	}
 
 	// First we initialize our waf and our seclang parser
-	waf := coraza.NewWaf()
+	waf := coraza.NewWAF()
 	waf.SetErrorLogCb(logError)
 	waf.Logger = &debugLogger{}
 
@@ -65,11 +65,9 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	// TODO(anuraaga): Make this configurable in plugin configuration.
 	waf.RequestBodyLimit = waf.RequestBodyInMemoryLimit
 
-	parser, err := seclang.NewParser(waf)
-	if err != nil {
-		proxywasm.LogCriticalf("failed to create seclang parser: %v", err)
-		return types.OnPluginStartStatusFailed
-	}
+	parser := seclang.NewParser(waf)
+	root, _ := fs.Sub(crs, "rules")
+	parser.SetRoot(root)
 
 	crs, err := fs.Sub(crs, "custom_rules")
 	if err != nil {

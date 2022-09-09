@@ -6,6 +6,11 @@ testoverride:
   input:
     dest_addr: envoy
   ignore:
+    '911100-5': 'Rejected by Envoy with Error 400'
+    '911100-7': 'Rejected by Envoy with Error 400'
+    '920100-4': 'Accepted by Envoy. Valid request. It is only disabled by default from Apache and Nginx'
+    '920100-10': 'Invalid HTTP method is rejected by Envoy'
+    '920100-14': 'Invalid HTTP method is rejected by Envoy'
     '920181-1': 'Invalid URL, Coraza stops this.'
     '942490-17': 'Invalid URL, Coraza stops this.'
     '942260-17': 'Invalid URL, Coraza stops this.'
@@ -40,21 +45,6 @@ testoverride:
     '920460-3': 'Quadruple backslash issue'
     '920460-4': 'Quadruple backslash issue'
     '932180-2': 'Bad multipart'
-    '920100-4': 'Method connect is not valid for caddy'
-    '920100-5': 'Method connect is not valid for caddy'
-    '920100-8': 'Caddy doesnt respond to errors like apache'
-    '920170-3': 'Caddy doesnt accept HEAD payloads'
-    '920171-2': 'Caddy hides transfer-encoding from Coraza on file_server mode'
-    '920171-3': 'Caddy hides transfer-encoding from Coraza on file_server mode'
-    '920270-4': 'Caddy ignores the nullbyte'
-    '920272-5': 'Caddy can handle that invalid encoding'
-    '920280-3': 'Caddy returns error 505 instead'
-    '920290-1': 'Caddy ignores an empty host'
-    '920420-8': 'Caddy does not accept thatinvalid content-type'
-    '920430-3': 'Caddy returns error 505 instead'
-    '920430-5': 'Caddy will close the connection on close and return 400'
-    '920430-8': 'HTTP/3 is unsupported by caddy'
-    '920430-9': 'HTTP/0.8 is unsupported by caddy'
     # Temporary:
     '953120-0': 'Temporary, this works but the testing framework does not support it yet.'
     '953120-2': 'Temporary, this works but the testing framework does not support it yet.'

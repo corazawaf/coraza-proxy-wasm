@@ -35,8 +35,10 @@ static_resources:
                           value: |
                             {
                               "rules": [
-                                {"inline": "SecRuleEngine On \nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
-                                {"include": "OWASP_CRS"}
+                                {"inline": "Include ftw-config.conf"},
+                                {"inline": "Include coraza.conf-recommended"},
+                                {"inline": "Include crs-setup.conf.example"},
+                                {"inline": "Include crs/*.conf"}
                               ]
                             }
                         vm_config:

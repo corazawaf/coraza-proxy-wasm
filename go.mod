@@ -7,7 +7,7 @@ require (
 	github.com/magefile/mage v1.13.0
 	github.com/stretchr/testify v1.8.0
 	github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220831045923-bd6f69563ef4
-	github.com/tidwall/gjson v1.14.2
+	github.com/tidwall/gjson v1.14.3
 )
 
 require (
@@ -23,3 +23,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/corazawaf/coraza/v3 => github.com/anuraaga/coraza/v3 v3.0.0-20220905043104-edd178fdb375
