@@ -34,7 +34,12 @@ static_resources:
                           "@type": "type.googleapis.com/google.protobuf.StringValue"
                           value: |
                             {
-                              "rules":"SecRuleEngine On \nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
+                              "rules": [
+                                {"inline": "Include ftw-config.conf"},
+                                {"inline": "Include coraza.conf-recommended"},
+                                {"inline": "Include crs-setup.conf.example"},
+                                {"inline": "Include crs/*.conf"}
+                              ]
                             }
                         vm_config:
                           runtime: "envoy.wasm.runtime.v8"

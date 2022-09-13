@@ -1,6 +1,6 @@
+github.com/anuraaga/coraza/v3 v3.0.0-20220905043104-edd178fdb375 h1:q74P/MPYqspS8+Z7XtrGM1oF2j/VzXh4ztepydocMfI=
+github.com/anuraaga/coraza/v3 v3.0.0-20220905043104-edd178fdb375/go.mod h1:4n19iYn2azZSvZwvS4NH82WGj+89OAtbRLTzjtF+1/w=
 github.com/anuraaga/go-modsecurity v0.0.0-20220824035035-b9a4099778df/go.mod h1:7jguE759ADzy2EkxGRXigiC0ER1Yq2IFk2qNtwgzc7U=
-github.com/corazawaf/coraza/v3 v3.0.0-20220830185138-a7b5422cf0ae h1:QBPdiYPlZJxJ9vwQW/0iniVWvWBdlMWRhrIxaA+31HE=
-github.com/corazawaf/coraza/v3 v3.0.0-20220830185138-a7b5422cf0ae/go.mod h1:phzRWg3VEYxpl7YsOzs8KrZZi1nQw2jxBFg8rj62N9U=
 github.com/corazawaf/libinjection-go v0.0.0-20220207031228-44e9c4250eb5 h1:SukhxLQRRBM3nJFEUF+ePG7l0JTWAvaxaG/o6X/FQVY=
 github.com/corazawaf/libinjection-go v0.0.0-20220207031228-44e9c4250eb5/go.mod h1:OP4TM7xdJ2skyXqNX1AN1wN5nNZEmJNuWbNPOItn7aw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -31,8 +31,8 @@ github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220831045923-bd6f69563ef4 h
 github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220831045923-bd6f69563ef4/go.mod h1:YVEdbjpYmWRaTXSHuIK6O1kibi313mcQpTbcuBTd4Mg=
 github.com/tetratelabs/wazero v1.0.0-beta.2 h1:Qa1R1oizAYHcmy8PljgINdXUZ/nRQkxUBbYfGSb4IBE=
 github.com/tetratelabs/wazero v1.0.0-beta.2/go.mod h1:CD5smBN5rGZo7UNe8aUiWyYE3bDWED/CQSonog9NSEg=
-github.com/tidwall/gjson v1.14.2 h1:6BBkirS0rAHjumnjHF6qgy5d2YAJ1TLIaFE2lzfOLqo=
-github.com/tidwall/gjson v1.14.2/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
+github.com/tidwall/gjson v1.14.3 h1:9jvXn7olKEHU1S9vwoMGliaT8jq1vJ7IH/n9zD9Dnlw=
+github.com/tidwall/gjson v1.14.3/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/match v1.1.1 h1:+Ho715JplO36QYgwN9PGYNhgZvoUSc9X2c80KVTi+GA=
 github.com/tidwall/match v1.1.1/go.mod h1:eRSPERbgtNPcGhD8UCthc6PmLEQXEWd3PRB5JTxsfmM=
 github.com/tidwall/pretty v1.2.0 h1:RWIZEg2iJ8/g6fDDYzMpobmaoGh5OLl4AXtGUGPcqCs=
