@@ -3,7 +3,7 @@ module github.com/jcchavezs/coraza-wasm-filter
 go 1.17
 
 require (
-	github.com/corazawaf/coraza/v3 v3.0.0-20220830185138-a7b5422cf0ae
+	github.com/corazawaf/coraza/v3 v3.0.0-20220913021343-a3bd8c85ebf5
 	github.com/magefile/mage v1.13.0
 	github.com/stretchr/testify v1.8.0
 	github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220831045923-bd6f69563ef4
