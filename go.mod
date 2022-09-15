@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/corazawaf/libinjection-go v0.0.0-20220207031228-44e9c4250eb5 // indirect
+	github.com/corazawaf/libinjection-go v0.0.0-20220909190158-227e7e772cef // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/petar-dambovaliev/aho-corasick v0.0.0-20211021192214-5ab2d9280aa9 // indirect
