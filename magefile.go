@@ -20,7 +20,7 @@ import (
 
 var addLicenseVersion = "v1.0.0" // https://github.com/google/addlicense
 var golangCILintVer = "v1.48.0"  // https://github.com/golangci/golangci-lint/releases
-var gosImportsVer = "v0.1.5"     // https://github.com/rinchsan/gosimports/releases/tag/v0.1.5
+var gosImportsVer = "v0.3.1"     // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
 
 var errCommitFormatting = errors.New("files not formatted, please commit formatting changes")
 var errNoGitDir = errors.New("no .git directory found")
@@ -119,7 +119,12 @@ func Build() error {
 	if err := os.MkdirAll("build", 0755); err != nil {
 		return err
 	}
-	if err := sh.RunV("tinygo", "build", "-opt", "2", "-o", "build/mainraw.wasm", "-scheduler=none", "-target=wasi", "."); err != nil {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	if err := sh.RunV("docker", "run", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-tinygo:main", "bash", "-c",
+		"cd /src && tinygo build -opt 2 -o build/mainraw.wasm -scheduler=none -target=wasi ."); err != nil {
 		return err
 	}
 	if err := sh.RunV("wasm2wat", "build/mainraw.wasm", "-o", "build/mainraw.wat"); err != nil {
@@ -147,6 +152,23 @@ func Build() error {
 		return err
 	}
 	return sh.RunV("wat2wasm", "build/main.wat", "-o", "build/main.wasm")
+}
+
+func UpdateLibs() error {
+	libs := []string{"aho-corasick", "libinjection", "re2"}
+	for _, lib := range libs {
+		if err := sh.RunV("docker", "build", "-t", "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-"+lib, filepath.Join("buildtools", lib)); err != nil {
+			return err
+		}
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		if err := sh.RunV("docker", "run", "-it", "--rm", "-v", fmt.Sprintf("%s:/out", filepath.Join(wd, "lib")), "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-"+lib); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // E2e runs e2e tests with a built plugin. Requires docker-compose.
