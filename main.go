@@ -12,10 +12,11 @@ import (
 	"github.com/corazawaf/coraza/v3"
 	"github.com/corazawaf/coraza/v3/seclang"
 	ctypes "github.com/corazawaf/coraza/v3/types"
-	_ "github.com/jcchavezs/coraza-wasm-filter/internal/calloc"
-	"github.com/jcchavezs/coraza-wasm-filter/internal/operators"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
+
+	_ "github.com/jcchavezs/coraza-wasm-filter/internal/calloc"
+	"github.com/jcchavezs/coraza-wasm-filter/internal/operators"
 )
 
 // #cgo LDFLAGS: lib/libinjection.a lib/libre2.a lib/libcre2.a lib/libc++.a lib/libc++abi.a lib/libclang_rt.builtins-wasm32.a lib/libaho_corasick.a

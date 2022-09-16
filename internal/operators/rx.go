@@ -7,6 +7,7 @@ package operators
 
 import (
 	"github.com/corazawaf/coraza/v3"
+
 	"github.com/jcchavezs/coraza-wasm-filter/internal/re2"
 )
 
