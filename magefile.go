@@ -103,23 +103,8 @@ func Check() {
 	mg.SerialDeps(Lint, Test)
 }
 
-func CheckBuildTools() error {
-	if err := sh.Run("tinygo", "version"); err != nil {
-		return errors.New("missing build tool tinygo (https://tinygo.org/getting-started/install/)")
-	}
-
-	wabtTools := []string{"wasm2wat", "wasm-opt", "wasm2wat"}
-	for _, t := range wabtTools {
-		if err := sh.Run(t, "--version"); err != nil {
-			return fmt.Errorf("missing build tool %q, we recommend you to install wabt (https://github.com/WebAssembly/wabt)", t)
-		}
-	}
-	return nil
-}
-
 // Build builds the Coraza wasm plugin.
 func Build() error {
-	mg.Deps(CheckBuildTools)
 	if err := os.MkdirAll("build", 0755); err != nil {
 		return err
 	}
@@ -127,20 +112,16 @@ func Build() error {
 	if err != nil {
 		return err
 	}
-	if err := sh.RunV("docker", "run", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-tinygo:main", "bash", "-c",
-		"cd /src && tinygo build -opt 2 -o build/mainraw.wasm -scheduler=none -target=wasi ."); err != nil {
-		return err
-	}
-	if err := sh.RunV("wasm2wat", "build/mainraw.wasm", "-o", "build/mainraw.wat"); err != nil {
-		return err
-	}
-	// Removes unused code, which is important since compiled unused code may import unavailable host functions
-	if err := sh.RunV("wasm-opt", "-Os", "-c", "build/mainraw.wasm", "-o", "build/mainopt.wasm"); err != nil {
-		return err
-	}
-	// Unfortuantely the imports themselves are left due to potential use with call_indirect. Hack away missing functions
-	// until they are stubbed in Envoy because we know we don't need them.
-	if err := sh.RunV("wasm2wat", "build/mainopt.wasm", "-o", "build/mainopt.wat"); err != nil {
+
+	script := `
+cd /src && \
+tinygo build -opt 2 -o build/mainraw.wasm -scheduler=none -target=wasi . && \
+wasm-opt -Os -c build/mainraw.wasm -o build/mainopt.wasm && \
+wasm2wat --enable-all build/mainopt.wasm -o build/mainopt.wat
+`
+
+	if err := sh.RunV("docker", "run", "--pull", "always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-tinygo:main", "bash", "-c",
+		strings.TrimSpace(script)); err != nil {
 		return err
 	}
 
@@ -155,7 +136,8 @@ func Build() error {
 	if err != nil {
 		return err
 	}
-	return sh.RunV("wat2wasm", "build/main.wat", "-o", "build/main.wasm")
+	return sh.RunV("docker", "run", "--rm", "-v", fmt.Sprintf("%s:/build", filepath.Join(wd, "build")), "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-tinygo:main", "bash", "-c",
+		"wat2wasm --enable-all build/main.wat -o build/main.wasm")
 }
 
 func UpdateLibs() error {
