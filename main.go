@@ -66,22 +66,14 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	waf.RequestBodyLimit = waf.RequestBodyInMemoryLimit
 
 	parser := seclang.NewParser(waf)
-	root, _ := fs.Sub(crs, "rules")
+	root, err := fs.Sub(crs, "rules")
+	if err != nil {
+		proxywasm.LogCriticalf("failed to find rules folder: %v", err)
+		return types.OnPluginStartStatusFailed
+	}
 	parser.SetRoot(root)
 
-	crs, err := fs.Sub(crs, "custom_rules")
-	if err != nil {
-		proxywasm.LogCriticalf("failed to access CRS filesystem: %v", err)
-		return types.OnPluginStartStatusFailed
-	}
-
-	rules, err := resolveIncludes(config.rules, crs)
-	if err != nil {
-		proxywasm.LogCriticalf("failed to load embedded rules: %v", err)
-		return types.OnPluginStartStatusFailed
-	}
-
-	err = parser.FromString(rules)
+	err = parser.FromString(config.rules)
 	if err != nil {
 		proxywasm.LogCriticalf("failed to parse rules: %v", err)
 		return types.OnPluginStartStatusFailed

@@ -265,7 +265,7 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 				if inlineRules := strings.TrimSpace(tt.inlineRules); inlineRules != "" {
 					conf = fmt.Sprintf(`
 					{ 
-						"rules": [ { "inline": "%s" } ]
+						"rules": "%s"
 					}	
 				`, inlineRules)
 				}
@@ -557,7 +557,7 @@ func TestLogError(t *testing.T) {
 			t.Run(fmt.Sprintf("severity %d", tt.severity), func(t *testing.T) {
 				conf := fmt.Sprintf(`
 {
-	"rules" : [{"inline": "SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:%d,msg:'%%{MATCHED_VAR}',pass,t:none\""}]
+	"rules" : "SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:%d,msg:'%%{MATCHED_VAR}',pass,t:none\""
 }
 `, tt.severity)
 
@@ -587,7 +587,7 @@ func TestParseCRS(t *testing.T) {
 		opt := proxytest.
 			NewEmulatorOption().
 			WithVMContext(vm).
-			WithPluginConfiguration([]byte(`{ "rules": [ {"inline": "Include ftw-config.conf\nInclude coraza.conf-recommended\nInclude crs-setup.conf.example\nInclude crs/*.conf"} ] }`))
+			WithPluginConfiguration([]byte(`{ "rules": "Include ftw-config.conf\nInclude coraza.conf-recommended\nInclude crs-setup.conf.example\nInclude crs/*.conf" }`))
 
 		host, reset := proxytest.NewHostEmulator(opt)
 		defer reset()
@@ -657,7 +657,7 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:4,t:lower
 
 			t.Run(tt.name, func(t *testing.T) {
 				conf := fmt.Sprintf(`
-					{ "rules": [ {"inline": "%s"} ] }
+					{ "rules": "%s" }
 				`, strings.TrimSpace(tt.rules))
 				opt := proxytest.
 					NewEmulatorOption().
