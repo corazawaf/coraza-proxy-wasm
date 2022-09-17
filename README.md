@@ -38,7 +38,7 @@ using `go run mage.go updateLibs`.
 
 ### Running the filter in an Envoy process
 
-In order to run the coraza-proxy-wasm we need to spin up an envoy configuration including this as the filter config:
+In order to run the coraza-proxy-wasm we need to spin up an envoy configuration including this as the filter config
 
 ```yaml
     ...
