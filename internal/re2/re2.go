@@ -21,6 +21,10 @@ func cre2Delete(rePtr unsafe.Pointer)
 func cre2Match(rePtr unsafe.Pointer, textPtr unsafe.Pointer, textLen uint32, startPos uint32, endPos uint32,
 	anchor uint32, matchArrPtr unsafe.Pointer, nmatch uint32) uint32
 
+//export cre2_match8
+func cre2Match8(rePtr unsafe.Pointer, textPtr unsafe.Pointer, textLen uint32, startPos uint32, endPos uint32,
+	anchor uint32, matchArrPtr unsafe.Pointer, nmatch uint32) uint32
+
 type RegExp struct {
 	ptr unsafe.Pointer
 }
@@ -33,14 +37,14 @@ func Compile(pattern string) (RegExp, error) {
 	return RegExp{ptr: rePtr}, nil
 }
 
-func (re RegExp) FindStringSubmatch(text string, n int) []string {
+func (re RegExp) FindStringSubmatch8(text string, f func(int, string)) bool {
 	sh := (*reflect.StringHeader)(unsafe.Pointer(&text))
 	// Array of cre2_string_t, which is const char* and int, easiest way to get it is an array of ints.
-	matchArr := make([]uint32, 2*n)
+	var matchArr [16]uint32
 	matchArrPtr := unsafe.Pointer(&matchArr[0])
-	res := cre2Match(re.ptr, unsafe.Pointer(sh.Data), uint32(sh.Len), 0, uint32(sh.Len), 0, matchArrPtr, uint32(n))
+	res := cre2Match8(re.ptr, unsafe.Pointer(sh.Data), uint32(sh.Len), 0, uint32(sh.Len), 0, matchArrPtr, 8)
 	if res == 0 {
-		return nil
+		return false
 	}
 
 	// Pointer math! re2 will return matches which are memory pointers into memory corresponding to text.
@@ -48,8 +52,7 @@ func (re RegExp) FindStringSubmatch(text string, n int) []string {
 	// pointers directly.
 	textPtr := uint32(sh.Data)
 
-	var matches []string
-	for i := 0; i < n; i++ {
+	for i := 0; i < 8; i++ {
 		sPtr := matchArr[2*i]
 		if sPtr == 0 {
 			break
@@ -57,7 +60,8 @@ func (re RegExp) FindStringSubmatch(text string, n int) []string {
 		sLen := matchArr[2*i+1]
 
 		textIdx := sPtr - textPtr
-		matches = append(matches, text[textIdx:textIdx+sLen])
+		f(i, text[textIdx:textIdx+sLen])
 	}
-	return matches
+
+	return true
 }

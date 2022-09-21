@@ -26,16 +26,9 @@ func (o *rx) Init(options coraza.RuleOperatorOptions) error {
 }
 
 func (o *rx) Evaluate(tx *coraza.Transaction, value string) bool {
-	matches := o.re.FindStringSubmatch(value, 8)
-	if len(matches) == 0 {
-		return false
-	}
-
-	if tx.Capture {
-		for i, c := range matches {
-			tx.CaptureField(i, c)
+	return o.re.FindStringSubmatch8(value, func(i int, match string) {
+		if tx.Capture {
+			tx.CaptureField(i, match)
 		}
-	}
-
-	return true
+	})
 }
