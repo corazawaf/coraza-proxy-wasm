@@ -175,7 +175,13 @@ func Ftw() error {
 	defer func() {
 		_ = sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "down", "-v")
 	}()
-	return sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "run", "--rm", "ftw")
+	env := map[string]string{
+		"FTW_CLOUDMODE": os.Getenv("FTW_CLOUDMODE"),
+	}
+	if os.Getenv("ENVOY_NOWASM") == "true" {
+		env["ENVOY_CONFIG"] = "/conf/envoy-config-nowasm.yaml"
+	}
+	return sh.RunWithV(env, "docker-compose", "--file", "ftw/docker-compose.yml", "run", "--rm", "ftw")
 }
 
 var Default = Build
