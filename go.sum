@@ -27,8 +27,8 @@ github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSS
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PKk=
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
-github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220831045923-bd6f69563ef4 h1:FSXp4DrzGamerGY9bhBsL2yJdedDZbMwSsxJEaVxHWo=
-github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220831045923-bd6f69563ef4/go.mod h1:YVEdbjpYmWRaTXSHuIK6O1kibi313mcQpTbcuBTd4Mg=
+github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220922045757-132ee0a06ac2 h1:Dd0c7ZCOStoWSnBtfcoF7mXC0MPA9YfbrCHkE4qexZs=
+github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220922045757-132ee0a06ac2/go.mod h1:YVEdbjpYmWRaTXSHuIK6O1kibi313mcQpTbcuBTd4Mg=
 github.com/tetratelabs/wazero v1.0.0-beta.2 h1:Qa1R1oizAYHcmy8PljgINdXUZ/nRQkxUBbYfGSb4IBE=
 github.com/tetratelabs/wazero v1.0.0-beta.2/go.mod h1:CD5smBN5rGZo7UNe8aUiWyYE3bDWED/CQSonog9NSEg=
 github.com/tidwall/gjson v1.14.3 h1:9jvXn7olKEHU1S9vwoMGliaT8jq1vJ7IH/n9zD9Dnlw=

@@ -113,12 +113,17 @@ func Build() error {
 		return err
 	}
 
-	script := `
+	timingBuildTag := ""
+	if os.Getenv("TIMING") == "true" {
+		timingBuildTag = "-tags 'timing proxywasm_timing'"
+	}
+
+	script := fmt.Sprintf(`
 cd /src && \
-tinygo build -opt 2 -o build/mainraw.wasm -scheduler=none -target=wasi . && \
+tinygo build -opt 2 -o build/mainraw.wasm -scheduler=none -target=wasi %s . && \
 wasm-opt -Os -c build/mainraw.wasm -o build/mainopt.wasm && \
 wasm2wat --enable-all build/mainopt.wasm -o build/mainopt.wat
-`
+`, timingBuildTag)
 
 	if err := sh.RunV("docker", "run", "--pull", "always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-tinygo:main", "bash", "-c",
 		strings.TrimSpace(script)); err != nil {
