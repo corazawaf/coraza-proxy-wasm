@@ -9,6 +9,7 @@ RUN mkdir -p /aho-corasick && curl -L https://github.com/BurntSushi/aho-corasick
 WORKDIR /aho-corasick
 ADD aho-corasick.patch aho-corasick.patch
 RUN patch -p1 < aho-corasick.patch
+ENV RUSTFLAGS "-C target-feature=-crt-static"
 RUN cargo build --release --target wasm32-wasi
 
 CMD ["cp", "target/wasm32-wasi/release/libaho_corasick.a", "/out/libaho_corasick.a"]
