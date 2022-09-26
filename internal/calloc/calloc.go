@@ -37,3 +37,9 @@ func posix_memalign(memptr *unsafe.Pointer, alignment, size uintptr) int {
 	*memptr = libc_malloc(size)
 	return 0
 }
+
+//export aligned_alloc
+func aligned_alloc(alignment, size uintptr) unsafe.Pointer {
+	// Ignore alignment for now
+	return libc_malloc(size)
+}

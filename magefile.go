@@ -142,7 +142,7 @@ wasm2wat --enable-all build/mainopt.wasm -o build/mainopt.wat
 		return err
 	}
 	return sh.RunV("docker", "run", "--rm", "-v", fmt.Sprintf("%s:/build", filepath.Join(wd, "build")), "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-tinygo:main", "bash", "-c",
-		"wat2wasm --enable-all build/main.wat -o build/main.wasm")
+		"wat2wasm --enable-all /build/main.wat -o /build/main.wasm")
 }
 
 func UpdateLibs() error {

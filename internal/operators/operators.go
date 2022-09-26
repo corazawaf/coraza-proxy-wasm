@@ -14,4 +14,6 @@ func Register() {
 	operators.Register("detectSQLi", func() coraza.RuleOperator { return &detectSQLi{} })
 	operators.Register("detectXSS", func() coraza.RuleOperator { return &detectXSS{} })
 	operators.Register("rx", func() coraza.RuleOperator { return &rx{} })
+	operators.Register("pm", func() coraza.RuleOperator { return &pm{} })
+	operators.Register("pmFromFile", func() coraza.RuleOperator { return &pmFromFile{} })
 }

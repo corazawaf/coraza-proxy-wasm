@@ -1,3 +1,12 @@
+diff --git a/.gitignore b/.gitignore
+index f1a4d65..d6ff1a3 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,3 +1,4 @@
++.idea
+ .*.swp
+ doc
+ tags
 diff --git a/Cargo.toml b/Cargo.toml
 index 610bd4d..55e2f37 100644
 --- a/Cargo.toml
@@ -12,22 +21,35 @@ index 610bd4d..55e2f37 100644
  [features]
 diff --git a/src/exports.rs b/src/exports.rs
 new file mode 100644
-index 0000000..f97de6d
+index 0000000..29c203d
 --- /dev/null
 +++ b/src/exports.rs
-@@ -0,0 +1,93 @@
+@@ -0,0 +1,107 @@
 +use std::mem::MaybeUninit;
 +use std::slice;
++use std::str;
 +use crate::{AhoCorasick, AhoCorasickBuilder, MatchKind};
 +
 +static mut MATCHERS: Vec<AhoCorasick> = Vec::new();
 +
 +#[no_mangle]
-+pub extern "C" fn new_matcher(patterns_ptr: usize, patterns_len: usize) -> usize {
-+    let patterns_str = ptr_to_string(patterns_ptr, patterns_len);
-+    std::mem::forget(&patterns_str);
++pub extern "C" fn new_matcher(patterns_ptr: *mut u8, patterns_len: usize) -> usize {
++    let all_patterns = unsafe {
++        slice::from_raw_parts(patterns_ptr, patterns_len)
++    };
 +
-+    let patterns = patterns_str.split(' ');
++    let mut patterns = Vec::new();
++
++    let mut off = 0;
++    while off < patterns_len {
++        let pattern_len = u32::from_le_bytes([all_patterns[off], all_patterns[off+1], all_patterns[off+2], all_patterns[off+3]]) as usize;
++        off += 4;
++        let pattern = unsafe {
++            str::from_utf8_unchecked(&all_patterns[off..off+pattern_len])
++        };
++        patterns.push(pattern);
++        off += pattern_len;
++    }
 +
 +    let ac = AhoCorasickBuilder::new()
 +        .ascii_case_insensitive(true)
@@ -39,6 +61,7 @@ index 0000000..f97de6d
 +        MATCHERS.push(ac);
 +        MATCHERS.len() - 1
 +    }
++
 +}
 +
 +#[no_mangle]
