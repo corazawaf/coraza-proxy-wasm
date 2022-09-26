@@ -10,10 +10,11 @@ RUN curl -L https://go.dev/dl/go1.19.1.linux-${TARGETARCH:-amd64}.tar.gz | tar -
 ENV PATH /go/bin:/root/go/bin:$PATH
 ENV GOROOT /go
 
-RUN apt-get install -y libclang-14-dev wabt binaryen
+RUN apt-get install -y libclang-14-dev wabt binaryen git
 
 # https://github.com/tinygo-org/tinygo/commit/9e4e182615cd80303c564f95020e0c3bd10af64a
-RUN go install github.com/tinygo-org/tinygo@9e4e182615cd80303c564f95020e0c3bd10af64a
-
-RUN mkdir -p $(tinygo env TINYGOROOT)/lib/wasi-libc/ && \
-    ln -s /wasi-sysroot $(tinygo env TINYGOROOT)/lib/wasi-libc/sysroot
+RUN git clone --shallow-submodules --recursive https://github.com/tinygo-org/tinygo --branch dev
+WORKDIR /tinygo
+RUN git reset --hard 9e4e182615cd80303c564f95020e0c3bd10af64a
+RUN go install
+RUN make wasi-libc
