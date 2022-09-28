@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"github.com/corazawaf/coraza/v3"
-	"github.com/corazawaf/coraza/v3/seclang"
 	ctypes "github.com/corazawaf/coraza/v3/types"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
@@ -46,7 +45,7 @@ type corazaPlugin struct {
 	// so that we don't need to reimplement all the methods.
 	types.DefaultPluginContext
 
-	waf *coraza.WAF
+	waf coraza.WAF
 }
 
 // Override types.DefaultPluginContext.
@@ -62,19 +61,19 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		return types.OnPluginStartStatusFailed
 	}
 
-	// First we initialize our waf and our seclang parser
-	waf := coraza.NewWAF()
-	waf.SetErrorLogCb(logError)
-	waf.Logger = &debugLogger{}
-
-	// TinyGo compilation will prevent buffering request body to files anyways, so this is
-	// effectively no-op but make clear our expectations.
-	// TODO(anuraaga): Make this configurable in plugin configuration.
-	waf.RequestBodyLimit = waf.RequestBodyInMemoryLimit
-
-	parser := seclang.NewParser(waf)
 	root, _ := fs.Sub(crs, "rules")
-	parser.SetRoot(root)
+
+	// First we initialize our waf and our seclang parser
+	conf := coraza.NewWAFConfig().
+		WithErrorLogger(logError).
+		WithDebugLogger(&debugLogger{}).
+		WithRequestBodyAccess(coraza.NewRequestBodyConfig().
+			WithLimit(1024 * 1024 * 1024).
+			// TinyGo compilation will prevent buffering request body to files anyways, so this is
+			// effectively no-op but make clear our expectations.
+			// TODO(anuraaga): Make this configurable in plugin configuration.
+			WithInMemoryLimit(1024 * 1024 * 1024)).
+		WithRootFS(root)
 
 	crs, err := fs.Sub(crs, "custom_rules")
 	if err != nil {
@@ -88,7 +87,9 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		return types.OnPluginStartStatusFailed
 	}
 
-	err = parser.FromString(rules)
+	conf = conf.WithDirectives(rules)
+
+	waf, err := coraza.NewWAF(conf)
 	if err != nil {
 		proxywasm.LogCriticalf("failed to parse rules: %v", err)
 		return types.OnPluginStartStatusFailed
@@ -109,7 +110,7 @@ type httpContext struct {
 	// so that we don't need to reimplement all the methods.
 	types.DefaultHttpContext
 	contextID             uint32
-	tx                    *coraza.Transaction
+	tx                    ctypes.Transaction
 	httpProtocol          string
 	processedRequestBody  bool
 	processedResponseBody bool
@@ -182,7 +183,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 			return types.ActionContinue
 		}
 
-		_, err = tx.RequestBodyBuffer.Write(body)
+		_, err = tx.RequestBodyWriter().Write(body)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to read request body: %v", err)
 			return types.ActionContinue
@@ -263,7 +264,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 			return types.ActionContinue
 		}
 
-		_, err = tx.ResponseBodyBuffer.Write(body)
+		_, err = tx.ResponseBodyWriter().Write(body)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to read response body: %v", err)
 			return types.ActionContinue
@@ -302,7 +303,7 @@ func (ctx *httpContext) OnHttpStreamDone() {
 	}
 
 	ctx.tx.ProcessLogging()
-	_ = ctx.tx.Clean()
+	_ = ctx.tx.Close()
 	proxywasm.LogInfof("%d finished", ctx.contextID)
 }
 

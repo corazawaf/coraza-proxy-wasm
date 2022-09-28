@@ -6,7 +6,7 @@
 package operators
 
 import (
-	"github.com/corazawaf/coraza/v3"
+	"github.com/corazawaf/coraza/v3/rules"
 
 	"github.com/jcchavezs/coraza-wasm-filter/internal/injection"
 )
@@ -14,10 +14,10 @@ import (
 type detectXSS struct {
 }
 
-var _ coraza.RuleOperator = (*detectXSS)(nil)
+var _ rules.Operator = (*detectXSS)(nil)
 
-func (o *detectXSS) Init(options coraza.RuleOperatorOptions) error { return nil }
+func (o *detectXSS) Init(options rules.OperatorOptions) error { return nil }
 
-func (o *detectXSS) Evaluate(tx *coraza.Transaction, value string) bool {
+func (o *detectXSS) Evaluate(tx rules.TransactionState, value string) bool {
 	return injection.IsXSS(value)
 }

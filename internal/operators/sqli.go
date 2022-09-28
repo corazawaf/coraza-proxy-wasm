@@ -6,7 +6,7 @@
 package operators
 
 import (
-	"github.com/corazawaf/coraza/v3"
+	"github.com/corazawaf/coraza/v3/rules"
 
 	"github.com/jcchavezs/coraza-wasm-filter/internal/injection"
 )
@@ -14,17 +14,15 @@ import (
 type detectSQLi struct {
 }
 
-var _ coraza.RuleOperator = (*detectSQLi)(nil)
+var _ rules.Operator = (*detectSQLi)(nil)
 
-func (o *detectSQLi) Init(options coraza.RuleOperatorOptions) error { return nil }
+func (o *detectSQLi) Init(options rules.OperatorOptions) error { return nil }
 
-func (o *detectSQLi) Evaluate(tx *coraza.Transaction, value string) bool {
+func (o *detectSQLi) Evaluate(tx rules.TransactionState, value string) bool {
 	res, fp := injection.IsSQLi(value)
 	if !res {
 		return false
 	}
-	if tx.Capture {
-		tx.CaptureField(0, string(fp))
-	}
+	tx.CaptureField(0, string(fp))
 	return true
 }
