@@ -1,4 +1,4 @@
-// Copyright 2022 The OWASP Coraza contributors
+// Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build tinygo
@@ -36,4 +36,10 @@ func posix_memalign(memptr *unsafe.Pointer, alignment, size uintptr) int {
 	// Ignore alignment for now
 	*memptr = libc_malloc(size)
 	return 0
+}
+
+//export aligned_alloc
+func aligned_alloc(alignment, size uintptr) unsafe.Pointer {
+	// Ignore alignment for now
+	return libc_malloc(size)
 }

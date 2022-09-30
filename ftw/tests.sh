@@ -29,4 +29,6 @@ while [[ "$status_code" -eq "000" ]]; do
 done
 echo -e "\n[Ok] Got status code $status_code, expected 200. Ready to start."
 
-go-ftw run -d coreruleset/tests/regression/tests --config ftw.yml --read-timeout=10s || (echo "Envoy Logs:" && cat /home/envoy/logs/envoy.log)
+FTW_CLOUDMODE=${FTW_CLOUDMODE:-false}
+
+go-ftw run -d coreruleset/tests/regression/tests --config ftw.yml --read-timeout=10s --cloud=$FTW_CLOUDMODE || (echo "Envoy Logs:" && cat /home/envoy/logs/envoy.log)

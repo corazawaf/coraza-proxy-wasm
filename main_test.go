@@ -1,4 +1,4 @@
-// Copyright 2022 The OWASP Coraza contributors
+// Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
 package main
@@ -715,7 +715,7 @@ func vmTest(t *testing.T, f func(*testing.T, types.VMContext)) {
 	})
 
 	t.Run("wasm", func(t *testing.T) {
-		buildPath := filepath.Join("build", "main.wasm")
+		buildPath := filepath.Join("build", "mainraw.wasm")
 		wasm, err := os.ReadFile(buildPath)
 		if err != nil {
 			t.Skip("wasm not found")

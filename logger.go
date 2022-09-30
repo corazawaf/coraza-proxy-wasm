@@ -1,4 +1,4 @@
-// Copyright 2022 The OWASP Coraza contributors
+// Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
 package main
@@ -6,45 +6,45 @@ package main
 import (
 	"io"
 
-	"github.com/corazawaf/coraza/v3"
+	"github.com/corazawaf/coraza/v3/loggers"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 )
 
 type debugLogger struct {
-	level coraza.LogLevel
+	level loggers.LogLevel
 }
 
 func (l *debugLogger) Info(message string, args ...interface{}) {
-	if l.level >= coraza.LogLevelInfo {
+	if l.level >= loggers.LogLevelInfo {
 		proxywasm.LogInfof(message, args...)
 	}
 }
 
 func (l *debugLogger) Warn(message string, args ...interface{}) {
-	if l.level >= coraza.LogLevelWarn {
+	if l.level >= loggers.LogLevelWarn {
 		proxywasm.LogWarnf(message, args...)
 	}
 }
 
 func (l *debugLogger) Error(message string, args ...interface{}) {
-	if l.level >= coraza.LogLevelError {
+	if l.level >= loggers.LogLevelError {
 		proxywasm.LogErrorf(message, args...)
 	}
 }
 
 func (l *debugLogger) Debug(message string, args ...interface{}) {
-	if l.level >= coraza.LogLevelDebug {
+	if l.level >= loggers.LogLevelDebug {
 		proxywasm.LogDebugf(message, args...)
 	}
 }
 
 func (l *debugLogger) Trace(message string, args ...interface{}) {
-	if l.level >= coraza.LogLevelTrace {
+	if l.level >= loggers.LogLevelTrace {
 		proxywasm.LogTracef(message, args...)
 	}
 }
 
-func (l *debugLogger) SetLevel(level coraza.LogLevel) {
+func (l *debugLogger) SetLevel(level loggers.LogLevel) {
 	l.level = level
 }
 

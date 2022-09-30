@@ -1,6 +1,6 @@
 services:
   httpbin:
-    image: kennethreitz/httpbin:latest
+    image: ealen/echo-server:latest
   chown:
     image: alpine:3.16
     command:
@@ -16,7 +16,7 @@ services:
     image: envoyproxy/envoy:v1.23-latest
     command:
       - -c
-      - /conf/envoy-config.yaml
+      - ${ENVOY_CONFIG:-/conf/envoy-config.yaml}
       - --log-level
       - info
       - --component-log-level
@@ -54,6 +54,8 @@ services:
     depends_on:
       - wasm-logs
     build: .
+    environment:
+      - FTW_CLOUDMODE
     volumes:
       - logs:/home/envoy/logs:ro
 volumes:

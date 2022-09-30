@@ -1,4 +1,4 @@
-// Copyright 2022 The OWASP Coraza contributors
+// Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build mage
@@ -18,9 +18,9 @@ import (
 	"github.com/magefile/mage/sh"
 )
 
-var addLicenseVersion = "v1.0.0" // https://github.com/google/addlicense
-var golangCILintVer = "v1.48.0"  // https://github.com/golangci/golangci-lint/releases
-var gosImportsVer = "v0.3.1"     // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
+var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
+var golangCILintVer = "v1.48.0"                                    // https://github.com/golangci/golangci-lint/releases
+var gosImportsVer = "v0.3.1"                                       // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
 
 var errCommitFormatting = errors.New("files not formatted, please commit formatting changes")
 var errNoGitDir = errors.New("no .git directory found")
@@ -35,6 +35,7 @@ func Format() error {
 	if _, err := sh.Exec(map[string]string{}, io.Discard, io.Discard, "go", "run", fmt.Sprintf("github.com/google/addlicense@%s", addLicenseVersion),
 		"-c", "The OWASP Coraza contributors",
 		"-s=only",
+		"-y=",
 		"-ignore", "**/*.yml",
 		"-ignore", "**/*.yaml",
 		"-ignore", "examples/**", "."); err != nil {
@@ -113,12 +114,17 @@ func Build() error {
 		return err
 	}
 
-	script := `
+	timingBuildTag := ""
+	if os.Getenv("TIMING") == "true" {
+		timingBuildTag = "-tags 'timing proxywasm_timing'"
+	}
+
+	script := fmt.Sprintf(`
 cd /src && \
-tinygo build -opt 2 -o build/mainraw.wasm -scheduler=none -target=wasi . && \
+tinygo build -opt 2 -o build/mainraw.wasm -scheduler=none -target=wasi %s . && \
 wasm-opt -Os -c build/mainraw.wasm -o build/mainopt.wasm && \
 wasm2wat --enable-all build/mainopt.wasm -o build/mainopt.wat
-`
+`, timingBuildTag)
 
 	if err := sh.RunV("docker", "run", "--pull", "always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-tinygo:main", "bash", "-c",
 		strings.TrimSpace(script)); err != nil {
@@ -137,7 +143,7 @@ wasm2wat --enable-all build/mainopt.wasm -o build/mainopt.wat
 		return err
 	}
 	return sh.RunV("docker", "run", "--rm", "-v", fmt.Sprintf("%s:/build", filepath.Join(wd, "build")), "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-tinygo:main", "bash", "-c",
-		"wat2wasm --enable-all build/main.wat -o build/main.wasm")
+		"wat2wasm --enable-all /build/main.wat -o /build/main.wasm")
 }
 
 func UpdateLibs() error {
@@ -170,7 +176,13 @@ func Ftw() error {
 	defer func() {
 		_ = sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "down", "-v")
 	}()
-	return sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "run", "--rm", "ftw")
+	env := map[string]string{
+		"FTW_CLOUDMODE": os.Getenv("FTW_CLOUDMODE"),
+	}
+	if os.Getenv("ENVOY_NOWASM") == "true" {
+		env["ENVOY_CONFIG"] = "/conf/envoy-config-nowasm.yaml"
+	}
+	return sh.RunWithV(env, "docker-compose", "--file", "ftw/docker-compose.yml", "run", "--rm", "ftw")
 }
 
 var Default = Build
