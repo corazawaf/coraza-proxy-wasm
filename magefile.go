@@ -1,4 +1,4 @@
-// Copyright 2022 The OWASP Coraza contributors
+// Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build mage
@@ -18,9 +18,9 @@ import (
 	"github.com/magefile/mage/sh"
 )
 
-var addLicenseVersion = "v1.0.0" // https://github.com/google/addlicense
-var golangCILintVer = "v1.48.0"  // https://github.com/golangci/golangci-lint/releases
-var gosImportsVer = "v0.3.1"     // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
+var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
+var golangCILintVer = "v1.48.0"                                    // https://github.com/golangci/golangci-lint/releases
+var gosImportsVer = "v0.3.1"                                       // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
 
 var errCommitFormatting = errors.New("files not formatted, please commit formatting changes")
 var errNoGitDir = errors.New("no .git directory found")
@@ -35,6 +35,7 @@ func Format() error {
 	if _, err := sh.Exec(map[string]string{}, io.Discard, io.Discard, "go", "run", fmt.Sprintf("github.com/google/addlicense@%s", addLicenseVersion),
 		"-c", "The OWASP Coraza contributors",
 		"-s=only",
+		"-y=",
 		"-ignore", "**/*.yml",
 		"-ignore", "**/*.yaml",
 		"-ignore", "examples/**", "."); err != nil {

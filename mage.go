@@ -1,4 +1,4 @@
-// Copyright 2022 The OWASP Coraza contributors
+// Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build ignore
