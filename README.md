@@ -30,7 +30,7 @@ PATH=/opt/homebrew/Cellar/go@1.18/1.18.6/bin:$PATH  GOROOT=/opt/homebrew/Cellar/
 ```
 You will find the WASM plugin under `./build/main.wasm`.
 
-For performance purposes, some libs are built from their C++ implementation. The compiled polyglot wasm libs are already checked in under [./lib/](./lib/). It is possible to rely on the Dockerfiles under [./buildtools/](./buildtools/) if you wish to rebuild them from scratch.
+For performance purposes, some libs are built from their C++ implementation. The compiled polyglot wasm libs are already checked in under [./lib/](./lib/). It is possible to rely on the `updateLibs` command and the Dockerfiles under [./buildtools/](./buildtools/) if you wish to rebuild them from scratch.
 
 ### Running the filter in an Envoy process
 
@@ -108,9 +108,9 @@ Once the filter is built, via the commands `RunExample` and `teardownExample` yo
 In order to monitor envoy logs while performing requests you can run:
 - Envoy logs: `docker-compose -f ./example/docker-compose.yml logs -f envoy-logs`.
 - Critical wasm (audit) logs: `docker-compose -f ./example/docker-compose.yml logs -f wasm-logs`
-### Manual e2e test
-Run `./example/tests.sh` in order to run against the just set up environment the e2e tests.
-### Manual payloads
+
+### Manual requests
+Run `./example/readme-tests.sh` in order to run the following requests against the just set up test environment, otherwise manually execute them on your own:
 ```bash
 # True positive requests:
 # XSS phase 1
@@ -121,7 +121,7 @@ curl -i -X POST 'http://localhost:8080/anything' --data "1%27%20ORDER%20BY%203--
 curl -I --user-agent "Grabber/0.1 (X11; U; Linux i686; en-US; rv:1.7)" -H "Host: localhost" -H "Accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5" localhost:8080
 
 # True negative requests:
-# A GET request with an harmless argument
+# A GET request with a harmless argument
 curl -I 'http://localhost:8080/anything?arg=arg_1'
 # An usual user-agent
 curl -I --user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36" localhost:8080
