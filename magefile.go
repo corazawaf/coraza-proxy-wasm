@@ -85,20 +85,6 @@ func Doc() error {
 	return sh.RunV("go", "run", "golang.org/x/tools/cmd/godoc@latest", "-http=:6060")
 }
 
-// Precommit installs a git hook to run check when committing
-func Precommit() error {
-	if _, err := os.Stat(filepath.Join(".git", "hooks")); os.IsNotExist(err) {
-		return errNoGitDir
-	}
-
-	f, err := os.ReadFile(".pre-commit.hook")
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(filepath.Join(".git", "hooks", "pre-commit"), f, 0755)
-}
-
 // Check runs lint and tests.
 func Check() {
 	mg.SerialDeps(Lint, Test)
@@ -146,6 +132,7 @@ wasm2wat --enable-all build/mainopt.wasm -o build/mainopt.wat
 		"wat2wasm --enable-all /build/main.wat -o /build/main.wasm")
 }
 
+// UpdateLibs updates the C++ filter dependencies.
 func UpdateLibs() error {
 	libs := []string{"aho-corasick", "libinjection", "re2"}
 	for _, lib := range libs {

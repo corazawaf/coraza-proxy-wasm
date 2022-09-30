@@ -7,20 +7,16 @@ Web Application Firewall WASM filter built on top of [Coraza](https://github.com
 ```
 ▶ go run mage.go -l
 Targets:
-  build*             builds the Coraza Wasm plugin.
-  check              runs lint and tests.
-  checkBuildTools
-  coverage           runs tests with coverage and race detector enabled.
-  doc                runs godoc, access at http://localhost:6060
-  e2e                runs e2e tests with a built plugin.
-  format             formats code in this repository.
-  ftw                runs ftw tests with a built plugin and Envoy.
-  lint               verifies code quality.
-  precommit          installs a git hook to run check when committing
-  setup              spins up the test environment.
-  teardown           tears down the test environment.
-  test               runs all tests.
-  updateLibs
+  build*        builds the Coraza wasm plugin.
+  check         runs lint and tests.
+  coverage      runs tests with coverage and race detector enabled.
+  doc           runs godoc, access at http://localhost:6060
+  e2e           runs e2e tests with a built plugin.
+  format        formats code in this repository.
+  ftw           runs ftw tests with a built plugin and Envoy.
+  lint          verifies code quality.
+  test          runs all tests.
+  updateLibs    updates the C++ filter dependencies.
 
 * default target
 ```
