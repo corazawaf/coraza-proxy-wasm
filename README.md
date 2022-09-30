@@ -111,7 +111,7 @@ In order to monitor envoy logs while performing requests you can run:
 ### Manual e2e test
 Run `./example/tests.sh` in order to run against the just set up environment the e2e tests.
 ### Manual payloads
-```
+```bash
 # True positive requests:
 # XSS phase 1
 curl -I 'http://localhost:8080/anything?arg=<script>alert(0)</script>'
@@ -127,4 +127,4 @@ curl -I 'http://localhost:8080/anything?arg=arg_1'
 curl -I --user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36" localhost:8080
 # A payload (reading the body request)
 curl -i -X POST 'http://localhost:8080/anything' --data "this is a payload"
-```bash
+```
