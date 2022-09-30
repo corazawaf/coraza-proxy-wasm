@@ -63,7 +63,7 @@ func Lint() error {
 	return nil
 }
 
-// Test runs all tests.
+// Test runs all unit tests.
 func Test() error {
 	return sh.RunV("go", "test", "./...")
 }
@@ -186,12 +186,12 @@ func Ftw() error {
 	return sh.RunWithV(env, "docker-compose", "--file", "ftw/docker-compose.yml", "run", "--rm", "ftw")
 }
 
-// Setup spins up the test environment. Requires docker-compose.
-func SetupExample() error {
+// RunExample spins up the test environment, access at http://localhost:8080. Requires docker-compose.
+func RunExample() error {
 	return sh.RunV("docker-compose", "--file", "example/docker-compose.yml", "up", "-d", "envoy-logs")
 }
 
-// Teardown tears down the test environment. Requires docker-compose.
+// TeardownExample tears down the test environment. Requires docker-compose.
 func TeardownExample() error {
 	return sh.RunV("docker-compose", "--file", "example/docker-compose.yml", "down")
 }
