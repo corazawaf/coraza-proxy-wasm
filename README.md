@@ -1,4 +1,4 @@
-# Coraza Proxy WASM
+# Coraza WASM filter
 
 Web Application Firewall WASM filter built on top of [Coraza](https://github.com/corazawaf/coraza) and implementing on proxy-wasm ABI. It can be loaded directly from Envoy or also used as an Istio plugin.
 
