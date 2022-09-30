@@ -35,7 +35,7 @@ For performance purposes, some libs are built from they C++ implementation. The 
 
 ### Running the filter in an Envoy process
 
-In order to run the coraza-wasm-filter we need to spin up an envoy configuration including this as the filter config:
+In order to run the coraza-proxy-wasm we need to spin up an envoy configuration including this as the filter config:
 
 ```yaml
     ...
@@ -104,7 +104,7 @@ go run mage.go build
 ```
 Take a look at its config file [ftw.yml](./ftw/ftw.yml) for details about tests currently excluded.
 
-### Spinning up the coraza-wasm-filter for manual tests
+### Spinning up the coraza-proxy-wasm for manual tests
 Via the commands `setup` and `teardown` you can spin up and tear down the test environment. Envoy with the coraza-wasm filter will be reachable at `localhost:8080`.
 In order to monitor envoy logs while performing requests run:
 ```
