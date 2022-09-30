@@ -8,7 +8,7 @@ cd /workspace
 
 step=1
 total_steps=3
-max_retries=10 #seconds for the server reachability timeout
+max_retries=15 #seconds for the server reachability timeout
 host=${1:-envoy}
 health_url="http://${host}:80"
 unfiltered_url="http://${host}:80/home"
@@ -21,7 +21,7 @@ while [[ "$status_code" -eq "000" ]]; do
   status_code=$(curl --write-out "%{http_code}" --silent --output /dev/null $health_url)
   sleep 1
   echo -ne "[Wait] Waiting for response from $health_url. Timeout: ${max_retries}s   \r"
-  ((max_retries-=1))
+  let "max_retries--"
   if [[ "$max_retries" -eq 0 ]] ; then
     echo "[Fail] Timeout waiting for response from $health_url, make sure the server is running."
     exit 1

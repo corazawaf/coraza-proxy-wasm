@@ -146,6 +146,7 @@ wasm2wat --enable-all build/mainopt.wasm -o build/mainopt.wat
 		"wat2wasm --enable-all /build/main.wat -o /build/main.wasm")
 }
 
+// UpdateLibs updates and builds all the required polyglot wasm libs.
 func UpdateLibs() error {
 	libs := []string{"aho-corasick", "libinjection", "re2"}
 	for _, lib := range libs {
@@ -183,6 +184,16 @@ func Ftw() error {
 		env["ENVOY_CONFIG"] = "/conf/envoy-config-nowasm.yaml"
 	}
 	return sh.RunWithV(env, "docker-compose", "--file", "ftw/docker-compose.yml", "run", "--rm", "ftw")
+}
+
+// Setup spins up the test environment. Requires docker-compose.
+func SetupExample() error {
+	return sh.RunV("docker-compose", "--file", "example/docker-compose.yml", "up", "-d", "envoy-logs")
+}
+
+// Teardown tears down the test environment. Requires docker-compose.
+func TeardownExample() error {
+	return sh.RunV("docker-compose", "--file", "example/docker-compose.yml", "down")
 }
 
 var Default = Build
