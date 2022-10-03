@@ -161,7 +161,7 @@ func E2e() error {
 
 	var errsMsgs []string
 	for _, image := range envoyImages {
-		err := sh.RunV(fmt.Sprintf("ENVOY_IMAGE=%q", image), "docker-compose", "--file", "e2e/docker-compose.yml", "up", "--abort-on-container-exit")
+		err := sh.RunWith(map[string]string{"ENVOY_IMAGE": image}, "docker-compose", "--file", "e2e/docker-compose.yml", "up", "--abort-on-container-exit")
 		if err != nil {
 			errsMsgs = append(errsMsgs, fmt.Sprintf("for %s: %v", image, err))
 		}
