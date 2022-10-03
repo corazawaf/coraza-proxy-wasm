@@ -8,7 +8,7 @@ WORKDIR /workspace
 
 RUN apk add --no-cache bash
 
-COPY e2e-example.sh /workspace/e2e-example.sh
+COPY ../e2e/e2e-example.sh /workspace/e2e-example.sh
 
 ENV ENVOY_HOST=envoy
 ENV HTTPBIN_HOST=httpbin
