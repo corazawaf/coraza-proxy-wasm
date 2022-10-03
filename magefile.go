@@ -85,7 +85,7 @@ func Doc() error {
 	return sh.RunV("go", "run", "golang.org/x/tools/cmd/godoc@latest", "-http=:6060")
 }
 
-// Precommit installs a git hook to run check when committing
+// Precommit installs a git hook to run check when committing.
 func Precommit() error {
 	if _, err := os.Stat(filepath.Join(".git", "hooks")); os.IsNotExist(err) {
 		return errNoGitDir
@@ -164,9 +164,9 @@ func UpdateLibs() error {
 	return nil
 }
 
-// E2e runs e2e tests with a built plugin. Requires docker-compose.
+// E2e runs e2e tests with a built plugin against the example deployment. Requires docker-compose.
 func E2e() error {
-	return sh.RunV("docker-compose", "--file", "e2e/docker-compose.yml", "up", "--abort-on-container-exit")
+	return sh.RunV("docker-compose", "--file", "example/docker-compose.yml", "up", "--abort-on-container-exit", "tests")
 }
 
 // Ftw runs ftw tests with a built plugin and Envoy. Requires docker-compose.

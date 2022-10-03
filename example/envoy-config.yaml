@@ -39,7 +39,7 @@ static_resources:
                                 {"inline": "Include crs-setup-demo.conf"},
                                 {"inline": "SecDebugLogLevel 3"},
                                 {"inline": "Include crs/*.conf"},
-                                {"inline": "SecRule ARGS:id \"@eq 0\" \"id:1, phase:1,deny, status:403,msg:'Invalid id',log,auditlog\""}
+                                {"inline": "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""}
                               ]
                             }
                         vm_config:

@@ -57,15 +57,8 @@ jobs:
       - name: Run unit tests
         run: go run mage.go coverage
 
-      - name: Run e2e tests
+      - name: Run e2e tests against the example
         run: go run mage.go e2e
-
-      - name: Spins up the example
-        run: go run mage.go runExample
-
-      - name: Run example tests
-        shell: bash
-        run: ./example/readme-tests.sh
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2

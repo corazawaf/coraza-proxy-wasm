@@ -268,17 +268,28 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		}
 	}
 
+	// Response  body has to be buffered in order to check that it is fully legit
 	if !endOfStream {
-		return types.ActionContinue
+		return types.ActionPause
 	}
 
-	// We have already sent response headers so cannot now send an unauthorized response.
-	// The error will have been logged by Coraza though.
+	// We have already sent response headers, an unauthorized response can not be sent anymore,
+	// but we can still drop the response to prevent leaking sensitive content
+	// The error will also be logged by Coraza.
 	ctx.processedResponseBody = true
-	_, err := tx.ProcessResponseBody()
+	interruption, err := tx.ProcessResponseBody()
 	if err != nil {
 		proxywasm.LogCriticalf("failed to process response body: %v", err)
 		return types.ActionContinue
+	}
+	if interruption != nil {
+		err = proxywasm.ReplaceHttpResponseBody([]byte(``))
+		if err != nil {
+			proxywasm.LogCriticalf("failed to perform interruption on response body: %v", err)
+		}
+		// TODO(M4tteop): I'm looking for the Go version of StopIterationNoBuffer
+		// It is formally not correct to invoke SendHttpResponse during OnHttpResponseBody, but it is correctly closing the connection.
+		return ctx.handleInterruption(interruption)
 	}
 
 	return types.ActionContinue
