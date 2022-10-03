@@ -1,4 +1,4 @@
-# Coraza WASM filter
+# Coraza Proxy WASM
 
 Web Application Firewall WASM filter built on top of [Coraza](https://github.com/corazawaf/coraza) and implemented on proxy-wasm ABI. It can be loaded directly from Envoy or also used as an Istio plugin.
 
@@ -138,4 +138,3 @@ curl -i -X POST 'http://localhost:8080/anything' --data "Hello world"
 # An usual user-agent
 curl -I --user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36" localhost:8080
 ```
-
