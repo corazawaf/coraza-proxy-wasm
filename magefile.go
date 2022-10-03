@@ -152,7 +152,35 @@ func UpdateLibs() error {
 
 // E2e runs e2e tests with a built plugin. Requires docker-compose.
 func E2e() error {
-	return sh.RunV("docker-compose", "--file", "e2e/docker-compose.yml", "up", "--abort-on-container-exit")
+	// The SHA of the envoy version comes from https://github.com/istio/proxy/blob/master/WORKSPACE#L42
+	var envoyImages = []string{
+		"envoyproxy/envoy:v1.23-latest",                                 // istio 1.5.0
+		"envoyproxy/envoy-dev:1c86bac121ae73cefcba64ec0a863707b6cb8158", // istio 1.5.1
+		"envoyproxy/envoy-dev:latest",
+	}
+
+	var errsMsgs []string
+	for _, image := range envoyImages {
+		err := sh.RunV(fmt.Sprintf("ENVOY_IMAGE=%q", image), "docker-compose", "--file", "e2e/docker-compose.yml", "up", "--abort-on-container-exit")
+		if err != nil {
+			errsMsgs = append(errsMsgs, fmt.Sprintf("for %s: %v", image, err))
+		}
+	}
+
+	if len(errsMsgs) == 0 {
+		return nil
+	}
+
+	if len(errsMsgs) == 1 {
+		return fmt.Errorf("failed %s", errsMsgs[0])
+	}
+
+	jointErrMsg := strings.Builder{}
+	jointErrMsg.WriteString("failed")
+	for _, em := range errsMsgs {
+		jointErrMsg.WriteString("\n - " + em)
+	}
+	return errors.New(jointErrMsg.String())
 }
 
 // Ftw runs ftw tests with a built plugin and Envoy. Requires docker-compose.
