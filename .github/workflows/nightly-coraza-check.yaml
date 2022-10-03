@@ -1,4 +1,4 @@
-name: CI
+name: Nightly Coraza Check
 on:
   pull_request:
   schedule:
@@ -47,10 +47,10 @@ jobs:
         uses: sergeysova/jq-action@v2
         id: coraza-latest-commit
         with:
-          cmd: curl https://api.github.com/repos/corazawaf/coraza/commits/v3/dev | jq -r .commit.tree.sha
+          cmd: curl -s https://api.github.com/repos/corazawaf/coraza/commits/v3/dev | jq -r .sha
 
       - name: Fetch last coraza version
-        run: ls -la && go get -u github.com/corazawaf/coraza@${{ steps.coraza-latest-commit.outputs.value }} && go mod tidy
+        run: go get -u github.com/corazawaf/coraza@${{ steps.coraza-latest-commit.outputs.value }} && go mod tidy
 
       - name: Build WASM filter
         run: go run mage.go build
