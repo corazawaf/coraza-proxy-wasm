@@ -1,6 +1,6 @@
 services:
   envoy:
-    image: envoyproxy/envoy:v1.22-latest
+    image: envoyproxy/envoy:v1.23-latest
     command:
       - -c
       - /conf/envoy-config.yaml
