@@ -8,7 +8,7 @@ package operators
 import (
 	"github.com/corazawaf/coraza/v3/rules"
 
-	"github.com/jcchavezs/coraza-wasm-filter/internal/injection"
+	"github.com/corazawaf/coraza-proxy-wasm/internal/injection"
 )
 
 type detectSQLi struct {

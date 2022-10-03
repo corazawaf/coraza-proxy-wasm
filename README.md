@@ -15,11 +15,10 @@ Targets:
   format             formats code in this repository.
   ftw                runs ftw tests with a built plugin and Envoy.
   lint               verifies code quality.
-  precommit          installs a git hook to run check when committing.
   runExample         spins up the test environment, access at http://localhost:8080.
   teardownExample    tears down the test environment.
   test               runs all unit tests.
-  updateLibs         updates and builds all the required polyglot wasm libs.
+  updateLibs         updates the C++ filter dependencies.
 
 * default target
 ```
@@ -34,7 +33,7 @@ For performance purposes, some libs are built from their C++ implementation. The
 
 ### Running the filter in an Envoy process
 
-In order to run the coraza-wasm-filter we need to spin up an envoy configuration including this as the filter config:
+In order to run the coraza-proxy-wasm we need to spin up an envoy configuration including this as the filter config:
 
 ```yaml
     ...

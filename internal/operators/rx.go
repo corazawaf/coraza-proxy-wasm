@@ -10,7 +10,7 @@ import (
 
 	"github.com/corazawaf/coraza/v3/rules"
 
-	"github.com/jcchavezs/coraza-wasm-filter/internal/re2"
+	"github.com/corazawaf/coraza-proxy-wasm/internal/re2"
 )
 
 type rx struct {
