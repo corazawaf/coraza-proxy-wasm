@@ -68,7 +68,7 @@ In order to run the coraza-proxy-wasm we need to spin up an envoy configuration 
 
 ### Using CRS
 
-Coreruleset comes embeded in the extension, in order to use it in the config, you just need to include it directly in the rules:
+Coreruleset comes embedded in the extension, in order to use it in the config, you just need to include it directly in the rules:
 
 Loading entire coreruleset:
 
