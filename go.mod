@@ -1,6 +1,6 @@
-module github.com/jcchavezs/coraza-wasm-filter
+module github.com/corazawaf/coraza-proxy-wasm
 
-go 1.17
+go 1.18
 
 require (
 	github.com/corazawaf/coraza/v3 v3.0.0-20220930090706-97ac7823431a
