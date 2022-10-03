@@ -1,6 +1,5 @@
 name: Nightly Coraza Check
 on:
-  pull_request:
   schedule:
     - cron: "0 4 * * *"
 
