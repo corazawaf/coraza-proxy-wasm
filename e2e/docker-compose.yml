@@ -1,0 +1,25 @@
+services:
+  envoy:
+    image: envoyproxy/envoy:v1.23-latest
+    command:
+      - -c
+      - /conf/envoy-config.yaml
+      - --log-level
+      - info
+      - --component-log-level
+      - wasm:debug
+    volumes:
+      - ../build:/build
+      - .:/conf
+    ports:
+      - 8001:8001
+  tests:
+    depends_on:
+      - envoy
+    image: curlimages/curl
+    entrypoint: sh
+    command:
+      - /conf/tests.sh
+      - envoy
+    volumes:
+      - .:/conf
