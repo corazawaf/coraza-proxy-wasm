@@ -35,6 +35,8 @@ jobs:
 
       - uses: docker/setup-qemu-action@v2
       - uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
 
       - uses: docker/metadata-action@v4
         id: meta
