@@ -20,7 +20,7 @@ while [[ "$status_code" -eq "000" ]]; do
   status_code=$(curl --write-out "%{http_code}" --silent --output /dev/null $health_url)
   sleep 1
   echo -ne "[Wait] Waiting for response from $health_url. Timeout: ${max_retries}s   \r"
-  ((max_retries-=1))
+  max_retries=$((max_retries-1))
   if [[ "$max_retries" -eq 0 ]] ; then
     echo "[Fail] Timeout waiting for response from $health_url, make sure the server is running."
     exit 1
@@ -29,7 +29,7 @@ done
 echo -e "\n[Ok] Got status code $status_code, expected 200. Ready to start."
 
 # Testing envoy container reachability with an unfiltered request
-((step+=1))
+step=$((step+1))
 echo "[$step/$total_steps] Testing true negative request"
 status_code=$(curl --write-out "%{http_code}" --silent --output /dev/null $unfiltered_url)
 if [[ "$status_code" -ne 200 ]] ; then
@@ -39,7 +39,7 @@ fi
 echo "[Ok] Got status code $status_code, expected 200"
 
 # Testing filtered request
-((step+=1))
+step=$((step+1))
 echo "[$step/$total_steps] Testing true positive request"
 status_code=$(curl --write-out "%{http_code}" --silent --output /dev/null $filtered_url)
 if [[ "$status_code" -ne 403 ]] ; then
