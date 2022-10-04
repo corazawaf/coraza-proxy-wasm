@@ -70,8 +70,9 @@ jobs:
         run: go run mage.go coverage
 
       - name: Run e2e tests
+        shell: bash
         run: >
-          for $image in $ENVOY_IMAGES; do
+          for image in $ENVOY_IMAGES; do
               ENVOY_IMAGE=$image go run mage.go e2e
           done
 
