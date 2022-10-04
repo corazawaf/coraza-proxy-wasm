@@ -32,6 +32,7 @@ static_resources:
                           value: |
                             {
                               "rules": [
+                                {"inline": "test for failure"},
                                 {"inline": "SecDebugLogLevel 5 \nSecRuleEngine On \nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""}
                               ]
                             }
