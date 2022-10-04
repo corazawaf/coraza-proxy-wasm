@@ -152,14 +152,13 @@ func UpdateLibs() error {
 
 // E2e runs e2e tests with a built plugin. Requires docker-compose.
 func E2e() error {
-	// The SHA of the envoy version comes from https://github.com/istio/proxy/blob/master/WORKSPACE#L42
-	var envoyImages = []string{
-		"envoyproxy/envoy:v1.23-latest",                                 // istio 1.5.0
-		"envoyproxy/envoy-dev:1c86bac121ae73cefcba64ec0a863707b6cb8158", // istio 1.5.1
-		"envoyproxy/envoy-dev:latest",
+	envoyImagesList := strings.TrimSpace(os.Getenv("ENVOY_IMAGES"))
+	if len(envoyImagesList) == 0 {
+		envoyImagesList = "envoyproxy/envoy:v1.23-latest"
 	}
 
 	var errsMsgs []string
+	envoyImages := strings.Split(envoyImagesList, " ")
 	for _, image := range envoyImages {
 		err := sh.RunWith(map[string]string{"ENVOY_IMAGE": image}, "docker-compose", "--file", "e2e/docker-compose.yml", "up", "--abort-on-container-exit")
 		if err != nil {
