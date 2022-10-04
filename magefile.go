@@ -152,34 +152,7 @@ func UpdateLibs() error {
 
 // E2e runs e2e tests with a built plugin. Requires docker-compose.
 func E2e() error {
-	envoyImagesList := strings.TrimSpace(os.Getenv("ENVOY_IMAGES"))
-	if len(envoyImagesList) == 0 {
-		envoyImagesList = "envoyproxy/envoy:v1.23-latest"
-	}
-
-	var errsMsgs []string
-	envoyImages := strings.Split(envoyImagesList, " ")
-	for _, image := range envoyImages {
-		err := sh.RunWith(map[string]string{"ENVOY_IMAGE": image}, "docker-compose", "--file", "e2e/docker-compose.yml", "up", "--abort-on-container-exit")
-		if err != nil {
-			errsMsgs = append(errsMsgs, fmt.Sprintf("for %s: %v", image, err))
-		}
-	}
-
-	if len(errsMsgs) == 0 {
-		return nil
-	}
-
-	if len(errsMsgs) == 1 {
-		return fmt.Errorf("failed %s", errsMsgs[0])
-	}
-
-	jointErrMsg := strings.Builder{}
-	jointErrMsg.WriteString("failed")
-	for _, em := range errsMsgs {
-		jointErrMsg.WriteString("\n - " + em)
-	}
-	return errors.New(jointErrMsg.String())
+	return sh.RunWith("docker-compose", "--file", "e2e/docker-compose.yml", "up", "--abort-on-container-exit")
 }
 
 // Ftw runs ftw tests with a built plugin and Envoy. Requires docker-compose.

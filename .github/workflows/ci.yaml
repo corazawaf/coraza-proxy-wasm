@@ -70,7 +70,10 @@ jobs:
         run: go run mage.go coverage
 
       - name: Run e2e tests
-        run: go run mage.go e2e
+        run: >
+          for $image in $ENVOY_IMAGES; do
+              ENVOY_IMAGE=$image go run mage.go e2e
+          done
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
