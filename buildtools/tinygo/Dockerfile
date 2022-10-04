@@ -1,7 +1,7 @@
 # Copyright 2022 The OWASP Coraza contributors
 # SPDX-License-Identifier: Apache-2.0
 
-FROM ghcr.io/anuraaga/coraza-wasm-filter/buildtools-wasi-sdk:main
+FROM ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-wasi-sdk:main
 
 ARG TARGETARCH
 
