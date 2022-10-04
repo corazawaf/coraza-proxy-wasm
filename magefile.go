@@ -112,7 +112,7 @@ wasm-opt -Os -c build/mainraw.wasm -o build/mainopt.wasm && \
 wasm2wat --enable-all build/mainopt.wasm -o build/mainopt.wat
 `, timingBuildTag)
 
-	if err := sh.RunV("docker", "run", "--pull", "always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-tinygo:main", "bash", "-c",
+	if err := sh.RunV("docker", "run", "--pull", "always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo:main", "bash", "-c",
 		strings.TrimSpace(script)); err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ wasm2wat --enable-all build/mainopt.wasm -o build/mainopt.wat
 	if err != nil {
 		return err
 	}
-	return sh.RunV("docker", "run", "--rm", "-v", fmt.Sprintf("%s:/build", filepath.Join(wd, "build")), "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-tinygo:main", "bash", "-c",
+	return sh.RunV("docker", "run", "--rm", "-v", fmt.Sprintf("%s:/build", filepath.Join(wd, "build")), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo:main", "bash", "-c",
 		"wat2wasm --enable-all /build/main.wat -o /build/main.wasm")
 }
 
@@ -136,14 +136,14 @@ wasm2wat --enable-all build/mainopt.wasm -o build/mainopt.wat
 func UpdateLibs() error {
 	libs := []string{"aho-corasick", "libinjection", "re2"}
 	for _, lib := range libs {
-		if err := sh.RunV("docker", "build", "-t", "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-"+lib, filepath.Join("buildtools", lib)); err != nil {
+		if err := sh.RunV("docker", "build", "-t", "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-"+lib, filepath.Join("buildtools", lib)); err != nil {
 			return err
 		}
 		wd, err := os.Getwd()
 		if err != nil {
 			return err
 		}
-		if err := sh.RunV("docker", "run", "-it", "--rm", "-v", fmt.Sprintf("%s:/out", filepath.Join(wd, "lib")), "ghcr.io/anuraaga/coraza-wasm-filter/buildtools-"+lib); err != nil {
+		if err := sh.RunV("docker", "run", "-it", "--rm", "-v", fmt.Sprintf("%s:/out", filepath.Join(wd, "lib")), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-"+lib); err != nil {
 			return err
 		}
 	}

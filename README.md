@@ -1,8 +1,9 @@
 # Coraza Proxy WASM
 
-Web Application Firewall WASM filter built on top of [Coraza](https://github.com/corazawaf/coraza) and implemented on proxy-wasm ABI. It can be loaded directly from Envoy or also used as an Istio plugin.
+Web Application Firewall WASM filter built on top of [Coraza](https://github.com/corazawaf/coraza) and implementing the [proxy-wasm ABI](https://github.com/proxy-wasm/spec). It can be loaded directly from Envoy or also used as an Istio plugin.
 
 ## Getting started
+
 `go run mage.go -l` lists all the available commands:
 ```
 ▶ go run mage.go -l
@@ -20,14 +21,17 @@ Targets:
 
 * default target
 ```
+
 ### Building the filter
->Note: The build of the Wasm filter currently relies on Go `1.18.*`
+
+>Note: The build of the Wasm filter currently relies on Go `1.18.*`. On MacOS, you can install it with `brew install go@1.18` and then use
 ```
 PATH=/opt/homebrew/Cellar/go@1.18/1.18.6/bin:$PATH  GOROOT=/opt/homebrew/Cellar/go@1.18/1.18.6/libexec go run mage.go build
 ```
 You will find the WASM plugin under `./build/main.wasm`.
 
-For performance purposes, some libs are built from their C++ implementation. The compiled polyglot wasm libs are already checked in under [./lib/](./lib/). It is possible to rely on the `updateLibs` command and the Dockerfiles under [./buildtools/](./buildtools/) if you wish to rebuild them from scratch.
+For performance purposes, some libs are built from non-Go implementations. The compiled polyglot wasm libs are already checked in under [./lib/](./lib/). It is possible to rely on the Dockerfiles under [./buildtools/](./buildtools/) if you wish to rebuild them from scratch
+using `go run mage.go updateLibs`.
 
 ### Running the filter in an Envoy process
 
@@ -68,7 +72,7 @@ In order to run the coraza-proxy-wasm we need to spin up an envoy configuration 
 
 ### Using CRS
 
-Coreruleset comes embedded in the extension, in order to use it in the config, you just need to include it directly in the rules:
+[Core Rule Set](https://github.com/coreruleset/coreruleset) comes embedded in the extension, in order to use it in the config, you just need to include it directly in the rules:
 
 Loading entire coreruleset:
 
@@ -96,7 +100,7 @@ configuration:
 
 The following command runs the [go-ftw](https://github.com/fzipi/go-ftw) test suite against the filter with the CRS fully loaded.
 ```
-go run mage.go build
+go run mage.go ftw
 ```
 Take a look at its config file [ftw.yml](./ftw/ftw.yml) for details about tests currently excluded.
 
