@@ -39,6 +39,15 @@ jobs:
       - uses: docker/build-push-action@v3
         with:
           context: buildtools/tinygo
+          file: buildtools/tinygo/wasi-libc.Dockerfile
+          push: false
+          platforms: linux/amd64
+          tags: ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo-wasi-libc:main
+          load: true
+
+      - uses: docker/build-push-action@v3
+        with:
+          context: buildtools/tinygo
           push: ${{ github.event_name != 'pull_request' }}
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
