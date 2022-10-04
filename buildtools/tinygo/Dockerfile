@@ -1,7 +1,8 @@
 # Copyright 2022 The OWASP Coraza contributors
 # SPDX-License-Identifier: Apache-2.0
 
-FROM --platform=linux/amd64 ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo-wasi-libc:main AS wasi-libc
+ARG WASI_LIBC_IMAGE
+FROM --platform=linux/amd64 ${WASI_LIBC_IMAGE:-ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo-wasi-libc:main} AS wasi-libc
 
 FROM ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-wasi-sdk:main
 
