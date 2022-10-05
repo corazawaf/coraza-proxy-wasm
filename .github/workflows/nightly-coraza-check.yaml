@@ -43,10 +43,8 @@ jobs:
             ${{ runner.os }}-tinygo-
 
       - name: Get last commit of coraza
-        uses: sergeysova/jq-action@v2
         id: coraza-latest-commit
-        with:
-          cmd: curl -s https://api.github.com/repos/corazawaf/coraza/commits/v3/dev | jq -r .sha
+        run: gh api repos/corazawaf/coraza/commits/v3/dev -q .sha
 
       - name: Fetch last coraza version
         run: go get -u github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }} && go mod tidy
