@@ -19,7 +19,10 @@ var actions = map[types.Action]string{
 }
 
 func (m *wafMetrics) CountAction(phase string, a types.Action, tagsKV ...string) {
-	fqn := fmt.Sprintf("waf_filter.phase_%s.action_%s", phase, actions[a])
+	// This metric is processed as: waf_filter.action_count{action="continue",phase="on_http_request_body",rule_id="100"}.
+	// The extraction rule is defined in envoy.yaml as a bootstrap configuration.
+	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#config-metrics-v3-statsconfig.
+	fqn := fmt.Sprintf("waf_filter.action_count.phase_%s.action_%s", phase, actions[a])
 	for i := 0; i < len(tagsKV)/2; i++ {
 		fqn = fqn + "." + tagsKV[2*i] + "." + tagsKV[2*i+1]
 	}
@@ -34,7 +37,7 @@ func (m *wafMetrics) CountAction(phase string, a types.Action, tagsKV ...string)
 }
 
 func (m *wafMetrics) Duration(phase string, d time.Duration) {
-	fqn := fmt.Sprintf("waf_filter.phase_%s", phase)
+	fqn := fmt.Sprintf("waf_filter.phase_duration.phase_%s", phase)
 	histo, ok := m.histograms[fqn]
 	if !ok {
 		histo = proxywasm.DefineHistogramMetric(fqn)
