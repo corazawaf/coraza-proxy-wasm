@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-func currentTime() time.Time {
-	return time.Time{}
-}
-
-func logTime(msg string, start time.Time) {
+func logTime(string, time.Time) {
 	// no-op without build tag
 }

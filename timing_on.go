@@ -11,10 +11,6 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 )
 
-func currentTime() time.Time {
-	return time.Now()
-}
-
 func logTime(msg string, start time.Time) {
 	proxywasm.LogDebugf("%s took %s", msg, time.Since(start))
 }

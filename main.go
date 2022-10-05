@@ -125,6 +125,7 @@ type httpContext struct {
 func (ctx *httpContext) returnWrapper(phase string) func(types.Action, ...string) types.Action {
 	start := time.Now()
 	return func(action types.Action, tagsKV ...string) types.Action {
+		logTime(phase, start)
 		ctx.metrics.CountAction(phase, action, tagsKV...)
 		ctx.metrics.Duration(phase, time.Since(start))
 		return action
