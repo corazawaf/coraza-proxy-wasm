@@ -6,8 +6,10 @@ package main
 import (
 	"context"
 	"embed"
+	"fmt"
 	"io/fs"
 	"strconv"
+	"time"
 
 	"github.com/corazawaf/coraza/v3"
 	ctypes "github.com/corazawaf/coraza/v3/types"
@@ -99,7 +101,12 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 // Override types.DefaultPluginContext.
 func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
-	return &httpContext{contextID: contextID, tx: ctx.waf.NewTransaction(context.Background())}
+	return &httpContext{
+		contextID: contextID,
+		tx:        ctx.waf.NewTransaction(context.Background()),
+		// TODO(jcchavezs): figure out how/when enable/disable metrics
+		metrics: &wafMetrics{},
+	}
 }
 
 type httpContext struct {
@@ -111,11 +118,22 @@ type httpContext struct {
 	httpProtocol          string
 	processedRequestBody  bool
 	processedResponseBody bool
+	metrics               *wafMetrics
+}
+
+// returnWrapper wraps the action return to make sure we record metrics around them.
+func (ctx *httpContext) returnWrapper(phase string) func(types.Action, ...string) types.Action {
+	start := time.Now()
+	return func(action types.Action, tagsKV ...string) types.Action {
+		ctx.metrics.CountAction(phase, action, tagsKV...)
+		ctx.metrics.Duration(phase, time.Since(start))
+		return action
+	}
 }
 
 // Override types.DefaultHttpContext.
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
-	defer logTime("OnHttpRequestHeaders", currentTime())
+	wrap := ctx.returnWrapper("on_http_request_headers")
 	tx := ctx.tx
 
 	// This currently relies on Envoy's behavior of mapping all requests to HTTP/2 semantics
@@ -125,13 +143,13 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	path, err := proxywasm.GetHttpRequestHeader(":path")
 	if err != nil {
 		proxywasm.LogCriticalf("failed to get :path: %v", err)
-		return types.ActionContinue
+		return wrap(types.ActionContinue)
 	}
 
 	method, err := proxywasm.GetHttpRequestHeader(":method")
 	if err != nil {
 		proxywasm.LogCriticalf("failed to get :method: %v", err)
-		return types.ActionContinue
+		return wrap(types.ActionContinue)
 	}
 
 	protocol, err := proxywasm.GetProperty([]string{"request", "protocol"})
@@ -148,7 +166,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	hs, err := proxywasm.GetHttpRequestHeaders()
 	if err != nil {
 		proxywasm.LogCriticalf("failed to get request headers: %v", err)
-		return types.ActionContinue
+		return wrap(types.ActionContinue)
 	}
 
 	for _, h := range hs {
@@ -163,49 +181,49 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	interruption := tx.ProcessRequestHeaders()
 	if interruption != nil {
-		return ctx.handleInterruption(interruption)
+		return wrap(ctx.handleInterruption(interruption), "rule_id", fmt.Sprint(interruption.RuleID))
 	}
 
-	return types.ActionContinue
+	return wrap(types.ActionContinue)
 }
 
 func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.Action {
-	defer logTime("OnHttpRequestBody", currentTime())
+	wrap := ctx.returnWrapper("on_http_request_body")
 	tx := ctx.tx
 
 	if bodySize > 0 {
 		body, err := proxywasm.GetHttpRequestBody(0, bodySize)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to get request body: %v", err)
-			return types.ActionContinue
+			return wrap(types.ActionContinue)
 		}
 
 		_, err = tx.RequestBodyWriter().Write(body)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to read request body: %v", err)
-			return types.ActionContinue
+			return wrap(types.ActionContinue)
 		}
 	}
 
 	if !endOfStream {
-		return types.ActionContinue
+		return wrap(types.ActionContinue)
 	}
 
 	ctx.processedRequestBody = true
 	interruption, err := tx.ProcessRequestBody()
 	if err != nil {
 		proxywasm.LogCriticalf("failed to process request body: %v", err)
-		return types.ActionContinue
+		return wrap(types.ActionContinue)
 	}
 	if interruption != nil {
-		return ctx.handleInterruption(interruption)
+		return wrap(ctx.handleInterruption(interruption), "rule_id", fmt.Sprint(interruption.RuleID))
 	}
 
-	return types.ActionContinue
+	return wrap(types.ActionContinue)
 }
 
 func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
-	defer logTime("OnHttpResponseHeaders", currentTime())
+	wrap := ctx.returnWrapper("on_http_response_headers")
 	tx := ctx.tx
 
 	// Requests without body won't call OnHttpRequestBody, but there are rules in the request body
@@ -215,17 +233,17 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
 			proxywasm.LogCriticalf("failed to process request body: %v", err)
-			return types.ActionContinue
+			return wrap(types.ActionContinue)
 		}
 		if interruption != nil {
-			return ctx.handleInterruption(interruption)
+			return wrap(ctx.handleInterruption(interruption), "rule_id", fmt.Sprint(interruption.RuleID))
 		}
 	}
 
 	status, err := proxywasm.GetHttpResponseHeader(":status")
 	if err != nil {
 		proxywasm.LogCriticalf("failed to get :status: %v", err)
-		return types.ActionContinue
+		return wrap(types.ActionContinue)
 	}
 	code, err := strconv.Atoi(status)
 	if err != nil {
@@ -235,7 +253,7 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 	hs, err := proxywasm.GetHttpResponseHeaders()
 	if err != nil {
 		proxywasm.LogCriticalf("failed to get response headers: %v", err)
-		return types.ActionContinue
+		return wrap(types.ActionContinue)
 	}
 
 	for _, h := range hs {
@@ -244,27 +262,27 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 
 	interruption := tx.ProcessResponseHeaders(code, ctx.httpProtocol)
 	if interruption != nil {
-		return ctx.handleInterruption(interruption)
+		return wrap(ctx.handleInterruption(interruption), "rule_id", fmt.Sprint(interruption.RuleID))
 	}
 
-	return types.ActionContinue
+	return wrap(types.ActionContinue)
 }
 
 func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types.Action {
-	defer logTime("OnHttpResponseBody", currentTime())
+	wrap := ctx.returnWrapper("on_http_response_body")
 	tx := ctx.tx
 
 	if bodySize > 0 {
 		body, err := proxywasm.GetHttpResponseBody(0, bodySize)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to get response body: %v", err)
-			return types.ActionContinue
+			return wrap(types.ActionContinue)
 		}
 
 		_, err = tx.ResponseBodyWriter().Write(body)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to read response body: %v", err)
-			return types.ActionContinue
+			return wrap(types.ActionContinue)
 		}
 	}
 
@@ -282,19 +300,22 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	interruption, err := tx.ProcessResponseBody()
 	if err != nil {
 		proxywasm.LogCriticalf("failed to process response body: %v", err)
-		return types.ActionContinue
+		return wrap(types.ActionContinue)
 	}
 	if interruption != nil {
 		// TODO(M4tteoP): Address response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
 		return types.ActionContinue
 	}
 
-	return types.ActionContinue
+	return wrap(types.ActionContinue)
 }
 
 // Override types.DefaultHttpContext.
 func (ctx *httpContext) OnHttpStreamDone() {
-	defer logTime("OnHttpStreamDone", currentTime())
+	defer func(start time.Time) {
+		ctx.metrics.Duration("on_http_stream_done", time.Since(start))
+	}(time.Now())
+
 	tx := ctx.tx
 
 	// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
