@@ -105,7 +105,7 @@ func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 		contextID: contextID,
 		tx:        ctx.waf.NewTransaction(context.Background()),
 		// TODO(jcchavezs): figure out how/when enable/disable metrics
-		metrics: &wafMetrics{},
+		metrics: NewWAFMetrics(),
 	}
 }
 
