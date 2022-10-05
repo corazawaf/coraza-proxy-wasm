@@ -1,5 +1,8 @@
 name: Nightly Coraza Check
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/nightly-coraza-check.yaml"
   schedule:
     - cron: "0 4 * * *"
 
@@ -44,7 +47,7 @@ jobs:
 
       - name: Get last commit of coraza
         id: coraza-latest-commit
-        run: gh api repos/corazawaf/coraza/commits/v3/dev -q .sha
+        run: echo "::set-output value=$(gh api repos/corazawaf/coraza/commits/v3/dev -q .sha)"
 
       - name: Fetch last coraza version
         run: go get -u github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }} && go mod tidy
