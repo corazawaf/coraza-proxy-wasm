@@ -1,5 +1,8 @@
 name: Nightly Coraza Check
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/nightly-coraza-check.yaml"
   schedule:
     - cron: "0 4 * * *"
 
@@ -9,7 +12,7 @@ env:
   WABT_VERSION: 1.0.29
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out code
@@ -43,10 +46,10 @@ jobs:
             ${{ runner.os }}-tinygo-
 
       - name: Get last commit of coraza
-        uses: sergeysova/jq-action@v2
         id: coraza-latest-commit
-        with:
-          cmd: curl -s https://api.github.com/repos/corazawaf/coraza/commits/v3/dev | jq -r .sha
+        run: echo "::set-output name=value::$(gh api repos/corazawaf/coraza/commits/v3/dev -q .sha)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fetch last coraza version
         run: go get -u github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }} && go mod tidy
