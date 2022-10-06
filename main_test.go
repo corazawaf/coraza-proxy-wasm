@@ -15,8 +15,9 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 )
 
-func checkMetric(t *testing.T, host proxytest.HostEmulator, phase string, a types.Action, expectedCounter int) {
-	value, err := host.GetCounterMetric(fmt.Sprintf("waf_filter.action_count.phase=%s.action=%s", phase, actions[a]))
+func checkTXMetric(t *testing.T, host proxytest.HostEmulator, expectedCounter int) {
+	t.Helper()
+	value, err := host.GetCounterMetric("waf_filter.tx.total")
 	require.NoError(t, err)
 	require.Equal(t, uint64(expectedCounter), value)
 }
@@ -308,6 +309,8 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 				requestHdrsAction := host.CallOnRequestHeaders(id, reqHdrs, false)
 				require.Equal(t, tt.requestHdrsAction, requestHdrsAction)
 
+				checkTXMetric(t, host, 1)
+
 				// Stream bodies in chunks of 5
 
 				if requestHdrsAction == types.ActionContinue {
@@ -326,21 +329,11 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 							require.Equal(t, types.ActionContinue, requestBodyAction)
 						}
 					}
-					checkMetric(t, host, "on_http_request_headers", types.ActionContinue, 1)
-					checkMetric(t, host, "on_http_request_headers", types.ActionPause, 0)
-				} else {
-					checkMetric(t, host, "on_http_request_headers", types.ActionContinue, 0)
-					checkMetric(t, host, "on_http_request_headers", types.ActionPause, 1)
 				}
 
 				if requestBodyAction == types.ActionContinue {
 					responseHdrsAction = host.CallOnResponseHeaders(id, respHdrs, false)
 					require.Equal(t, tt.responseHdrsAction, responseHdrsAction)
-					checkMetric(t, host, "on_http_request_body", types.ActionContinue, 1)
-					checkMetric(t, host, "on_http_request_body", types.ActionPause, 0)
-				} else {
-					checkMetric(t, host, "on_http_request_body", types.ActionContinue, 0)
-					checkMetric(t, host, "on_http_request_body", types.ActionPause, 1)
 				}
 
 				if responseHdrsAction == types.ActionContinue {
@@ -355,11 +348,6 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 						action := host.CallOnResponseBody(id, body, eos)
 						require.Equal(t, types.ActionContinue, action)
 					}
-					checkMetric(t, host, "on_http_response_headers", types.ActionContinue, 1)
-					checkMetric(t, host, "on_http_response_headers", types.ActionPause, 0)
-				} else {
-					checkMetric(t, host, "on_http_response_headers", types.ActionContinue, 0)
-					checkMetric(t, host, "on_http_response_headers", types.ActionPause, 1)
 				}
 
 				// Call OnHttpStreamDone.
