@@ -10,7 +10,7 @@ RUN apk add --no-cache bash
 
 COPY ./e2e-example.sh /workspace/e2e-example.sh
 
-ENV ENVOY_HOST=envoy
+ENV ENVOY_HOST=envoy:8080
 ENV HTTPBIN_HOST=httpbin
 
 ENTRYPOINT ["bash"]

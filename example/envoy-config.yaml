@@ -63,4 +63,4 @@ static_resources:
                   address:
                     socket_address:
                       address: httpbin
-                      port_value: 8081
+                      port_value: 80
