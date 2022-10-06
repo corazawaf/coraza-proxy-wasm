@@ -2,7 +2,7 @@ services:
   httpbin:
     image: kennethreitz/httpbin:latest
     ports:
-      - 8081:80
+      - 8081:8081
   chown:
     image: alpine:3.16
     command:
@@ -31,7 +31,7 @@ services:
       - .:/conf
       - logs:/home/envoy/logs:rw
     ports:
-      - 8080:80
+      - 8080:8080
   envoy-logs:
     depends_on:
       - envoy
