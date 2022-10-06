@@ -129,7 +129,7 @@ func UpdateLibs() error {
 
 // E2e runs e2e tests with a built plugin against the example deployment. Requires docker-compose.
 func E2e() error {
-	return sh.RunV("docker-compose", "--file", "example/docker-compose.yml", "up", "--abort-on-container-exit", "tests")
+	return sh.RunV("docker-compose", "--file", "e2e/docker-compose.yml", "up", "--abort-on-container-exit", "tests")
 }
 
 // Ftw runs ftw tests with a built plugin and Envoy. Requires docker-compose.

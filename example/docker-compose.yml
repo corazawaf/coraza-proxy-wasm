@@ -53,11 +53,5 @@ services:
       - tail -c +0 -f /home/envoy/logs/envoy.log | grep --line-buffered "[critical][wasm]"
     volumes:
       - logs:/home/envoy/logs:ro
-  tests:
-    depends_on:
-      - envoy
-    build:
-      context: ../e2e/
-      dockerfile: ./Dockerfile
 volumes:
   logs:

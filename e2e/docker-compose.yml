@@ -1,0 +1,20 @@
+services:
+  httpbin:
+    extends:
+        file: ../example/docker-compose.yml
+        service: httpbin
+  chown:
+    extends:
+      file: ../example/docker-compose.yml
+      service: chown
+  envoy:
+    extends:
+      file: ../example/docker-compose.yml
+      service: envoy
+  tests:
+    depends_on:
+      - envoy
+    build:
+      dockerfile: ./Dockerfile.curl
+volumes:
+  logs:
