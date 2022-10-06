@@ -110,15 +110,16 @@ check_status "${envoy_url_unfiltered}" 403 -X POST -H 'Content-Type: application
 echo "[${step}/${total_steps}] (onResponseHeaders) Testing true positive"
 check_status "${envoy_url_filtered_resp_header}" 403
 
-# Testing response body true negative
-((step+=1))
-echo "[${step}/${total_steps}] (onResponseBody) Testing true negative"
-check_body "${envoy_url_unfiltered}" false -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${trueNegativeBodyPayloadForResponseBody}"
+# TODO(M4tteoP): Address response body e2e after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
+# # Testing response body true negative
+# ((step+=1))
+# echo "[${step}/${total_steps}] (onResponseBody) Testing true negative"
+# check_body "${envoy_url_unfiltered}" false -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${trueNegativeBodyPayloadForResponseBody}"
 
-# Testing response body detection
-((step+=1))
-echo "[${step}/${total_steps}] (onResponseBody) Testing true positive"
-check_body "${envoy_url_echo}" true -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayloadForResponseBody}"
+# # Testing response body detection
+# ((step+=1))
+# echo "[${step}/${total_steps}] (onResponseBody) Testing true positive"
+# check_body "${envoy_url_echo}" true -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayloadForResponseBody}"
 
 ## Testing extra requests examples from the readme and some CRS rules in anomaly score mode.
 

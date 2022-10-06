@@ -17,7 +17,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/petar-dambovaliev/aho-corasick v0.0.0-20211021192214-5ab2d9280aa9 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/tetratelabs/wazero v1.0.0-pre.2 // indirect
+	github.com/tetratelabs/wazero v1.0.0-beta.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	golang.org/x/net v0.0.0-20221002022538-bcab6841153b // indirect

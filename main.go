@@ -283,13 +283,8 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		return types.ActionContinue
 	}
 	if interruption != nil {
-		err = proxywasm.ReplaceHttpResponseBody([]byte(``))
-		if err != nil {
-			proxywasm.LogCriticalf("failed to perform interruption on response body: %v", err)
-		}
-		// TODO(M4tteop): I'm looking for the Go version of StopIterationNoBuffer
-		// It is formally not correct to invoke SendHttpResponse during OnHttpResponseBody, but it is correctly closing the connection.
-		return ctx.handleInterruption(interruption)
+		// TODO(M4tteoP): Address response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
+		return types.ActionContinue
 	}
 
 	return types.ActionContinue
