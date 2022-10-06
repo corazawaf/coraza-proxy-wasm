@@ -271,7 +271,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	// Response  body has to be buffered in order to check that it is fully legit
 	if !endOfStream {
 		// TODO(M4tteoP): Address response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
-		//return types.ActionPause
+		// return types.ActionPause
 		return types.ActionContinue
 	}
 
