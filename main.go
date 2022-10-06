@@ -125,6 +125,7 @@ type httpContext struct {
 
 // Override types.DefaultHttpContext.
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
+	defer logTime("OnHttpRequestHeaders", currentTime())
 	ctx.metrics.CountTX()
 	tx := ctx.tx
 
@@ -180,6 +181,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 }
 
 func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.Action {
+	defer logTime("OnHttpRequestBody", currentTime())
 	tx := ctx.tx
 
 	if bodySize > 0 {
@@ -214,6 +216,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 }
 
 func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
+	defer logTime("OnHttpResponseHeaders", currentTime())
 	tx := ctx.tx
 
 	// Requests without body won't call OnHttpRequestBody, but there are rules in the request body
@@ -259,6 +262,7 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 }
 
 func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types.Action {
+	defer logTime("OnHttpResponseBody", currentTime())
 	tx := ctx.tx
 
 	if bodySize > 0 {
@@ -301,6 +305,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 
 // Override types.DefaultHttpContext.
 func (ctx *httpContext) OnHttpStreamDone() {
+	defer logTime("OnHttpStreamDone", currentTime())
 	tx := ctx.tx
 
 	// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
