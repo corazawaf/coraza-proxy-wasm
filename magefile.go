@@ -12,10 +12,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
+	"github.com/tetratelabs/wabin/binary"
+	"github.com/tetratelabs/wabin/wasm"
 )
 
 var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
@@ -95,41 +96,17 @@ func Build() error {
 	if err := os.MkdirAll("build", 0755); err != nil {
 		return err
 	}
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
 
 	timingBuildTag := ""
 	if os.Getenv("TIMING") == "true" {
-		timingBuildTag = "-tags 'timing proxywasm_timing'"
+		timingBuildTag = "-tags='timing proxywasm_timing'"
 	}
 
-	script := fmt.Sprintf(`
-cd /src && \
-tinygo build -opt 2 -o build/mainraw.wasm -scheduler=none -target=wasi %s . && \
-wasm-opt -Os -c build/mainraw.wasm -o build/mainopt.wasm && \
-wasm2wat --enable-all build/mainopt.wasm -o build/mainopt.wat
-`, timingBuildTag)
-
-	if err := sh.RunV("docker", "run", "--pull", "always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo:main", "bash", "-c",
-		strings.TrimSpace(script)); err != nil {
+	if err := sh.RunV("tinygo", "build", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", timingBuildTag); err != nil {
 		return err
 	}
 
-	watBytes, err := os.ReadFile(filepath.Join("build", "mainopt.wat"))
-	if err != nil {
-		return err
-	}
-	wat := string(watBytes)
-	wat = strings.ReplaceAll(wat, "fd_filestat_get", "fd_fdstat_get")
-	wat = strings.ReplaceAll(wat, `"wasi_snapshot_preview1" "path_filestat_get"`, `"env" "proxy_get_header_map_value"`)
-	err = os.WriteFile(filepath.Join("build", "main.wat"), []byte(wat), 0644)
-	if err != nil {
-		return err
-	}
-	return sh.RunV("docker", "run", "--rm", "-v", fmt.Sprintf("%s:/build", filepath.Join(wd, "build")), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo:main", "bash", "-c",
-		"wat2wasm --enable-all /build/main.wat -o /build/main.wasm")
+	return stubUnusedWasmImports(filepath.Join("build", "mainraw.wasm"), filepath.Join("build", "main.wasm"))
 }
 
 // UpdateLibs updates the C++ filter dependencies.
@@ -183,3 +160,31 @@ func TeardownExample() error {
 }
 
 var Default = Build
+
+func stubUnusedWasmImports(inPath, outPath string) error {
+	raw, err := os.ReadFile(inPath)
+	if err != nil {
+		return err
+	}
+	mod, err := binary.DecodeModule(raw, wasm.CoreFeaturesV2)
+	if err != nil {
+		return err
+	}
+
+	for _, imp := range mod.ImportSection {
+		switch {
+		case imp.Name == "fd_filestat_get":
+			imp.Name = "fd_fdstat_get"
+		case imp.Name == "path_filestat_get":
+			imp.Module = "env"
+			imp.Name = "proxy_get_header_map_value"
+		}
+	}
+
+	out := binary.EncodeModule(mod)
+	if err = os.WriteFile(outPath, out, 0644); err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -24,9 +24,8 @@ Targets:
 
 ### Building the filter
 
->Note: The build of the Wasm filter currently relies on Go `1.18.*`. On MacOS, you can install it with `brew install go@1.18` and then use
 ```
-PATH=/opt/homebrew/Cellar/go@1.18/1.18.6/bin:$PATH  GOROOT=/opt/homebrew/Cellar/go@1.18/1.18.6/libexec go run mage.go build
+go run mage.go build
 ```
 You will find the WASM plugin under `./build/main.wasm`.
 
