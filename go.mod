@@ -7,6 +7,7 @@ require (
 	github.com/magefile/mage v1.14.0
 	github.com/stretchr/testify v1.8.0
 	github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220922045757-132ee0a06ac2
+	github.com/tetratelabs/wabin v0.0.0-20220927005300-3b0fbf39a46a
 	github.com/tidwall/gjson v1.14.3
 )
 
