@@ -31,14 +31,14 @@ func (m *wafMetrics) incrementCounter(fqn string) {
 }
 
 func (m *wafMetrics) CountTX() {
-	// This metric is processed as: waf_filter.tx.total
+	// This metric is processed as: waf_filter_tx_total
 	m.incrementCounter("waf_filter.tx.total")
 }
 
 func (m *wafMetrics) CountTXInterruption(phase string, ruleID int) {
-	// This metric is processed as: waf_filter.tx.interruption{phase="on_http_request_body",rule_id="100"}.
+	// This metric is processed as: waf_filter_tx_interruption{phase="http_request_body",rule_id="100"}.
 	// The extraction rule is defined in envoy.yaml as a bootstrap configuration.
 	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#config-metrics-v3-statsconfig.
-	fqn := fmt.Sprintf("waf_filter.tx.interruptions.phase=%s.rule_id=%d", phase, ruleID)
+	fqn := fmt.Sprintf("waf_filter.tx.interruptions_ruleid=%d_phase=%s", ruleID, phase)
 	m.incrementCounter(fqn)
 }

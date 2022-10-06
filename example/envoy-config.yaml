@@ -1,3 +1,12 @@
+stats_config:
+  stats_tags:
+    # Envoy extracs the first matching group as a value.
+    # See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#config-metrics-v3-statsconfig.
+    - tag_name: phase
+      regex: "(_phase=([a-z_]+))"
+    - tag_name: rule_id
+      regex: "(_ruleid=([0-9]+))"
+
 static_resources:
   listeners:
     - address:
@@ -64,3 +73,10 @@ static_resources:
                     socket_address:
                       address: httpbin
                       port_value: 80
+
+admin:
+  access_log_path: "/dev/null"
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 8082
