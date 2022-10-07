@@ -20,33 +20,12 @@ import (
 	"github.com/tetratelabs/wabin/wasm"
 )
 
-var tinygoVersion = "0.26"
 var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
 var golangCILintVer = "v1.48.0"                                    // https://github.com/golangci/golangci-lint/releases
 var gosImportsVer = "v0.3.1"                                       // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
 
 var errCommitFormatting = errors.New("files not formatted, please commit formatting changes")
 var errNoGitDir = errors.New("no .git directory found")
-
-func init() {
-	if err := checkTinygoVersion(); err != nil {
-		fmt.Printf("Error: %v\n", err)
-		os.Exit(1)
-	}
-}
-
-func checkTinygoVersion() error {
-	v, err := sh.Output("tinygo", "version")
-	if err != nil {
-		return fmt.Errorf("unexpected tinygo error: %v", err)
-	}
-
-	if !strings.HasPrefix(v, fmt.Sprintf("tinygo version %s", tinygoVersion)) {
-		return fmt.Errorf("unexpected tinygo error, wanted %s", tinygoVersion)
-	}
-
-	return nil
-}
 
 // Format formats code in this repository.
 func Format() error {
