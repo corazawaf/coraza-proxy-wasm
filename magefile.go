@@ -43,6 +43,7 @@ func init() {
 	}
 }
 
+// checkGoVersion checks the minium version of Go is supported.
 func checkGoVersion() error {
 	v, err := sh.Output("go", "version")
 	if err != nil {
@@ -67,6 +68,8 @@ func checkGoVersion() error {
 	return nil
 }
 
+// checkTinygoVersion checks that exactly the right tinygo version is supported because
+// tinygo isn't stable yet.
 func checkTinygoVersion() error {
 	v, err := sh.Output("tinygo", "version")
 	if err != nil {
