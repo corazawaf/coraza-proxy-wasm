@@ -1,6 +1,6 @@
 stats_config:
   stats_tags:
-    # Envoy extracs the first matching group as a value.
+    # Envoy extracts the first matching group as a value.
     # See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#config-metrics-v3-statsconfig.
     - tag_name: phase
       regex: "(_phase=([a-z_]+))"
