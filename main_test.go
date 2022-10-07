@@ -15,6 +15,13 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 )
 
+func checkTXMetric(t *testing.T, host proxytest.HostEmulator, expectedCounter int) {
+	t.Helper()
+	value, err := host.GetCounterMetric("waf_filter.tx.total")
+	require.NoError(t, err)
+	require.Equal(t, uint64(expectedCounter), value)
+}
+
 func TestLifecycle(t *testing.T) {
 	reqHdrs := [][2]string{
 		{":path", "/hello"},
@@ -301,6 +308,8 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 
 				requestHdrsAction := host.CallOnRequestHeaders(id, reqHdrs, false)
 				require.Equal(t, tt.requestHdrsAction, requestHdrsAction)
+
+				checkTXMetric(t, host, 1)
 
 				// Stream bodies in chunks of 5
 

@@ -10,7 +10,7 @@ services:
       - /conf/envoy-config.yaml
     volumes:
       - ../build:/build
-      - ../example:/conf  # relying on envoy-config file from /example/
+      - ../example:/conf # relying on envoy-config file from /example/
   tests:
     depends_on:
       - envoy

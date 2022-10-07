@@ -5,7 +5,8 @@ Web Application Firewall WASM filter built on top of [Coraza](https://github.com
 ## Getting started
 
 `go run mage.go -l` lists all the available commands:
-```
+
+```bash
 ▶ go run mage.go -l
 Targets:
   build*             builds the Coraza wasm plugin.
@@ -26,9 +27,10 @@ Targets:
 
 ### Building the filter
 
-```
+```bash
 go run mage.go build
 ```
+
 You will find the WASM plugin under `./build/main.wasm`.
 
 For performance purposes, some libs are built from non-Go implementations. The compiled polyglot wasm libs are already checked in under [./lib/](./lib/). It is possible to rely on the Dockerfiles under [./buildtools/](./buildtools/) if you wish to rebuild them from scratch
@@ -100,19 +102,25 @@ configuration:
 ### Running go-ftw (CRS Regression tests)
 
 The following command runs the [go-ftw](https://github.com/fzipi/go-ftw) test suite against the filter with the CRS fully loaded.
-```
+
+```bash
 go run mage.go ftw
 ```
+
 Take a look at its config file [ftw.yml](./ftw/ftw.yml) for details about tests currently excluded.
 
 ## Example: Spinning up the coraza-wasm-filter for manual tests
+
 Once the filter is built, via the commands `mage runExample` and `mage teardownExample` you can spin up and tear down the test environment. Envoy with the coraza-wasm filter will be reachable at `localhost:8080`. The filter is configured with the CRS loaded working in Anomaly Scoring mode. For details and locally tweaking the configuration refer to [coraza-demo.conf](./rules/coraza-demo.conf) and [crs-setup-demo.conf](./rules/crs-setup-demo.conf).
 In order to monitor envoy logs while performing requests you can run:
+
 - Envoy logs: `docker-compose -f ./example/docker-compose.yml logs -f envoy-logs`.
 - Critical wasm (audit) logs: `docker-compose -f ./example/docker-compose.yml logs -f wasm-logs`
 
 ### Manual requests
+
 Run `./e2e/e2e-example.sh` in order to run the following requests against the just set up test environment, otherwise manually execute and tweak them to grasp the behaviour of the filter:
+
 ```bash
 # True positive requests:
 # Custom rule phase 1
@@ -139,4 +147,22 @@ curl -i -X POST 'http://localhost:8080/anything' --data "This is a payload"
 curl -i -X POST 'http://localhost:8080/anything' --data "Hello world"
 # An usual user-agent
 curl -I --user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36" localhost:8080
+```
+
+### WAF Metrics
+
+Metrics are exposed in the prometheus format under `localhost:8082` (admin cluster in the envoy config).
+
+```bash
+curl -s localhost:8082/stats/prometheus | grep waf_filter
+```
+
+and we get the metrics with the corresponding tags:
+
+```bash
+# TYPE waf_filter_tx_interruptions counter
+waf_filter_tx_interruptions{phase="http_request_body",rule_id="949110"} 1
+waf_filter_tx_interruptions{phase="http_response_headers",rule_id="949110"} 3
+# TYPE waf_filter_tx_total counter
+waf_filter_tx_total{} 7
 ```

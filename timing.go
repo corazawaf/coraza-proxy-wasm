@@ -9,10 +9,12 @@ import (
 	"time"
 )
 
+var zeroTime = time.Time{}
+
 func currentTime() time.Time {
-	return time.Time{}
+	return zeroTime
 }
 
-func logTime(msg string, start time.Time) {
+func logTime(string, time.Time) {
 	// no-op without build tag
 }

@@ -43,6 +43,8 @@ type corazaPlugin struct {
 	types.DefaultPluginContext
 
 	waf coraza.WAF
+
+	metrics *wafMetrics
 }
 
 // Override types.DefaultPluginContext.
@@ -94,12 +96,19 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 	ctx.waf = waf
 
+	ctx.metrics = NewWAFMetrics()
+
 	return types.OnPluginStartStatusOK
 }
 
 // Override types.DefaultPluginContext.
 func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
-	return &httpContext{contextID: contextID, tx: ctx.waf.NewTransaction(context.Background())}
+	return &httpContext{
+		contextID: contextID,
+		tx:        ctx.waf.NewTransaction(context.Background()),
+		// TODO(jcchavezs): figure out how/when enable/disable metrics
+		metrics: ctx.metrics,
+	}
 }
 
 type httpContext struct {
@@ -111,11 +120,13 @@ type httpContext struct {
 	httpProtocol          string
 	processedRequestBody  bool
 	processedResponseBody bool
+	metrics               *wafMetrics
 }
 
 // Override types.DefaultHttpContext.
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
 	defer logTime("OnHttpRequestHeaders", currentTime())
+	ctx.metrics.CountTX()
 	tx := ctx.tx
 
 	// This currently relies on Envoy's behavior of mapping all requests to HTTP/2 semantics
@@ -163,7 +174,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	interruption := tx.ProcessRequestHeaders()
 	if interruption != nil {
-		return ctx.handleInterruption(interruption)
+		return ctx.handleInterruption("http_request_headers", interruption)
 	}
 
 	return types.ActionContinue
@@ -198,7 +209,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		return types.ActionContinue
 	}
 	if interruption != nil {
-		return ctx.handleInterruption(interruption)
+		return ctx.handleInterruption("http_request_body", interruption)
 	}
 
 	return types.ActionContinue
@@ -218,7 +229,7 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 			return types.ActionContinue
 		}
 		if interruption != nil {
-			return ctx.handleInterruption(interruption)
+			return ctx.handleInterruption("http_response_headers", interruption)
 		}
 	}
 
@@ -244,7 +255,7 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 
 	interruption := tx.ProcessResponseHeaders(code, ctx.httpProtocol)
 	if interruption != nil {
-		return ctx.handleInterruption(interruption)
+		return ctx.handleInterruption("http_response_headers", interruption)
 	}
 
 	return types.ActionContinue
@@ -312,7 +323,9 @@ func (ctx *httpContext) OnHttpStreamDone() {
 	proxywasm.LogInfof("%d finished", ctx.contextID)
 }
 
-func (ctx *httpContext) handleInterruption(interruption *ctypes.Interruption) types.Action {
+func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.Interruption) types.Action {
+	ctx.metrics.CountTXInterruption(phase, interruption.RuleID)
+
 	proxywasm.LogInfof("%d interrupted, action %q", ctx.contextID, interruption.Action)
 	statusCode := interruption.Status
 	if statusCode == 0 {
