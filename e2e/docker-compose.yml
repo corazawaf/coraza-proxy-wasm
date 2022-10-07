@@ -1,20 +1,18 @@
 services:
   httpbin:
-    extends:
-        file: ../example/docker-compose.yml
-        service: httpbin
-  chown:
-    extends:
-      file: ../example/docker-compose.yml
-      service: chown
+    image: kennethreitz/httpbin:latest
   envoy:
-    extends:
-      file: ../example/docker-compose.yml
-      service: envoy
+    depends_on:
+      - httpbin
+    image: envoyproxy/envoy:v1.23-latest
+    command:
+      - -c
+      - /conf/envoy-config.yaml
+    volumes:
+      - ../build:/build
+      - ../example:/conf  # relying on envoy-config file from /example/
   tests:
     depends_on:
       - envoy
     build:
       dockerfile: ./Dockerfile.curl
-volumes:
-  logs:
