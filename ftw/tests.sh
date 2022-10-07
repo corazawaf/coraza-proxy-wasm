@@ -7,7 +7,7 @@ cd /workspace
 # Copied from https://github.com/jcchavezs/modsecurity-wasm-filter-e2e/blob/master/tests.sh
 
 step=1
-total_steps=3
+total_steps=1
 max_retries=15 #seconds for the server reachability timeout
 host=${1:-envoy}
 health_url="http://${host}:80"

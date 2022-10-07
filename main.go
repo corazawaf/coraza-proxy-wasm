@@ -268,16 +268,24 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		}
 	}
 
+	// Response  body has to be buffered in order to check that it is fully legit
 	if !endOfStream {
+		// TODO(M4tteoP): Address response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
+		// return types.ActionPause
 		return types.ActionContinue
 	}
 
-	// We have already sent response headers so cannot now send an unauthorized response.
-	// The error will have been logged by Coraza though.
+	// We have already sent response headers, an unauthorized response can not be sent anymore,
+	// but we can still drop the response to prevent leaking sensitive content
+	// The error will also be logged by Coraza.
 	ctx.processedResponseBody = true
-	_, err := tx.ProcessResponseBody()
+	interruption, err := tx.ProcessResponseBody()
 	if err != nil {
 		proxywasm.LogCriticalf("failed to process response body: %v", err)
+		return types.ActionContinue
+	}
+	if interruption != nil {
+		// TODO(M4tteoP): Address response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
 		return types.ActionContinue
 	}
 

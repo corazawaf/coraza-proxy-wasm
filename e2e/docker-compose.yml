@@ -1,25 +1,19 @@
 services:
+  httpbin:
+    image: kennethreitz/httpbin:latest
   envoy:
-    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.23-latest}
+    depends_on:
+      - httpbin
+    image: envoyproxy/envoy:v1.23-latest
     command:
       - -c
       - /conf/envoy-config.yaml
-      - --log-level
-      - info
-      - --component-log-level
-      - wasm:debug
     volumes:
       - ../build:/build
-      - .:/conf
-    ports:
-      - 8001:8001
+      - ../example:/conf  # relying on envoy-config file from /example/
   tests:
     depends_on:
       - envoy
-    image: curlimages/curl
-    entrypoint: sh
-    command:
-      - /conf/tests.sh
-      - envoy
-    volumes:
-      - .:/conf
+    build:
+      context: .
+      dockerfile: ./Dockerfile.curl
