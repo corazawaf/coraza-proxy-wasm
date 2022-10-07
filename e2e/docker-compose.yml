@@ -15,4 +15,5 @@ services:
     depends_on:
       - envoy
     build:
+      context: .
       dockerfile: ./Dockerfile.curl
