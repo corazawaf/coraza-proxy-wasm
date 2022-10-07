@@ -22,7 +22,7 @@ import (
 	"github.com/tetratelabs/wabin/wasm"
 )
 
-var minGoVersion = "1.19.2"
+var minGoVersion = "1.19"
 var tinygoMinorVersion = "0.26"
 var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
 var golangCILintVer = "v1.48.0"                                    // https://github.com/golangci/golangci-lint/releases
@@ -58,6 +58,9 @@ func checkGoVersion() error {
 	compare = compare[1:]
 
 	base := strings.SplitN(minGoVersion, ".", 3)
+	if len(base) == 2 {
+		base = append(base, "0")
+	}
 	for i := 0; i < 3; i++ {
 		baseN, _ := strconv.Atoi(base[i])
 		compareN, _ := strconv.Atoi(compare[i])
