@@ -15,7 +15,7 @@ testoverride:
     '920120-7': 'Rule bug'
     '932180-2': 'Bad multipart'
     '942490-17': 'Invalid URL, Coraza stops this.'
-    #'920272-5': 'ealen/echo-server fails this test. Httpbin fails 920400-1'
+    '920272-5': 'ealen/echo-server fails this test. Httpbin fails 920400-1'
     # Temporary:
     '953120-0': 'Temporary, this works but the testing framework does not support it yet.'
     '953120-2': 'Temporary, this works but the testing framework does not support it yet.'
