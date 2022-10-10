@@ -37,7 +37,7 @@ static_resources:
                             {
                               "rules": [
                                 {"inline": "Include ftw-config.conf"},
-                                {"inline": "Include coraza.conf-recommended"},
+                                {"inline": "Include coraza-ftw.conf"},
                                 {"inline": "Include crs-setup.conf.example"},
                                 {"inline": "Include crs/*.conf"}
                               ]

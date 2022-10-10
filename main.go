@@ -271,7 +271,6 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 			proxywasm.LogCriticalf("failed to get response body: %v", err)
 			return types.ActionContinue
 		}
-
 		_, err = tx.ResponseBodyWriter().Write(body)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to read response body: %v", err)
