@@ -133,7 +133,9 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	// and its request properties, but they may not be true of other proxies implementing
 	// proxy-wasm.
 
-	path, err := proxywasm.GetHttpRequestHeader(":path")
+	// Note the pseudo-header :path includes the query.
+	// See https://httpwg.org/specs/rfc9113.html#rfc.section.8.3.1
+	uri, err := proxywasm.GetHttpRequestHeader(":path")
 	if err != nil {
 		proxywasm.LogCriticalf("failed to get :path: %v", err)
 		return types.ActionContinue
@@ -154,7 +156,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	ctx.httpProtocol = string(protocol)
 
-	tx.ProcessURI(path, method, ctx.httpProtocol)
+	tx.ProcessURI(uri, method, ctx.httpProtocol)
 
 	hs, err := proxywasm.GetHttpRequestHeaders()
 	if err != nil {
