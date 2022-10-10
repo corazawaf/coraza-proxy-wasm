@@ -24,7 +24,7 @@ func checkTXMetric(t *testing.T, host proxytest.HostEmulator, expectedCounter in
 
 func TestLifecycle(t *testing.T) {
 	reqHdrs := [][2]string{
-		{":path", "/hello"},
+		{":path", "/hello?name=panda"},
 		{":method", "GET"},
 		{":authority", "localhost"},
 		{"User-Agent", "gotest"},
@@ -69,7 +69,7 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lower
 		{
 			name: "url denied",
 			inlineRules: `
-SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:1,t:lowercase,deny\"
+SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello?name=panda\" \"id:101,phase:1,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionPause,
 			requestBodyAction:  types.ActionContinue,
