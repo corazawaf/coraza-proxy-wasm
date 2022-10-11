@@ -50,12 +50,18 @@ func checkGoVersion() error {
 		return fmt.Errorf("unexpected go error: %v", err)
 	}
 
-	versionRegex := regexp.MustCompile("go([0-9]+).([0-9]+).([0-9]+)")
+	// Version can/cannot include patch version e.g.
+	// - go version go1.19 darwin/arm64
+	// - go version go1.19.2 darwin/amd64
+	versionRegex := regexp.MustCompile("go([0-9]+).([0-9]+).?([0-9]+)?")
 	compare := versionRegex.FindStringSubmatch(v)
 	if len(compare) != 4 {
 		return fmt.Errorf("unexpected go semver: %q", v)
 	}
 	compare = compare[1:]
+	if compare[2] == "" {
+		compare[2] = "0"
+	}
 
 	base := strings.SplitN(minGoVersion, ".", 3)
 	if len(base) == 2 {
