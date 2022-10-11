@@ -12,6 +12,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
@@ -19,12 +22,69 @@ import (
 	"github.com/tetratelabs/wabin/wasm"
 )
 
+var minGoVersion = "1.19"
+var tinygoMinorVersion = "0.26"
 var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
 var golangCILintVer = "v1.48.0"                                    // https://github.com/golangci/golangci-lint/releases
 var gosImportsVer = "v0.3.1"                                       // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
 
 var errCommitFormatting = errors.New("files not formatted, please commit formatting changes")
 var errNoGitDir = errors.New("no .git directory found")
+
+func init() {
+	for _, check := range []func() error{
+		checkTinygoVersion,
+		checkGoVersion,
+	} {
+		if err := check(); err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+	}
+}
+
+// checkGoVersion checks the minium version of Go is supported.
+func checkGoVersion() error {
+	v, err := sh.Output("go", "version")
+	if err != nil {
+		return fmt.Errorf("unexpected go error: %v", err)
+	}
+
+	versionRegex := regexp.MustCompile("go([0-9]+).([0-9]+).([0-9]+)")
+	compare := versionRegex.FindStringSubmatch(v)
+	if len(compare) != 4 {
+		return fmt.Errorf("unexpected go semver: %q", v)
+	}
+	compare = compare[1:]
+
+	base := strings.SplitN(minGoVersion, ".", 3)
+	if len(base) == 2 {
+		base = append(base, "0")
+	}
+	for i := 0; i < 3; i++ {
+		baseN, _ := strconv.Atoi(base[i])
+		compareN, _ := strconv.Atoi(compare[i])
+		if baseN > compareN {
+			return fmt.Errorf("unexpected go version, minimum want %q, have %q", minGoVersion, strings.Join(compare, "."))
+		}
+	}
+	return nil
+}
+
+// checkTinygoVersion checks that exactly the right tinygo version is supported because
+// tinygo isn't stable yet.
+func checkTinygoVersion() error {
+	v, err := sh.Output("tinygo", "version")
+	if err != nil {
+		return fmt.Errorf("unexpected tinygo error: %v", err)
+	}
+
+	if !strings.HasPrefix(v, fmt.Sprintf("tinygo version %s", tinygoMinorVersion)) {
+		return fmt.Errorf("unexpected tinygo version, wanted %s", tinygoMinorVersion)
+	}
+
+	return nil
+}
 
 // Format formats code in this repository.
 func Format() error {
