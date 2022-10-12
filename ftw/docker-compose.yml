@@ -1,6 +1,5 @@
 services:
   httpbin:
-    # image: ealen/echo-server:latest
     image: kennethreitz/httpbin:latest
   chown:
     image: alpine:3.16
