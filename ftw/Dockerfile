@@ -7,7 +7,7 @@ WORKDIR /workspace
 
 RUN apk update && apk add curl
 
-RUN go install github.com/fzipi/go-ftw@fd953f4f9ddd0f21595be4f48f0b468dda32e801
+RUN go install github.com/coreruleset/go-ftw@v0.4.0
 
 ADD https://github.com/coreruleset/coreruleset/archive/refs/tags/v4.0.0-rc1.tar.gz /workspace/coreruleset/
 RUN cd coreruleset && tar -xf v4.0.0-rc1.tar.gz --strip-components 1
