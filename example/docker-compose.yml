@@ -11,7 +11,6 @@ services:
       - chown -R 101:101 /home/envoy/logs
     volumes:
       - logs:/home/envoy/logs:rw
-
   envoy:
     depends_on:
       - chown

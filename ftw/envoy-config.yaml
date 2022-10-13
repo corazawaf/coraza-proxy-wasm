@@ -33,11 +33,12 @@ static_resources:
                         root_id: ""
                         configuration:
                           "@type": "type.googleapis.com/google.protobuf.StringValue"
+                          # NB: inline rules order matter. Some ftw-config rules override the coraza-recommended default ones.
                           value: |
                             {
                               "rules": [
+                                {"inline": "Include coraza.conf-recommended.conf"},
                                 {"inline": "Include ftw-config.conf"},
-                                {"inline": "Include coraza.conf-recommended"},
                                 {"inline": "Include crs-setup.conf.example"},
                                 {"inline": "Include crs/*.conf"}
                               ]
