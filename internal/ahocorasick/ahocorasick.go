@@ -43,11 +43,11 @@ func (ac Matcher) Matches(value string, n int) []string {
 	matchOffs := make([]uint32, 2*n)
 	matchOffsPtr := unsafe.Pointer(&matchOffs[0])
 	numMatches := matches(ac.ptr, unsafe.Pointer(sh.Data), uint32(sh.Len), uint32(n), matchOffsPtr)
-	var matches []string
+	var matches = make([]string, numMatches)
 	for i := 0; i < int(numMatches); i++ {
 		start := matchOffs[2*i]
 		end := matchOffs[2*i+1]
-		matches = append(matches, value[start:end])
+		matches[i] = value[start:end]
 	}
 	return matches
 }
