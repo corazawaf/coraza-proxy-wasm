@@ -69,7 +69,7 @@ jobs:
         shell: bash
         run: >
           for image in $ENVOY_IMAGES; do
-              echo "Running e2e with Envoy image $image\n"
+              echo "Running e2e with Envoy image $image"
               ENVOY_IMAGE=$image go run mage.go e2e
           done
 
