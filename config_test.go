@@ -4,8 +4,10 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParsePluginConfiguration(t *testing.T) {
@@ -23,14 +25,30 @@ func TestParsePluginConfiguration(t *testing.T) {
 			config: "{}",
 		},
 		{
+			name:      "bad config",
+			config:    "abc",
+			expectErr: errors.New("invalid json: \"abc\""),
+		},
+		{
 			name: "inline",
 			config: `
 			{
-				"rules": "SecRuleEngine On"
+				"rules": ["SecRuleEngine On"]
 			}
 			`,
 			expectConfig: pluginConfiguration{
-				rules: "SecRuleEngine On",
+				rules: []string{"SecRuleEngine On"},
+			},
+		},
+		{
+			name: "inline many entries",
+			config: `
+			{ 
+				"rules": ["SecRuleEngine On", "Include crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""]
+			}
+			`,
+			expectConfig: pluginConfiguration{
+				rules: []string{"SecRuleEngine On", "Include crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
 			},
 		},
 	}
@@ -38,13 +56,8 @@ func TestParsePluginConfiguration(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			cfg, err := parsePluginConfiguration([]byte(testCase.config))
-			if want, have := fmt.Sprint(testCase.expectErr), fmt.Sprint(err); want != have {
-				t.Errorf("unexpected error, want %q, have %q", want, have)
-			}
-
-			if want, have := testCase.expectConfig.rules, cfg.rules; want != have {
-				t.Errorf("unexpected rules, want %q, have %q", want, have)
-			}
+			assert.Equal(t, testCase.expectErr, err)
+			assert.ElementsMatch(t, testCase.expectConfig.rules, cfg.rules)
 		})
 	}
 }

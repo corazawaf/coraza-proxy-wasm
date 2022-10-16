@@ -8,6 +8,7 @@ import (
 	"embed"
 	"io/fs"
 	"strconv"
+	"strings"
 
 	"github.com/corazawaf/coraza/v3"
 	ctypes "github.com/corazawaf/coraza/v3/types"
@@ -73,7 +74,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 			WithInMemoryLimit(1024 * 1024 * 1024)).
 		WithRootFS(root)
 
-	waf, err := coraza.NewWAF(conf.WithDirectives(config.rules))
+	waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(config.rules, "\n")))
 	if err != nil {
 		proxywasm.LogCriticalf("failed to parse rules: %v", err)
 		return types.OnPluginStartStatusFailed

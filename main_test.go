@@ -285,11 +285,7 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 			t.Run(tt.name, func(t *testing.T) {
 				conf := `{}`
 				if inlineRules := strings.TrimSpace(tt.inlineRules); inlineRules != "" {
-					conf = fmt.Sprintf(`
-					{ 
-						"rules": "%s"
-					}	
-				`, inlineRules)
+					conf = fmt.Sprintf(`{"rules": ["%s"]}`, inlineRules)
 				}
 				opt := proxytest.
 					NewEmulatorOption().
@@ -581,7 +577,7 @@ func TestLogError(t *testing.T) {
 			t.Run(fmt.Sprintf("severity %d", tt.severity), func(t *testing.T) {
 				conf := fmt.Sprintf(`
 {
-	"rules" : "SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:%d,msg:'%%{MATCHED_VAR}',pass,t:none\""
+	"rules" : ["SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:%d,msg:'%%{MATCHED_VAR}',pass,t:none\""]
 }
 `, tt.severity)
 
@@ -681,7 +677,7 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:4,t:lower
 
 			t.Run(tt.name, func(t *testing.T) {
 				conf := fmt.Sprintf(`
-					{ "rules": "%s" }
+					{ "rules": ["%s"] }
 				`, strings.TrimSpace(tt.rules))
 				opt := proxytest.
 					NewEmulatorOption().
