@@ -1,0 +1,107 @@
+stats_config:
+  stats_tags:
+    # Envoy extracts the first matching group as a value.
+    # See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#config-metrics-v3-statsconfig.
+    - tag_name: phase
+      regex: "(_phase=([a-z_]+))"
+    - tag_name: rule_id
+      regex: "(_ruleid=([0-9]+))"
+
+static_resources:
+  listeners:
+    - address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 8080
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                codec_type: auto
+                route_config:
+                  virtual_hosts:
+                    - name: local_route
+                      domains:
+                        - "*"
+                      routes:
+                        - match:
+                            prefix: "/"
+                          route:
+                            cluster: local_server
+                http_filters:
+                  - name: envoy.filters.http.wasm
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+                      config:
+                        name: "coraza-filter"
+                        root_id: ""
+                        configuration:
+                          "@type": "type.googleapis.com/google.protobuf.StringValue"
+                          value: |
+                            {
+                              "rules": [
+                                {"inline": "Include coraza-demo.conf"},
+                                {"inline": "Include crs-setup-demo.conf"},
+                                {"inline": "SecDebugLogLevel 3"},
+                                {"inline": "Include crs/*.conf"},
+                                {"inline": "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""}
+                              ]
+                            }
+                        vm_config:
+                          runtime: "envoy.wasm.runtime.v8"
+                          vm_id: "my_vm_id"
+                          code:
+                            local:
+                              filename: "build/main.wasm"
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+  clusters:
+    - name: local_server
+      connect_timeout: 6000s
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: local_server
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: httpbin
+                      port_value: 80
+    - name: "statsd-exporter"
+      connect_timeout: "0.25s"
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      http2_protocol_options: {}
+      load_assignment:
+        cluster_name: statsd-exporter
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: statsd_exporter
+                      port_value: 9125
+
+admin:
+  access_log_path: "/dev/null"
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 8082
+
+stats_sinks:
+  - name: "envoy.statsd"
+    typed_config:
+      "@type": type.googleapis.com/envoy.config.metrics.v3.StatsdSink
+      prefix: "example-envoy"
+      address:
+        socket_address:
+          protocol: TCP
+          address: 127.0.0.1
+          port_value: 9125

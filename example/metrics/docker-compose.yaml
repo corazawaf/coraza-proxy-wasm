@@ -1,0 +1,53 @@
+services:
+  httpbin:
+    image: kennethreitz/httpbin:latest
+    ports:
+      - 8081:80
+
+  envoy:
+    depends_on:
+      - httpbin
+      - statsd_exporter
+    image: envoyproxy/envoy:v1.23-latest
+    command:
+      - -c
+      - /conf/envoy-config.yaml
+      - --log-level
+      - info
+      - --component-log-level
+      - wasm:debug
+      - --log-format [%Y-%m-%d %T.%f][%t][%l][%n] [%g:%#] %v
+    volumes:
+      - ../../build:/build
+      - .:/conf
+    ports:
+      - 8080:8080
+      - 8082:8082
+
+  statsd_exporter:
+    image: prom/statsd-exporter:latest
+    ports:
+      - "9125:9125"
+      - "9102:9102"
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus/config.yaml:/etc/prometheus.yaml
+    ports:
+      - "9090:9090"
+    command: "--config.file=/etc/prometheus.yaml"
+    depends_on:
+      - statsd_exporter
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - ./grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/dashboard.yaml
+      - ./grafana/dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
