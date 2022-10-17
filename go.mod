@@ -3,7 +3,7 @@ module github.com/corazawaf/coraza-proxy-wasm
 go 1.19
 
 require (
-	github.com/corazawaf/coraza/v3 v3.0.0-20221010131855-3aa6224e345c
+	github.com/corazawaf/coraza/v3 v3.0.0-20221016114523-6405c045e83b
 	github.com/magefile/mage v1.14.0
 	github.com/stretchr/testify v1.8.0
 	github.com/tetratelabs/proxy-wasm-go-sdk v0.19.1-0.20220922045757-132ee0a06ac2
@@ -20,7 +20,7 @@ require (
 	github.com/tetratelabs/wazero v1.0.0-beta.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
-	golang.org/x/net v0.0.0-20221004154528-8021a29435af // indirect
+	golang.org/x/net v0.0.0-20221014081412-f15817d10f9b // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

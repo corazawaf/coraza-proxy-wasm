@@ -4,7 +4,6 @@
 package main
 
 import (
-	"context"
 	"embed"
 	"io/fs"
 	"strconv"
@@ -105,7 +104,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 	return &httpContext{
 		contextID: contextID,
-		tx:        ctx.waf.NewTransaction(context.Background()),
+		tx:        ctx.waf.NewTransaction(),
 		// TODO(jcchavezs): figure out how/when enable/disable metrics
 		metrics: ctx.metrics,
 	}
