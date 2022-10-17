@@ -73,10 +73,9 @@ jobs:
               ENVOY_IMAGE=$image go run mage.go e2e
           done
 
-      # Currently excluded, go-ftw fails to find the destination after a while. Locally works fine.
-      # - name: Run regression tests (ftw)
-      #   shell: bash
-      #   run: go run mage.go ftw
+      - name: Run regression tests (ftw)
+        shell: bash
+        run: go run mage.go ftw
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
