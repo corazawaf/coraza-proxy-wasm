@@ -168,11 +168,21 @@ func Build() error {
 		timingBuildTag = "-tags='timing proxywasm_timing'"
 	}
 
+	// ~100MB initial heap
+	initialPages := 2100
+	if ipEnv := os.Getenv("INITIAL_PAGES"); ipEnv != "" {
+		if ip, err := strconv.Atoi(ipEnv); err != nil {
+			return err
+		} else {
+			initialPages = ip
+		}
+	}
+
 	if err := sh.RunV("tinygo", "build", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", timingBuildTag); err != nil {
 		return err
 	}
 
-	return stubUnusedWasmImports(filepath.Join("build", "mainraw.wasm"), filepath.Join("build", "main.wasm"))
+	return patchWasm(filepath.Join("build", "mainraw.wasm"), filepath.Join("build", "main.wasm"), initialPages)
 }
 
 // UpdateLibs updates the C++ filter dependencies.
@@ -227,7 +237,7 @@ func TeardownExample() error {
 
 var Default = Build
 
-func stubUnusedWasmImports(inPath, outPath string) error {
+func patchWasm(inPath, outPath string, initialPages int) error {
 	raw, err := os.ReadFile(inPath)
 	if err != nil {
 		return err
@@ -236,6 +246,8 @@ func stubUnusedWasmImports(inPath, outPath string) error {
 	if err != nil {
 		return err
 	}
+
+	mod.MemorySection.Min = uint32(initialPages)
 
 	for _, imp := range mod.ImportSection {
 		switch {
