@@ -42,11 +42,11 @@ static_resources:
                           value: |
                             {
                               "rules": [
-                                {"inline": "Include coraza-demo.conf"},
-                                {"inline": "Include crs-setup-demo.conf"},
-                                {"inline": "SecDebugLogLevel 3"},
-                                {"inline": "Include crs/*.conf"},
-                                {"inline": "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""}
+                                "Include coraza-demo.conf",
+                                "Include crs-setup-demo.conf",
+                                "SecDebugLogLevel 3",
+                                "Include crs/*.conf",
+                                "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
                               ]
                             }
                         vm_config:
@@ -62,8 +62,8 @@ static_resources:
   clusters:
     - name: local_server
       connect_timeout: 6000s
-      type: strict_dns
-      lb_policy: round_robin
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
       load_assignment:
         cluster_name: local_server
         endpoints:

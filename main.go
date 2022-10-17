@@ -7,6 +7,7 @@ import (
 	"embed"
 	"io/fs"
 	"strconv"
+	"strings"
 
 	"github.com/corazawaf/coraza/v3"
 	ctypes "github.com/corazawaf/coraza/v3/types"
@@ -67,27 +68,12 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		WithDebugLogger(&debugLogger{}).
 		WithRequestBodyAccess(coraza.NewRequestBodyConfig().
 			WithLimit(1024 * 1024 * 1024).
-			// TinyGo compilation will prevent buffering request body to files anyways, so this is
-			// effectively no-op but make clear our expectations.
+			// TinyGo compilation will prevent buffering request body to files anyways.
 			// TODO(anuraaga): Make this configurable in plugin configuration.
 			WithInMemoryLimit(1024 * 1024 * 1024)).
 		WithRootFS(root)
 
-	crs, err := fs.Sub(crs, "custom_rules")
-	if err != nil {
-		proxywasm.LogCriticalf("failed to access CRS filesystem: %v", err)
-		return types.OnPluginStartStatusFailed
-	}
-
-	rules, err := resolveIncludes(config.rules, crs)
-	if err != nil {
-		proxywasm.LogCriticalf("failed to load embedded rules: %v", err)
-		return types.OnPluginStartStatusFailed
-	}
-
-	conf = conf.WithDirectives(rules)
-
-	waf, err := coraza.NewWAF(conf)
+	waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(config.rules, "\n")))
 	if err != nil {
 		proxywasm.LogCriticalf("failed to parse rules: %v", err)
 		return types.OnPluginStartStatusFailed
