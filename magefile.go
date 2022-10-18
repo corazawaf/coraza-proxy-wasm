@@ -85,6 +85,11 @@ func checkTinygoVersion() error {
 		return fmt.Errorf("unexpected tinygo error: %v", err)
 	}
 
+	// Assume a dev build is valid.
+	if strings.Contains(v, "-dev") {
+		return nil
+	}
+
 	if !strings.HasPrefix(v, fmt.Sprintf("tinygo version %s", tinygoMinorVersion)) {
 		return fmt.Errorf("unexpected tinygo version, wanted %s", tinygoMinorVersion)
 	}
