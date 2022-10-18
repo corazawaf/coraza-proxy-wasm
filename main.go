@@ -307,6 +307,7 @@ func (ctx *httpContext) OnHttpStreamDone() {
 	ctx.tx.ProcessLogging()
 	_ = ctx.tx.Close()
 	proxywasm.LogInfof("%d finished", ctx.contextID)
+	logMemStats()
 }
 
 func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.Interruption) types.Action {
