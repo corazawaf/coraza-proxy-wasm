@@ -81,3 +81,4 @@ jobs:
           title: "chore: upgrades to github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }}"
           base: main
           delete-branch: true
+          push-to-fork: true
