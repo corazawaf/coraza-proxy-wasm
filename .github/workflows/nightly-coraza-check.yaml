@@ -79,3 +79,5 @@ jobs:
           branch: upgrades_coraza_${{ steps.coraza-latest-commit.outputs.value }}
           token: ${{ secrets.GITHUB_TOKEN }}
           title: "chore: upgrades to github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }}"
+          base: main
+          delete-branch: true
