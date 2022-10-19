@@ -168,9 +168,9 @@ func Build() error {
 		return err
 	}
 
-	perfDebugBuildTag := ""
-	if os.Getenv("PERFDEBUG") == "true" {
-		perfDebugBuildTag = "-tags='perfdebug proxywasm_timing'"
+	timingBuildTag := ""
+	if os.Getenv("TIMING") == "true" {
+		timingBuildTag = "-tags='timing proxywasm_timing'"
 	}
 
 	// ~100MB initial heap
@@ -183,7 +183,7 @@ func Build() error {
 		}
 	}
 
-	if err := sh.RunV("tinygo", "build", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", perfDebugBuildTag); err != nil {
+	if err := sh.RunV("tinygo", "build", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", timingBuildTag); err != nil {
 		return err
 	}
 
