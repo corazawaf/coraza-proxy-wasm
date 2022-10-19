@@ -1,7 +1,7 @@
 // Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !perfdebug
+//go:build !timing
 
 package main
 
@@ -16,9 +16,5 @@ func currentTime() time.Time {
 }
 
 func logTime(string, time.Time) {
-	// no-op without build tag
-}
-
-func logMemStats() {
 	// no-op without build tag
 }
