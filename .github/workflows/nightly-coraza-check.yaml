@@ -77,7 +77,7 @@ jobs:
         with:
           commit-message: "chore: upgrades to github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }}"
           branch: upgrades_coraza_${{ steps.coraza-latest-commit.outputs.value }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.NIGHTLY_UPGRADE_TOKEN }}
           title: "chore: upgrades to github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }}"
           base: main
           delete-branch: true
