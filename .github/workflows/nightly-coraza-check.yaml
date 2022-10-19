@@ -65,7 +65,7 @@ jobs:
 
       - if: ${{ steps.git-changes.outputs.value != '' }}
         name: Run unit tests
-        run: go run mage.go coverage
+        run: go run mage.go test
 
       - if: ${{ steps.git-changes.outputs.value != '' }}
         name: Run e2e tests
@@ -77,5 +77,5 @@ jobs:
         with:
           commit-message: "chore: upgrades to github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }}"
           branch: upgrades_coraza_${{ steps.coraza-latest-commit.outputs.value }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           title: "chore: upgrades to github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }}"
