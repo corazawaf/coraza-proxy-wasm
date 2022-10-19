@@ -14,6 +14,8 @@ type debugLogger struct {
 	level loggers.LogLevel
 }
 
+var _ loggers.DebugLogger = (*debugLogger)(nil)
+
 func (l *debugLogger) Info(message string, args ...interface{}) {
 	if l.level >= loggers.LogLevelInfo {
 		proxywasm.LogInfof(message, args...)
@@ -48,6 +50,6 @@ func (l *debugLogger) SetLevel(level loggers.LogLevel) {
 	l.level = level
 }
 
-func (l *debugLogger) SetOutput(w io.Writer) {
+func (l *debugLogger) SetOutput(w io.WriteCloser) {
 	proxywasm.LogWarn("ignoring SecDebugLog directive, debug logs are always routed to proxy logs")
 }
