@@ -55,16 +55,24 @@ jobs:
       - name: Fetch last coraza version
         run: go get -u github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }} && go mod tidy
 
-      - name: Build WASM filter
+      - name: Works out github changes
+        id: git-changes
+        run: echo "::set-output name=value::echo "$(git status -s)"
+
+      - if: ${{ steps.git-changes.outputs.value != "" }}
+        name: Build WASM filter
         run: go run mage.go build
 
-      - name: Run unit tests
+      - if: ${{ steps.git-changes.outputs.value != "" }}
+        name: Run unit tests
         run: go run mage.go coverage
 
-      - name: Run e2e tests
+      - if: ${{ steps.git-changes.outputs.value != "" }}
+        name: Run e2e tests
         run: go run mage.go e2e
 
-      - name: Create Pull Request
+      - if: ${{ steps.git-changes.outputs.value != "" }}
+        name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
         with:
           commit-message: "chore: upgrades to github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }}"
