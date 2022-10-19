@@ -58,5 +58,15 @@ services:
       - FTW_CLOUDMODE
     volumes:
       - logs:/home/envoy/logs:ro
+  ftw-memstats:
+    depends_on:
+      - ftw
+    image: debian:11-slim
+    entrypoint: bash
+    command:
+      - -c
+      - "tail -c +0 -f /home/envoy/logs/envoy.log | grep 'Sys: '"
+    volumes:
+      - logs:/home/envoy/logs:ro
 volumes:
   logs:

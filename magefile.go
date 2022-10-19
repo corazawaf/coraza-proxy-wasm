@@ -168,9 +168,17 @@ func Build() error {
 		return err
 	}
 
-	timingBuildTag := ""
+	var buildTags []string
 	if os.Getenv("TIMING") == "true" {
-		timingBuildTag = "-tags='timing proxywasm_timing'"
+		buildTags = append(buildTags, "timing", "proxywasm_timing")
+	}
+	if os.Getenv("MEMSTATS") == "true" {
+		buildTags = append(buildTags, "memstats")
+	}
+
+	buildTagArg := ""
+	if len(buildTags) > 0 {
+		buildTagArg = fmt.Sprintf("-tags='%s'", strings.Join(buildTags, " "))
 	}
 
 	// ~100MB initial heap
@@ -183,7 +191,7 @@ func Build() error {
 		}
 	}
 
-	if err := sh.RunV("tinygo", "build", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", timingBuildTag); err != nil {
+	if err := sh.RunV("tinygo", "build", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", buildTagArg); err != nil {
 		return err
 	}
 
@@ -227,7 +235,11 @@ func Ftw() error {
 	if os.Getenv("ENVOY_NOWASM") == "true" {
 		env["ENVOY_CONFIG"] = "/conf/envoy-config-nowasm.yaml"
 	}
-	return sh.RunWithV(env, "docker-compose", "--file", "ftw/docker-compose.yml", "run", "--rm", "ftw")
+	task := "ftw"
+	if os.Getenv("MEMSTATS") == "true" {
+		task = "ftw-memstats"
+	}
+	return sh.RunWithV(env, "docker-compose", "--file", "ftw/docker-compose.yml", "run", "--rm", task)
 }
 
 // RunExample spins up the test environment, access at http://localhost:8080. Requires docker-compose.
