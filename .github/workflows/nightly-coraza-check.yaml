@@ -63,3 +63,11 @@ jobs:
 
       - name: Run e2e tests
         run: go run mage.go e2e
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: "chore: upgrades to github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }}"
+          branch: upgrades_coraza_${{ steps.coraza-latest-commit.outputs.value }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          title: "chore: upgrades to github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }}"
