@@ -13,25 +13,23 @@ testoverride:
     '941110-9': 'Referer header is sanitized by Envoy and removed from the request'
     '920270-5': 'Referer header is sanitized by Envoy and removed from the request'
     '941101-1': 'Referer header is sanitized by Envoy and removed from the request'
+    '920180-4': 'False positive. go-ftw sends POST / HTTP/2.0, but Wasm reads HTTP/1.0. It does not happen with curl --http2-prior-knowledge'
+    '920210-2': 'Connection header is stripped out by Envoy'
+    '920210-3': 'Connection header is stripped out by Envoy'
+    '920210-4': 'Connection header is stripped out by Envoy'
+    '920210-6': 'Connection header is stripped out by Envoy'
+    '920210-7': 'Connection header is stripped out by Envoy'
+    '920274-2': 'PL4 - False positive. Envoy Populates :path header, therefore invalid character are detected. '
+    '920274-3': 'PL4 - False positive. Rule 920274 always triggered'
+    '920274-5': 'PL4 - False positive. Rule 920274 always triggered'
 
     # Rules somewhat working
     '920270-4': 'Log contains 920270. Test has log_contains disabled.'
     '920340-2': 'Log contains 920340, but tests expects expect_error: true'
 
     # Rules not working
-    '920400-1': 'Httpbin fails this test. ealen/echo-server fails 920272-5'
-    '920180-4': 'Rule 920180 not detected.'
-    '920210-2': 'Rule 920210 not detected.'
-    '920210-3': 'Rule 920210 not detected.'
-    '920210-4': 'Rule 920210 not detected.'
-    '920210-6': 'Rule 920210 not detected.'
-    '920210-7': 'Rule 920210 not detected.'
-    '920274-2': 'False positive. Rule 920274 always triggered'
-    '920274-3': 'False positive. Rule 920274 always triggered'
-    '920274-5': 'False positive. Rule 920274 always triggered'
-    '920400-1': 'Rule 920400 not detected.'
+    #'920400-1': 'Httpbin fails this test. ealen/echo-server fails 920272-5. Multipart.'
     '949110-3': 'Rule 949110 not detected. Related to 920100'
-
 
     # Coraza issues
     '920171-2': 'Rule 920171 not detected. GET/HEAD with body. Coraza side'
@@ -349,9 +347,9 @@ testoverride:
     '944300-326': 'Rule 944300 partially detected. Requires XML'
 
     # Response Body
-    '953120-0': 'WIP Response body'
-    '953120-2': 'WIP Response body'
-    '953120-4': 'WIP Response body'
+    '953120-0': 'Related to Response body rules log'
+    '953120-2': 'Related to Response body rules log'
+    '953120-4': 'Related to Response body rules log'
     '951110-0': 'RESPONSE_BODY Rule. Not detected'
     '951120-0': 'RESPONSE_BODY Rule. Not detected'
     '951130-0': 'RESPONSE_BODY Rule. Not detected'
