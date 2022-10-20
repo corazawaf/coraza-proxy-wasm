@@ -168,7 +168,7 @@ func Build() error {
 		return err
 	}
 
-	var buildTags []string
+	buildTags := []string{"custommalloc"}
 	if os.Getenv("TIMING") == "true" {
 		buildTags = append(buildTags, "timing", "proxywasm_timing")
 	}
@@ -176,10 +176,7 @@ func Build() error {
 		buildTags = append(buildTags, "memstats")
 	}
 
-	buildTagArg := ""
-	if len(buildTags) > 0 {
-		buildTagArg = fmt.Sprintf("-tags='%s'", strings.Join(buildTags, " "))
-	}
+	buildTagArg := fmt.Sprintf("-tags='%s'", strings.Join(buildTags, " "))
 
 	// ~100MB initial heap
 	initialPages := 2100

@@ -5,5 +5,5 @@
 
 package main
 
-// #cgo LDFLAGS: lib/libinjection.a lib/libre2.a lib/libcre2.a lib/libc++.a lib/libc++abi.a lib/libclang_rt.builtins-wasm32.a lib/libaho_corasick.a
+// #cgo LDFLAGS: lib/libinjection.a lib/libre2.a lib/libcre2.a lib/libc++.a lib/libc++abi.a lib/libclang_rt.builtins-wasm32.a lib/libaho_corasick.a lib/libmimalloc.a
 import "C"
