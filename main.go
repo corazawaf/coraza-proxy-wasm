@@ -14,7 +14,6 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 
-	_ "github.com/corazawaf/coraza-proxy-wasm/internal/calloc"
 	"github.com/corazawaf/coraza-proxy-wasm/internal/operators"
 )
 
