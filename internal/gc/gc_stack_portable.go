@@ -31,3 +31,18 @@ func markStack() {
 		stackObject = stackObject.parent
 	}
 }
+
+// trackPointer is a stub function call inserted by the compiler during IR
+// construction. Calls to it are later replaced with regular stack bookkeeping
+// code.
+//
+//go:linkname trackPointer runtime.trackPointer
+func trackPointer(ptr unsafe.Pointer)
+
+// swapStackChain swaps the stack chain.
+// This is called from internal/task when switching goroutines.
+//
+//go:linkname swapStackChain runtime.swapStackChain
+func swapStackChain(dst **stackChainObject) {
+	*dst, stackChainStart = stackChainStart, *dst
+}

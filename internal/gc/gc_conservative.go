@@ -196,6 +196,8 @@ func (b gcBlock) unmark() {
 // No memory may be allocated before this is called. That means the runtime and
 // any packages the runtime depends upon may not allocate memory during package
 // initialization.
+//
+//go:linkname initHeap runtime.initHeap
 func init() {
 	heapStart = uintptr(libc_malloc(heapSize))
 	heapEnd = heapStart + heapSize
@@ -204,37 +206,6 @@ func init() {
 	// Set all block states to 'free'.
 	metadataSize := heapEnd - uintptr(metadataStart)
 	memzero(unsafe.Pointer(metadataStart), metadataSize)
-}
-
-// setHeapEnd is called to expand the heap. The heap can only grow, not shrink.
-// Also, the heap should grow substantially each time otherwise growing the heap
-// will be expensive.
-func setHeapEnd(newHeapEnd uintptr) {
-	if gcAsserts && newHeapEnd <= heapEnd {
-		panic("gc: setHeapEnd didn't grow the heap")
-	}
-
-	// Save some old variables we need later.
-	oldMetadataStart := metadataStart
-	oldMetadataSize := heapEnd - uintptr(metadataStart)
-
-	// Increase the heap. After setting the new heapEnd, calculateHeapAddresses
-	// will update metadataStart and the memcpy will copy the metadata to the
-	// new location.
-	// The new metadata will be bigger than the old metadata, but a simple
-	// memcpy is fine as it only copies the old metadata and the new memory will
-	// have been zero initialized.
-	heapEnd = newHeapEnd
-	calculateHeapAddresses()
-	memcpy(metadataStart, oldMetadataStart, oldMetadataSize)
-
-	// Note: the memcpy above assumes the heap grows enough so that the new
-	// metadata does not overlap the old metadata. If that isn't true, memmove
-	// should be used to avoid corruption.
-	// This assert checks whether that's true.
-	if gcAsserts && uintptr(metadataStart) < uintptr(oldMetadataStart)+oldMetadataSize {
-		panic("gc: heap did not grow enough at once")
-	}
 }
 
 // calculateHeapAddresses initializes variables such as metadataStart and
@@ -363,32 +334,6 @@ func alloc(size uintptr, layout unsafe.Pointer) unsafe.Pointer {
 			return pointer
 		}
 	}
-}
-
-func realloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
-	if ptr == nil {
-		return alloc(size, nil)
-	}
-
-	ptrAddress := uintptr(ptr)
-	endOfTailAddress := blockFromAddr(ptrAddress).findNext().address()
-
-	// this might be a few bytes longer than the original size of
-	// ptr, because we align to full blocks of size bytesPerBlock
-	oldSize := endOfTailAddress - ptrAddress
-	if size <= oldSize {
-		return ptr
-	}
-
-	newAlloc := alloc(size, nil)
-	memcpy(newAlloc, ptr, oldSize)
-	free(ptr)
-
-	return newAlloc
-}
-
-func free(ptr unsafe.Pointer) {
-	// TODO: free blocks on request, when the compiler knows they're unused.
 }
 
 // GC performs a garbage collection cycle.
