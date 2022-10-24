@@ -136,11 +136,9 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		// TODO(anuraaga): HTTP protocol is commonly required in WAF rules, we should probably
 		// fail fast here, but proxytest does not support properties yet.
 		protocol = []byte("HTTP/2.0")
-		proxywasm.LogCriticalf("Protocol error. Forced to HTTP/2.0")
 	}
 
 	ctx.httpProtocol = string(protocol)
-	proxywasm.LogCriticalf("Dumping protocol: %s", ctx.httpProtocol)
 
 	tx.ProcessURI(uri, method, ctx.httpProtocol)
 
@@ -151,7 +149,6 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	}
 
 	for _, h := range hs {
-		proxywasm.LogCriticalf("Dumping Request header: %s|%s", h[0], h[1])
 		tx.AddRequestHeader(h[0], h[1])
 	}
 
