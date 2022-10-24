@@ -342,7 +342,11 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 							body = respBody[i : i+5]
 						}
 						action := host.CallOnResponseBody(id, body, eos)
-						require.Equal(t, types.ActionContinue, action)
+						if eos {
+							require.Equal(t, types.ActionContinue, action)
+						} else {
+							require.Equal(t, types.ActionPause, action)
+						}
 					}
 				}
 

@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bytes"
 	"embed"
 	"io/fs"
 	"strconv"
@@ -105,6 +106,7 @@ type httpContext struct {
 	httpProtocol          string
 	processedRequestBody  bool
 	processedResponseBody bool
+	responseBodySize      int
 	metrics               *wafMetrics
 }
 
@@ -253,6 +255,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	tx := ctx.tx
 
 	if bodySize > 0 {
+		ctx.responseBodySize += bodySize
 		body, err := proxywasm.GetHttpResponseBody(0, bodySize)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to get response body: %v", err)
@@ -267,9 +270,8 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 
 	// Response  body has to be buffered in order to check that it is fully legit
 	if !endOfStream {
-		// TODO(M4tteoP): Address response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
-		// return types.ActionPause
-		return types.ActionContinue
+		// TODO(M4tteoP): Update response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
+		return types.ActionPause
 	}
 
 	// We have already sent response headers, an unauthorized response can not be sent anymore,
@@ -282,7 +284,9 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		return types.ActionContinue
 	}
 	if interruption != nil {
-		// TODO(M4tteoP): Address response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
+		// TODO(M4tteoP): Update response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
+		// Currently returns
+		err = proxywasm.ReplaceHttpResponseBody(bytes.Repeat([]byte("\x00"), ctx.responseBodySize))
 		return types.ActionContinue
 	}
 
