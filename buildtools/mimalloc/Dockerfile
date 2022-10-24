@@ -1,3 +1,6 @@
+# Copyright The OWASP Coraza contributors
+# SPDX-License-Identifier: Apache-2.0
+
 FROM ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-wasi-sdk:main
 
 RUN apt-get install -y cmake patch
