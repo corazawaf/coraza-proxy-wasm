@@ -505,7 +505,7 @@ func TestEmptyBody(t *testing.T) {
 		require.Equal(t, types.ActionContinue, action)
 
 		action = host.CallOnResponseBody(id, []byte{}, false)
-		require.Equal(t, types.ActionContinue, action)
+		require.Equal(t, types.ActionPause, action)
 		action = host.CallOnResponseBody(id, []byte{}, true)
 		require.Equal(t, types.ActionContinue, action)
 
