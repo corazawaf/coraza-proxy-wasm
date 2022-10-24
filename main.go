@@ -268,7 +268,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		}
 	}
 
-	// Response  body has to be buffered in order to check that it is fully legit
+	// Response body has to be buffered in order to check that it is fully legit
 	if !endOfStream {
 		// TODO(M4tteoP): Update response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
 		return types.ActionPause
@@ -285,7 +285,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	}
 	if interruption != nil {
 		// TODO(M4tteoP): Update response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
-		// Currently returns
+		// Currently returns a body filled with null bytes that replaces the sensitive data potentially leaked
 		err = proxywasm.ReplaceHttpResponseBody(bytes.Repeat([]byte("\x00"), ctx.responseBodySize))
 		return types.ActionContinue
 	}
