@@ -206,7 +206,7 @@ tinygo build -gc=none -opt=2 -o %s -scheduler=none -target=wasi %s`, filepath.Jo
 
 // UpdateLibs updates the C++ filter dependencies.
 func UpdateLibs() error {
-	libs := []string{"aho-corasick", "libinjection", "re2"}
+	libs := []string{"aho-corasick", "libinjection", "mimalloc", "re2"}
 	for _, lib := range libs {
 		if err := sh.RunV("docker", "build", "-t", "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-"+lib, filepath.Join("buildtools", lib)); err != nil {
 			return err
