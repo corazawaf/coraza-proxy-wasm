@@ -287,6 +287,10 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		// TODO(M4tteoP): Update response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
 		// Currently returns a body filled with null bytes that replaces the sensitive data potentially leaked
 		err = proxywasm.ReplaceHttpResponseBody(bytes.Repeat([]byte("\x00"), ctx.responseBodySize))
+		if err != nil {
+			proxywasm.LogErrorf("failed to replace response body: %v", err)
+			return types.ActionContinue
+		}
 		return types.ActionContinue
 	}
 
