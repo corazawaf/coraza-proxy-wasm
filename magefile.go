@@ -193,7 +193,6 @@ func Build() error {
 		return err
 	}
 
-	//if err := sh.RunV("tinygo", "build", "-gc=none", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", buildTagArg); err != nil {
 	script := fmt.Sprintf(`
 cd /src && \
 tinygo build -gc=none -opt=2 -o %s -scheduler=none -target=wasi %s`, filepath.Join("build", "mainraw.wasm"), buildTagArg)
