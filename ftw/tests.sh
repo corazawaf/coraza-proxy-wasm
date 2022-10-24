@@ -24,6 +24,7 @@ while [[ "$status_code" -eq "000" ]]; do
   let "max_retries--"
   if [[ "$max_retries" -eq 0 ]] ; then
     echo "[Fail] Timeout waiting for response from $health_url, make sure the server is running."
+    echo "Envoy Logs:" && cat /home/envoy/logs/envoy.log
     exit 1
   fi
 done
