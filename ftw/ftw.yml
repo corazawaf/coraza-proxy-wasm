@@ -14,16 +14,16 @@ testoverride:
     '941110-9': 'Referer header is sanitized by Envoy and removed from the request'
     '920270-5': 'Referer header is sanitized by Envoy and removed from the request'
     '941101-1': 'Referer header is sanitized by Envoy and removed from the request'
-    '920180-4': 'False positive. go-ftw sends POST / HTTP/2.0, but Wasm reads HTTP/1.0. It does not happen with curl --http2-prior-knowledge'
     '920210-2': 'Connection header is stripped out by Envoy'
     '920210-3': 'Connection header is stripped out by Envoy'
     '920210-4': 'Connection header is stripped out by Envoy'
     '920210-6': 'Connection header is stripped out by Envoy'
     '920210-7': 'Connection header is stripped out by Envoy'
-    '920274-2': 'PL4 - False positive. Envoy Populates :path header, therefore invalid character are detected. '
-    '920274-3': 'PL4 - False positive. Rule 920274 always triggered'
-    '920274-5': 'PL4 - False positive. Rule 920274 always triggered'
-
+    '920274-2': 'PL4 - False positive. Envoy Populates :path header, therefore invalid character are detected'
+    '920274-3': 'PL4 - False positive. Envoy Populates :path header, therefore invalid character are detected'
+    '920274-5': 'PL4 - False positive. Envoy Populates :path header, therefore invalid character are detected'
+    '920180-4': 'False positive. go-ftw sends POST / HTTP/2.0, but Wasm reads HTTP/1.0. It does not happen with curl --http2-prior-knowledge'
+    
     # Rules somewhat working
     '920270-4': 'Log contains 920270. Test has log_contains disabled.'
     '920340-2': 'Log contains 920340, but tests expects expect_error: true'
