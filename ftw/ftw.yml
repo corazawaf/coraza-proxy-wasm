@@ -9,6 +9,7 @@ testoverride:
     '920100-4': 'Accepted by Envoy. Valid request. It is only disabled by default from Apache and Nginx'
     '920100-10': 'Invalid HTTP method. Rejected by Envoy with Error 400'
     '920100-14': 'Invalid HTTP method. Rejected by Envoy with Error 400'
+    '949110-3': 'Related to 920100. Invalid HTTP method. Rejected by Envoy with Error 400'
     '941110-4': 'Referer header is sanitized by Envoy and removed from the request'
     '941110-9': 'Referer header is sanitized by Envoy and removed from the request'
     '920270-5': 'Referer header is sanitized by Envoy and removed from the request'
@@ -26,12 +27,9 @@ testoverride:
     # Rules somewhat working
     '920270-4': 'Log contains 920270. Test has log_contains disabled.'
     '920340-2': 'Log contains 920340, but tests expects expect_error: true'
+    '920400-1': 'Log contains 920400, but tests expects expect_error: true'
 
-    # Rules not working
-    #'920400-1': 'Httpbin fails this test. ealen/echo-server fails 920272-5. Multipart.'
-    '949110-3': 'Rule 949110 not detected. Related to 920100'
-
-    # Coraza issues
+    # Coraza related issues
     '920171-2': 'Rule 920171 not detected. GET/HEAD with body. Coraza side'
     '920171-3': 'Rule 920171 not detected. GET/HEAD with body. Coraza side'
     '920280-1': 'Rule 920280 not detected. Host not present. Coraza side'
@@ -63,7 +61,7 @@ testoverride:
     '942440-18': 'False Positive. Rx. Coraza side'
     '944200-1': 'Rule 944200 not detected. Coraza side'
 
-    # XML
+    # XML related issues 
     '944100-13': 'Rule 944100 partially detected. Requires XML'
     '944100-14': 'Rule 944100 partially detected. Requires XML'
     '944100-17': 'Rule 944100 partially detected. Requires XML'
@@ -346,7 +344,7 @@ testoverride:
     '944300-325': 'Rule 944300 partially detected. Requires XML'
     '944300-326': 'Rule 944300 partially detected. Requires XML'
 
-    # Response Body
+    # Response Body Related Issues
     '953120-0': 'Related to Response body rules log'
     '953120-2': 'Related to Response body rules log'
     '953120-4': 'Related to Response body rules log'
