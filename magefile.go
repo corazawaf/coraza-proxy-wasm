@@ -229,7 +229,7 @@ func E2e() error {
 
 // Ftw runs ftw tests with a built plugin and Envoy. Requires docker-compose.
 func Ftw() error {
-	if err := sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "build"); err != nil {
+	if err := sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "build", "--pull"); err != nil {
 		return err
 	}
 	defer func() {
