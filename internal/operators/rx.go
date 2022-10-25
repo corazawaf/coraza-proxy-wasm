@@ -22,7 +22,7 @@ var _ rules.Operator = (*rx)(nil)
 
 func (o *rx) Init(options rules.OperatorOptions) error {
 	data := options.Arguments
-	// fmt.Println(data)
+
 	if data == `(?:\$(?:\((?:\(.*\)|.*)\)|\{.*})|\/\w*\[!?.+\]|[<>]\(.*\))` {
 		o.debug = true
 		fmt.Println("enabling rx debug!")

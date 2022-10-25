@@ -38,7 +38,7 @@ using `go run mage.go updateLibs`.
 
 ### Running the filter in an Envoy process
 
-In order to run the coraza-proxy-wasm we need to spin up an envoy configuration including this as the filter config:
+In order to run the coraza-proxy-wasm we need to spin up an envoy configuration including this as the filter config
 
 ```yaml
     ...
@@ -63,7 +63,11 @@ In order to run the coraza-proxy-wasm we need to spin up an envoy configuration 
                         "@type": "type.googleapis.com/google.protobuf.StringValue"
                         value: |
                         {
-                            "rules": "SecDebugLogLevel 5 \nSecRuleEngine On \nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
+                            "rules": [
+                                "SecDebugLogLevel 5",
+                                "SecRuleEngine On",
+                                "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
+                            ]
                         }
                     vm_config:
                         runtime: "envoy.wasm.runtime.v8"
@@ -84,7 +88,7 @@ configuration:
     "@type": "type.googleapis.com/google.protobuf.StringValue"
     value: |
     {
-        "rules": "SecDebugLogLevel 5 \nSecRuleEngine On \n Include crs/*.conf"
+        "rules": [ "SecDebugLogLevel 5", "SecRuleEngine On", "Include crs/*.conf" ]
     }
 ```
 
@@ -95,7 +99,7 @@ configuration:
     "@type": "type.googleapis.com/google.protobuf.StringValue"
     value: |
     {
-        "rules": "SecDebugLogLevel 5 \nSecRuleEngine On \n Include crs/REQUEST-901-INITIALIZATION.conf"
+        "rules": [ "SecDebugLogLevel 5", "SecRuleEngine On", "Include crs/REQUEST-901-INITIALIZATION.conf" ]
     }
 ```
 

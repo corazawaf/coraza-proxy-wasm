@@ -37,10 +37,10 @@ static_resources:
                           value: |
                             {
                               "rules": [
-                                {"inline": "Include coraza.conf-recommended.conf"},
-                                {"inline": "Include ftw-config.conf"},
-                                {"inline": "Include crs-setup.conf.example"},
-                                {"inline": "Include crs/*.conf"}
+                                "Include coraza.conf-recommended.conf",
+                                "Include ftw-config.conf",
+                                "Include crs-setup.conf.example",
+                                "Include crs/*.conf"
                               ]
                             }
                         vm_config:
@@ -56,8 +56,8 @@ static_resources:
   clusters:
     - name: local_server
       connect_timeout: 6000s
-      type: strict_dns
-      lb_policy: round_robin
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
       load_assignment:
         cluster_name: local_server
         endpoints:

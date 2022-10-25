@@ -4,17 +4,16 @@
 package main
 
 import (
-	"context"
 	"embed"
 	"io/fs"
 	"strconv"
+	"strings"
 
 	"github.com/corazawaf/coraza/v3"
 	ctypes "github.com/corazawaf/coraza/v3/types"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 
-	_ "github.com/corazawaf/coraza-proxy-wasm/internal/calloc"
 	"github.com/corazawaf/coraza-proxy-wasm/internal/operators"
 )
 
@@ -68,27 +67,12 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		WithDebugLogger(&debugLogger{}).
 		WithRequestBodyAccess(coraza.NewRequestBodyConfig().
 			WithLimit(1024 * 1024 * 1024).
-			// TinyGo compilation will prevent buffering request body to files anyways, so this is
-			// effectively no-op but make clear our expectations.
+			// TinyGo compilation will prevent buffering request body to files anyways.
 			// TODO(anuraaga): Make this configurable in plugin configuration.
 			WithInMemoryLimit(1024 * 1024 * 1024)).
 		WithRootFS(root)
 
-	crs, err := fs.Sub(crs, "custom_rules")
-	if err != nil {
-		proxywasm.LogCriticalf("failed to access CRS filesystem: %v", err)
-		return types.OnPluginStartStatusFailed
-	}
-
-	rules, err := resolveIncludes(config.rules, crs)
-	if err != nil {
-		proxywasm.LogCriticalf("failed to load embedded rules: %v", err)
-		return types.OnPluginStartStatusFailed
-	}
-
-	conf = conf.WithDirectives(rules)
-
-	waf, err := coraza.NewWAF(conf)
+	waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(config.rules, "\n")))
 	if err != nil {
 		proxywasm.LogCriticalf("failed to parse rules: %v", err)
 		return types.OnPluginStartStatusFailed
@@ -105,7 +89,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 	return &httpContext{
 		contextID: contextID,
-		tx:        ctx.waf.NewTransaction(context.Background()),
+		tx:        ctx.waf.NewTransaction(),
 		// TODO(jcchavezs): figure out how/when enable/disable metrics
 		metrics: ctx.metrics,
 	}
@@ -322,6 +306,7 @@ func (ctx *httpContext) OnHttpStreamDone() {
 	ctx.tx.ProcessLogging()
 	_ = ctx.tx.Close()
 	proxywasm.LogInfof("%d finished", ctx.contextID)
+	logMemStats()
 }
 
 func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.Interruption) types.Action {

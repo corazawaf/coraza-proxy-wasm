@@ -85,6 +85,11 @@ func checkTinygoVersion() error {
 		return fmt.Errorf("unexpected tinygo error: %v", err)
 	}
 
+	// Assume a dev build is valid.
+	if strings.Contains(v, "-dev") {
+		return nil
+	}
+
 	if !strings.HasPrefix(v, fmt.Sprintf("tinygo version %s", tinygoMinorVersion)) {
 		return fmt.Errorf("unexpected tinygo version, wanted %s", tinygoMinorVersion)
 	}
@@ -163,16 +168,40 @@ func Build() error {
 		return err
 	}
 
-	timingBuildTag := ""
+	buildTags := []string{"custommalloc"}
 	if os.Getenv("TIMING") == "true" {
-		timingBuildTag = "-tags='timing proxywasm_timing'"
+		buildTags = append(buildTags, "timing", "proxywasm_timing")
+	}
+	if os.Getenv("MEMSTATS") == "true" {
+		buildTags = append(buildTags, "memstats")
 	}
 
-	if err := sh.RunV("tinygo", "build", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", timingBuildTag); err != nil {
+	buildTagArg := fmt.Sprintf("-tags='%s'", strings.Join(buildTags, " "))
+
+	// ~100MB initial heap
+	initialPages := 2100
+	if ipEnv := os.Getenv("INITIAL_PAGES"); ipEnv != "" {
+		if ip, err := strconv.Atoi(ipEnv); err != nil {
+			return err
+		} else {
+			initialPages = ip
+		}
+	}
+
+	wd, err := os.Getwd()
+	if err != nil {
 		return err
 	}
 
-	return stubUnusedWasmImports(filepath.Join("build", "mainraw.wasm"), filepath.Join("build", "main.wasm"))
+	script := fmt.Sprintf(`
+cd /src && \
+tinygo build -gc=none -opt=2 -o %s -scheduler=none -target=wasi %s`, filepath.Join("build", "mainraw.wasm"), buildTagArg)
+	if err := sh.RunV("docker", "run", "--pull=always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo:main",
+		"bash", "-c", script); err != nil {
+		return err
+	}
+
+	return patchWasm(filepath.Join("build", "mainraw.wasm"), filepath.Join("build", "main.wasm"), initialPages)
 }
 
 // UpdateLibs updates the C++ filter dependencies.
@@ -212,7 +241,11 @@ func Ftw() error {
 	if os.Getenv("ENVOY_NOWASM") == "true" {
 		env["ENVOY_CONFIG"] = "/conf/envoy-config-nowasm.yaml"
 	}
-	return sh.RunWithV(env, "docker-compose", "--file", "ftw/docker-compose.yml", "run", "--rm", "ftw")
+	task := "ftw"
+	if os.Getenv("MEMSTATS") == "true" {
+		task = "ftw-memstats"
+	}
+	return sh.RunWithV(env, "docker-compose", "--file", "ftw/docker-compose.yml", "run", "--rm", task)
 }
 
 // RunExample spins up the test environment, access at http://localhost:8080. Requires docker-compose.
@@ -227,7 +260,7 @@ func TeardownExample() error {
 
 var Default = Build
 
-func stubUnusedWasmImports(inPath, outPath string) error {
+func patchWasm(inPath, outPath string, initialPages int) error {
 	raw, err := os.ReadFile(inPath)
 	if err != nil {
 		return err
@@ -236,6 +269,8 @@ func stubUnusedWasmImports(inPath, outPath string) error {
 	if err != nil {
 		return err
 	}
+
+	mod.MemorySection.Min = uint32(initialPages)
 
 	for _, imp := range mod.ImportSection {
 		switch {

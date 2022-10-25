@@ -12,10 +12,19 @@ import (
 )
 
 //export cre2_new
-func cre2New(patternPtr unsafe.Pointer, patternLen uint32, flags uint32) unsafe.Pointer
+func cre2New(patternPtr unsafe.Pointer, patternLen uint32, opts unsafe.Pointer) unsafe.Pointer
 
 //export cre2_delete
 func cre2Delete(rePtr unsafe.Pointer)
+
+//export cre2_opt_new
+func cre2OptNew() unsafe.Pointer
+
+//export cre2_opt_delete
+func cre2OptDelete(ptr unsafe.Pointer)
+
+//export cre2_opt_set_max_mem
+func cre2OptSetMaxMem(ptr unsafe.Pointer, maxMem uint64)
 
 //export cre2_match
 func cre2Match(rePtr unsafe.Pointer, textPtr unsafe.Pointer, textLen uint32, startPos uint32, endPos uint32,
@@ -31,7 +40,10 @@ type RegExp struct {
 
 func Compile(pattern string) (RegExp, error) {
 	sh := (*reflect.StringHeader)(unsafe.Pointer(&pattern))
-	rePtr := cre2New(unsafe.Pointer(sh.Data), uint32(sh.Len), 0)
+	opts := cre2OptNew()
+	defer cre2OptDelete(opts)
+	cre2OptSetMaxMem(opts, 8<<20 /* 8MB */)
+	rePtr := cre2New(unsafe.Pointer(sh.Data), uint32(sh.Len), opts)
 	runtime.KeepAlive(pattern)
 	// TODO(anuraaga): Propagate compilation errors from re2.
 	return RegExp{ptr: rePtr}, nil
