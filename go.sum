@@ -1,5 +1,5 @@
-github.com/corazawaf/coraza/v3 v3.0.0-20221018091920-3649adcccd55 h1:0AP8JMgFMn6kNpPAoHxaoxaeR5zUYzLeil36HTEYMJo=
-github.com/corazawaf/coraza/v3 v3.0.0-20221018091920-3649adcccd55/go.mod h1:+ypLPFkX5j1GwKi+rqRZ57W3lSHReBdeVLh0o8qirI4=
+github.com/corazawaf/coraza/v3 v3.0.0-20221025015745-5b0dfa270c3a h1:CpC23lHjesOjuhFC6rHXSyr5IOIRut/zjJmno+gQ1uk=
+github.com/corazawaf/coraza/v3 v3.0.0-20221025015745-5b0dfa270c3a/go.mod h1:+ypLPFkX5j1GwKi+rqRZ57W3lSHReBdeVLh0o8qirI4=
 github.com/corazawaf/libinjection-go v0.1.1 h1:N/SMuy9Q4wPL72pU/OsoYjIIjfvUbsVwHf8A3tWMLKg=
 github.com/corazawaf/libinjection-go v0.1.1/go.mod h1:OP4TM7xdJ2skyXqNX1AN1wN5nNZEmJNuWbNPOItn7aw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
