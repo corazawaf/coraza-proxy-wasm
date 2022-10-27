@@ -24,6 +24,7 @@ while [[ "$status_code" -eq "000" ]]; do
   let "max_retries--"
   if [[ "$max_retries" -eq 0 ]] ; then
     echo "[Fail] Timeout waiting for response from $health_url, make sure the server is running."
+    echo "Envoy Logs:" && cat /home/envoy/logs/envoy.log
     exit 1
   fi
 done
@@ -31,4 +32,4 @@ echo -e "\n[Ok] Got status code $status_code, expected 200. Ready to start."
 
 FTW_CLOUDMODE=${FTW_CLOUDMODE:-false}
 
-go-ftw run -d coreruleset/tests/regression/tests --config ftw.yml --read-timeout=10s --cloud=$FTW_CLOUDMODE || (echo "Envoy Logs:" && cat /home/envoy/logs/envoy.log; exit 1)
+go-ftw run -d coreruleset/tests/regression/tests --config ftw.yml --read-timeout=10s --cloud=$FTW_CLOUDMODE || (cp /home/envoy/logs/envoy.log /build/ftw-envoy.log; exit 1)

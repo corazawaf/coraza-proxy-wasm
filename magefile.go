@@ -168,7 +168,7 @@ func Build() error {
 		return err
 	}
 
-	var buildTags []string
+	buildTags := []string{"custommalloc"}
 	if os.Getenv("TIMING") == "true" {
 		buildTags = append(buildTags, "timing", "proxywasm_timing")
 	}
@@ -176,10 +176,7 @@ func Build() error {
 		buildTags = append(buildTags, "memstats")
 	}
 
-	buildTagArg := ""
-	if len(buildTags) > 0 {
-		buildTagArg = fmt.Sprintf("-tags='%s'", strings.Join(buildTags, " "))
-	}
+	buildTagArg := fmt.Sprintf("-tags='%s'", strings.Join(buildTags, " "))
 
 	// ~100MB initial heap
 	initialPages := 2100
@@ -191,7 +188,16 @@ func Build() error {
 		}
 	}
 
-	if err := sh.RunV("tinygo", "build", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", buildTagArg); err != nil {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	script := fmt.Sprintf(`
+cd /src && \
+tinygo build -gc=none -opt=2 -o %s -scheduler=none -target=wasi %s`, filepath.Join("build", "mainraw.wasm"), buildTagArg)
+	if err := sh.RunV("docker", "run", "--pull=always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo:main",
+		"bash", "-c", script); err != nil {
 		return err
 	}
 
@@ -200,7 +206,7 @@ func Build() error {
 
 // UpdateLibs updates the C++ filter dependencies.
 func UpdateLibs() error {
-	libs := []string{"aho-corasick", "libinjection", "re2"}
+	libs := []string{"aho-corasick", "libinjection", "mimalloc", "re2"}
 	for _, lib := range libs {
 		if err := sh.RunV("docker", "build", "-t", "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-"+lib, filepath.Join("buildtools", lib)); err != nil {
 			return err
@@ -223,7 +229,7 @@ func E2e() error {
 
 // Ftw runs ftw tests with a built plugin and Envoy. Requires docker-compose.
 func Ftw() error {
-	if err := sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "build"); err != nil {
+	if err := sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "build", "--pull"); err != nil {
 		return err
 	}
 	defer func() {

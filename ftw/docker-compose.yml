@@ -58,6 +58,7 @@ services:
       - FTW_CLOUDMODE
     volumes:
       - logs:/home/envoy/logs:ro
+      - ../build:/build
   ftw-memstats:
     depends_on:
       - ftw
