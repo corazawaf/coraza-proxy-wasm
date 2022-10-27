@@ -276,7 +276,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	}
 
 	// We have already sent response headers, an unauthorized response can not be sent anymore,
-	// but we can still drop the response to prevent leaking sensitive content
+	// but we can still drop the response to prevent leaking sensitive content.
 	// The error will also be logged by Coraza.
 	ctx.processedResponseBody = true
 	interruption, err := tx.ProcessResponseBody()
@@ -292,6 +292,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 			proxywasm.LogErrorf("failed to replace response body: %v", err)
 			return types.ActionContinue
 		}
+		proxywasm.LogWarn("response body intervention occurred: body replaced")
 		return types.ActionContinue
 	}
 
