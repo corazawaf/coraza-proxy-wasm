@@ -10,11 +10,11 @@ package bodyprocessors
 
 import (
 	"encoding/xml"
-	"github.com/corazawaf/coraza/v3/rules"
 	"io"
 	"strings"
 
 	"github.com/corazawaf/coraza/v3/bodyprocessors"
+	"github.com/corazawaf/coraza/v3/rules"
 )
 
 type xmlBodyProcessor struct {
