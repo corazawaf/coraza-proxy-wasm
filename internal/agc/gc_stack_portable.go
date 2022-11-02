@@ -6,7 +6,7 @@
 // Copied from https://github.com/tinygo-org/tinygo/blob/3dbc4d52105f4209ece1332f0272f293745ac0bf/src/runtime/gc_stack_portable.go
 // with go:linkname used to override functions in the runtime package.
 
-package gc
+package agc
 
 import (
 	"unsafe"

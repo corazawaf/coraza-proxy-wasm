@@ -3,7 +3,7 @@
 
 //go:build tinygo
 
-package gc
+package agc
 
 import "unsafe"
 

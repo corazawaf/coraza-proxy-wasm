@@ -10,29 +10,28 @@ package bodyprocessors
 
 import (
 	"encoding/xml"
+	"github.com/corazawaf/coraza/v3/rules"
 	"io"
 	"strings"
 
 	"github.com/corazawaf/coraza/v3/bodyprocessors"
-	"github.com/corazawaf/coraza/v3/collection"
-	"github.com/corazawaf/coraza/v3/types/variables"
 )
 
 type xmlBodyProcessor struct {
 }
 
-func (*xmlBodyProcessor) ProcessRequest(reader io.Reader, collections []collection.Collection, _ bodyprocessors.Options) error {
+func (*xmlBodyProcessor) ProcessRequest(reader io.Reader, vars rules.TransactionVariables, _ bodyprocessors.Options) error {
 	values, contents, err := readXML(reader)
 	if err != nil {
 		return err
 	}
-	col := collections[variables.RequestXML].(*collection.Map)
+	col := vars.RequestXML()
 	col.Set("//@*", values)
 	col.Set("/*", contents)
 	return nil
 }
 
-func (*xmlBodyProcessor) ProcessResponse(io.Reader, []collection.Collection, bodyprocessors.Options) error {
+func (*xmlBodyProcessor) ProcessResponse(io.Reader, rules.TransactionVariables, bodyprocessors.Options) error {
 	return nil
 }
 
