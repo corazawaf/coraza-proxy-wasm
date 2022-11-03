@@ -189,7 +189,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	}
 
 	if !endOfStream {
-		return types.ActionPause
+		return types.ActionContinue
 	}
 
 	ctx.processedRequestBody = true
