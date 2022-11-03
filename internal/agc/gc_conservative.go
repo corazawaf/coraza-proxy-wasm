@@ -6,7 +6,7 @@
 // Copied from https://github.com/tinygo-org/tinygo/blob/3dbc4d52105f4209ece1332f0272f293745ac0bf/src/runtime/gc_conservative.go
 // with modifications to use malloc for underlying memory storage.
 
-package gc
+package agc
 
 // This memory manager is a textbook mark/sweep implementation, heavily inspired
 // by the MicroPython garbage collector.
