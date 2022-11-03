@@ -19,9 +19,8 @@ type pm struct {
 
 var _ rules.Operator = (*pm)(nil)
 
-func (o *pm) Init(options rules.OperatorOptions) error {
-	o.m = ahocorasick.NewMatcher(strings.Split(options.Arguments, " "))
-	return nil
+func newPM(options rules.OperatorOptions) (rules.Operator, error) {
+	return &pm{m: ahocorasick.NewMatcher(strings.Split(options.Arguments, " "))}, nil
 }
 
 func (o *pm) Evaluate(tx rules.TransactionState, value string) bool {

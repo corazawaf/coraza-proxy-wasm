@@ -21,12 +21,12 @@ type pmFromFile struct {
 
 var _ rules.Operator = (*pmFromFile)(nil)
 
-func (o *pmFromFile) Init(options rules.OperatorOptions) error {
+func newPMFromFile(options rules.OperatorOptions) (rules.Operator, error) {
 	path := options.Arguments
 
 	data, err := loadFromFile(path, options.Path, options.Root)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var lines []string
@@ -43,8 +43,7 @@ func (o *pmFromFile) Init(options rules.OperatorOptions) error {
 		lines = append(lines, strings.ToLower(l))
 	}
 
-	o.m = ahocorasick.NewMatcher(lines)
-	return nil
+	return &pmFromFile{m: ahocorasick.NewMatcher(lines)}, nil
 }
 
 func (o *pmFromFile) Evaluate(tx rules.TransactionState, value string) bool {

@@ -7,13 +7,13 @@ package operators
 
 import (
 	"github.com/corazawaf/coraza/v3/operators"
-	"github.com/corazawaf/coraza/v3/rules"
 )
 
 func Register() {
-	operators.Register("detectSQLi", func() rules.Operator { return &detectSQLi{} })
-	operators.Register("detectXSS", func() rules.Operator { return &detectXSS{} })
-	operators.Register("rx", func() rules.Operator { return &rx{} })
-	operators.Register("pm", func() rules.Operator { return &pm{} })
-	operators.Register("pmFromFile", func() rules.Operator { return &pmFromFile{} })
+
+	operators.Register("detectSQLi", newDetectSQLi)
+	operators.Register("detectXSS", newDetectXSS)
+	operators.Register("rx", newRX)
+	operators.Register("pm", newPM)
+	operators.Register("pmFromFile", newPMFromFile)
 }
