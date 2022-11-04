@@ -15,12 +15,6 @@ import (
 	"github.com/corazawaf/coraza-proxy-wasm/internal/ahocorasick"
 )
 
-type pmFromFile struct {
-	m ahocorasick.Matcher
-}
-
-var _ rules.Operator = (*pmFromFile)(nil)
-
 func newPMFromFile(options rules.OperatorOptions) (rules.Operator, error) {
 	path := options.Arguments
 
@@ -43,9 +37,5 @@ func newPMFromFile(options rules.OperatorOptions) (rules.Operator, error) {
 		lines = append(lines, strings.ToLower(l))
 	}
 
-	return &pmFromFile{m: ahocorasick.NewMatcher(lines)}, nil
-}
-
-func (o *pmFromFile) Evaluate(tx rules.TransactionState, value string) bool {
-	return pmEvaluate(o.m, tx, value)
+	return &pm{m: ahocorasick.NewMatcher(lines)}, nil
 }
