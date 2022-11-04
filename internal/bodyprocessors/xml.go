@@ -17,8 +17,11 @@ import (
 	"github.com/corazawaf/coraza/v3/rules"
 )
 
-type xmlBodyProcessor struct {
-}
+type xmlBodyProcessor struct{}
+
+var (
+	_ bodyprocessors.BodyProcessor = &xmlBodyProcessor{}
+)
 
 func (*xmlBodyProcessor) ProcessRequest(reader io.Reader, vars rules.TransactionVariables, _ bodyprocessors.Options) error {
 	values, contents, err := readXML(reader)
@@ -60,10 +63,6 @@ func readXML(reader io.Reader) ([]string, []string, error) {
 	}
 	return attrs, content, nil
 }
-
-var (
-	_ bodyprocessors.BodyProcessor = &xmlBodyProcessor{}
-)
 
 func Register() {
 	bodyprocessors.Register("xml", func() bodyprocessors.BodyProcessor {

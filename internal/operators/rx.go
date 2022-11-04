@@ -20,7 +20,8 @@ type rx struct {
 
 var _ rules.Operator = (*rx)(nil)
 
-func (o *rx) Init(options rules.OperatorOptions) error {
+func newRX(options rules.OperatorOptions) (rules.Operator, error) {
+	o := &rx{}
 	data := options.Arguments
 
 	if data == `(?:\$(?:\((?:\(.*\)|.*)\)|\{.*})|\/\w*\[!?.+\]|[<>]\(.*\))` {
@@ -29,8 +30,12 @@ func (o *rx) Init(options rules.OperatorOptions) error {
 	}
 
 	re, err := re2.Compile(data)
+	if err != nil {
+		return nil, err
+	}
+
 	o.re = re
-	return err
+	return o, err
 }
 
 func (o *rx) Evaluate(tx rules.TransactionState, value string) bool {
