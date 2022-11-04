@@ -256,12 +256,12 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	tx := ctx.tx
 
 	if bodySize > 0 {
-		ctx.responseBodySize += bodySize
-		body, err := proxywasm.GetHttpResponseBody(0, bodySize)
+		body, err := proxywasm.GetHttpResponseBody(ctx.responseBodySize, bodySize)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to get response body: %v", err)
 			return types.ActionContinue
 		}
+		ctx.responseBodySize += bodySize
 		_, err = tx.ResponseBodyWriter().Write(body)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to read response body: %v", err)
