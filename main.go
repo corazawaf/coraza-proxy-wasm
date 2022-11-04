@@ -104,6 +104,7 @@ type httpContext struct {
 	httpProtocol          string
 	processedRequestBody  bool
 	processedResponseBody bool
+	requestBodySize       int
 	metrics               *wafMetrics
 }
 
@@ -171,11 +172,12 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	tx := ctx.tx
 
 	if bodySize > 0 {
-		body, err := proxywasm.GetHttpRequestBody(0, bodySize)
+		body, err := proxywasm.GetHttpRequestBody(ctx.requestBodySize, bodySize)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to get request body: %v", err)
 			return types.ActionContinue
 		}
+		ctx.requestBodySize += bodySize
 
 		_, err = tx.RequestBodyWriter().Write(body)
 		if err != nil {
@@ -185,7 +187,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	}
 
 	if !endOfStream {
-		return types.ActionContinue
+		return types.ActionPause
 	}
 
 	ctx.processedRequestBody = true
