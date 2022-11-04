@@ -23,6 +23,7 @@ func checkTXMetric(t *testing.T, host proxytest.HostEmulator, expectedCounter in
 }
 
 func TestLifecycle(t *testing.T) {
+	reqProtocol := "HTTP/1.1"
 	reqHdrs := [][2]string{
 		{":path", "/hello?name=panda"},
 		{":method", "GET"},
@@ -90,6 +91,26 @@ SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq post\" \"id:101,phase:1,t:lowe
 			name: "method denied",
 			inlineRules: `
 SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq get\" \"id:101,phase:1,t:lowercase,deny\"
+`,
+			requestHdrsAction:  types.ActionPause,
+			requestBodyAction:  types.ActionContinue,
+			responseHdrsAction: types.ActionContinue,
+			responded403:       true,
+		},
+		{
+			name: "protocol accepted",
+			inlineRules: `
+SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/2.0\" \"id:101,phase:1,t:lowercase,deny\"
+`,
+			requestHdrsAction:  types.ActionContinue,
+			requestBodyAction:  types.ActionContinue,
+			responseHdrsAction: types.ActionContinue,
+			responded403:       false,
+		},
+		{
+			name: "protocol denied",
+			inlineRules: `
+SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,t:lowercase,deny\"
 `,
 			requestHdrsAction:  types.ActionPause,
 			requestBodyAction:  types.ActionContinue,
@@ -298,6 +319,8 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 				require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
 
 				id := host.InitializeHttpContext()
+
+				require.NoError(t, host.SetProperty([]string{"request", "protocol"}, []byte(reqProtocol)))
 
 				requestBodyAction := types.ActionPause
 				responseHdrsAction := types.ActionPause
