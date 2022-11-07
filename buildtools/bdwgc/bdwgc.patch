@@ -1,0 +1,96 @@
+diff --git a/alloc.c b/alloc.c
+index a53e12c0..6e7be764 100644
+--- a/alloc.c
++++ b/alloc.c
+@@ -19,7 +19,7 @@
+ #include "private/gc_priv.h"
+ 
+ #include <stdio.h>
+-#if !defined(MACOS) && !defined(MSWINCE)
++#if !defined(MACOS) && !defined(MSWINCE) && !defined(WASI)
+ # include <signal.h>
+ # if !defined(GC_NO_TYPES) && !defined(SN_TARGET_PSP2) \
+      && !defined(__CC_ARM)
+diff --git a/include/private/gc_priv.h b/include/private/gc_priv.h
+index 2ffd4dd0..ef5a7007 100644
+--- a/include/private/gc_priv.h
++++ b/include/private/gc_priv.h
+@@ -838,7 +838,9 @@ EXTERN_C_END
+ # endif
+ #endif /* DARWIN */
+ 
+-#include <setjmp.h>
++#if !defined(WASI)
++# include <setjmp.h>
++#endif
+ 
+ #if __STDC_VERSION__ >= 201112L
+ # include <assert.h> /* for static_assert */
+diff --git a/include/private/gcconfig.h b/include/private/gcconfig.h
+index 2de01afe..3894e85b 100644
+--- a/include/private/gcconfig.h
++++ b/include/private/gcconfig.h
+@@ -703,6 +703,11 @@ EXTERN_C_BEGIN
+ #   define I386
+ #   define mach_type_known
+ # endif
++# if defined(__wasi__)
++#   define WASI
++#   define I386
++#   define mach_type_known
++#endif
+ 
+ /* Feel free to add more clauses here */
+ 
+@@ -1425,6 +1430,17 @@ EXTERN_C_BEGIN
+ #     define USE_MMAP_ANON      /* avoid /dev/zero, not supported */
+ #     define STACK_GROWS_DOWN
+ #   endif
++#   ifdef WASI
++      extern unsigned char __global_base;
++      extern unsigned char __heap_base;
++#     define OS_TYPE "WASI"
++#     define DATASTART ((ptr_t)&__global_base)
++#     define DATAEND ((ptr_t)&__heap_base)
++#     define STACKBOTTOM ((ptr_t)&__global_base)
++#     define USE_MMAP_ANON      /* avoid /dev/zero, not supported */
++#     define GC_NO_SIGSETJMP 1
++#     define NO_CLOCK 1
++#   endif
+ #   if defined(__QNX__)
+ #     define OS_TYPE "QNX"
+ #     define SA_RESTART 0
+diff --git a/misc.c b/misc.c
+index 64eeb7e4..273a1fa7 100644
+--- a/misc.c
++++ b/misc.c
+@@ -20,7 +20,7 @@
+ #include <limits.h>
+ #include <stdarg.h>
+ 
+-#ifndef MSWINCE
++#if !defined(MSWINCE) && !defined(WASI)
+ # include <signal.h>
+ #endif
+ 
+diff --git a/os_dep.c b/os_dep.c
+index e116ad02..de11192c 100644
+--- a/os_dep.c
++++ b/os_dep.c
+@@ -27,14 +27,14 @@
+ #endif
+ 
+ #include <stdio.h>
+-#if defined(MSWINCE) || defined(SN_TARGET_PS3)
++#if defined(MSWINCE) || defined(SN_TARGET_PS3) || defined(WASI)
+ # define SIGSEGV 0 /* value is irrelevant */
+ #else
+ # include <signal.h>
+ #endif
+ 
+ #if defined(UNIX_LIKE) || defined(CYGWIN32) || defined(NACL) \
+-    || defined(SYMBIAN)
++    || defined(SYMBIAN) || defined(WASI)
+ # include <fcntl.h>
+ #endif
+ 
