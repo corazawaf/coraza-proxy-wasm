@@ -27,7 +27,7 @@ index 2ffd4dd0..ef5a7007 100644
  #if __STDC_VERSION__ >= 201112L
  # include <assert.h> /* for static_assert */
 diff --git a/include/private/gcconfig.h b/include/private/gcconfig.h
-index 2de01afe..3894e85b 100644
+index 2de01afe..cf25e78c 100644
 --- a/include/private/gcconfig.h
 +++ b/include/private/gcconfig.h
 @@ -703,6 +703,11 @@ EXTERN_C_BEGIN
@@ -42,7 +42,7 @@ index 2de01afe..3894e85b 100644
  
  /* Feel free to add more clauses here */
  
-@@ -1425,6 +1430,17 @@ EXTERN_C_BEGIN
+@@ -1425,6 +1430,21 @@ EXTERN_C_BEGIN
  #     define USE_MMAP_ANON      /* avoid /dev/zero, not supported */
  #     define STACK_GROWS_DOWN
  #   endif
@@ -53,15 +53,19 @@ index 2de01afe..3894e85b 100644
 +#     define DATASTART ((ptr_t)&__global_base)
 +#     define DATAEND ((ptr_t)&__heap_base)
 +#     define STACKBOTTOM ((ptr_t)&__global_base)
++#     define GETPAGESIZE() 65536
 +#     define USE_MMAP_ANON      /* avoid /dev/zero, not supported */
 +#     define GC_NO_SIGSETJMP 1
 +#     define NO_CLOCK 1
++#     ifndef HBLKSIZE
++#       define HBLKSIZE 4096
++#     endif
 +#   endif
  #   if defined(__QNX__)
  #     define OS_TYPE "QNX"
  #     define SA_RESTART 0
 diff --git a/misc.c b/misc.c
-index 64eeb7e4..273a1fa7 100644
+index 64eeb7e4..406d5b93 100644
 --- a/misc.c
 +++ b/misc.c
 @@ -20,7 +20,7 @@
@@ -73,8 +77,17 @@ index 64eeb7e4..273a1fa7 100644
  # include <signal.h>
  #endif
  
+@@ -823,7 +823,7 @@ GC_API int GC_CALL GC_is_init_called(void)
+ #if !defined(OS2) && !defined(MACOS) && !defined(GC_ANDROID_LOG) \
+     && !defined(NN_PLATFORM_CTR) && !defined(NINTENDO_SWITCH) \
+     && (!defined(MSWIN32) || defined(CONSOLE_LOG)) && !defined(MSWINCE)
+-  STATIC int GC_stdout = GC_DEFAULT_STDOUT_FD;
++  STATIC int GC_stdout = GC_DEFAULT_STDERR_FD;
+   STATIC int GC_stderr = GC_DEFAULT_STDERR_FD;
+   STATIC int GC_log = GC_DEFAULT_STDERR_FD;
+ 
 diff --git a/os_dep.c b/os_dep.c
-index e116ad02..de11192c 100644
+index e116ad02..4bd9031c 100644
 --- a/os_dep.c
 +++ b/os_dep.c
 @@ -27,14 +27,14 @@
@@ -94,3 +107,12 @@ index e116ad02..de11192c 100644
  # include <fcntl.h>
  #endif
  
+@@ -2668,7 +2668,7 @@ static void block_unmap_inner(ptr_t start_addr, size_t len)
+             if (madvise(start_addr, len, MADV_DONTNEED) == -1)
+               ABORT_ON_REMAP_FAIL("unmap: madvise", start_addr, len);
+ #         endif
+-#       elif defined(EMSCRIPTEN)
++#       elif defined(EMSCRIPTEN) || defined(WASI)
+           /* Nothing to do, mmap(PROT_NONE) is not supported and        */
+           /* mprotect() is just a no-op.                                */
+ #       else
