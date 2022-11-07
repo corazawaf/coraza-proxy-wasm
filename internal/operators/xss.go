@@ -11,12 +11,13 @@ import (
 	"github.com/corazawaf/coraza-proxy-wasm/internal/injection"
 )
 
-type detectXSS struct {
-}
+type detectXSS struct{}
 
 var _ rules.Operator = (*detectXSS)(nil)
 
-func (o *detectXSS) Init(options rules.OperatorOptions) error { return nil }
+func newDetectXSS(rules.OperatorOptions) (rules.Operator, error) {
+	return &detectXSS{}, nil
+}
 
 func (o *detectXSS) Evaluate(tx rules.TransactionState, value string) bool {
 	return injection.IsXSS(value)

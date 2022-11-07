@@ -206,7 +206,7 @@ tinygo build -gc=none -opt=2 -o %s -scheduler=none -target=wasi %s`, filepath.Jo
 
 // UpdateLibs updates the C++ filter dependencies.
 func UpdateLibs() error {
-	libs := []string{"aho-corasick", "libinjection", "re2"}
+	libs := []string{"aho-corasick", "libinjection", "mimalloc", "re2"}
 	for _, lib := range libs {
 		if err := sh.RunV("docker", "build", "-t", "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-"+lib, filepath.Join("buildtools", lib)); err != nil {
 			return err
@@ -229,7 +229,7 @@ func E2e() error {
 
 // Ftw runs ftw tests with a built plugin and Envoy. Requires docker-compose.
 func Ftw() error {
-	if err := sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "build"); err != nil {
+	if err := sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "build", "--pull"); err != nil {
 		return err
 	}
 	defer func() {

@@ -14,6 +14,7 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 
+	"github.com/corazawaf/coraza-proxy-wasm/internal/bodyprocessors"
 	"github.com/corazawaf/coraza-proxy-wasm/internal/operators"
 )
 
@@ -21,6 +22,7 @@ import (
 var crs embed.FS
 
 func main() {
+	bodyprocessors.Register()
 	operators.Register()
 	proxywasm.SetVMContext(&vmContext{})
 }
@@ -329,7 +331,7 @@ func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.In
 
 func logError(error ctypes.MatchedRule) {
 	msg := error.ErrorLog(0)
-	switch error.Rule.Severity {
+	switch error.Rule().Severity() {
 	case ctypes.RuleSeverityEmergency:
 		proxywasm.LogCritical(msg)
 	case ctypes.RuleSeverityAlert:

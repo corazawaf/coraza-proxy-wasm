@@ -11,12 +11,13 @@ import (
 	"github.com/corazawaf/coraza-proxy-wasm/internal/injection"
 )
 
-type detectSQLi struct {
-}
+type detectSQLi struct{}
 
 var _ rules.Operator = (*detectSQLi)(nil)
 
-func (o *detectSQLi) Init(options rules.OperatorOptions) error { return nil }
+func newDetectSQLi(rules.OperatorOptions) (rules.Operator, error) {
+	return &detectSQLi{}, nil
+}
 
 func (o *detectSQLi) Evaluate(tx rules.TransactionState, value string) bool {
 	res, fp := injection.IsSQLi(value)
