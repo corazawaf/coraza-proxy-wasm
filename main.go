@@ -329,7 +329,7 @@ func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.In
 
 func logError(error ctypes.MatchedRule) {
 	msg := error.ErrorLog(0)
-	switch error.Rule.Severity {
+	switch error.Rule().Severity() {
 	case ctypes.RuleSeverityEmergency:
 		proxywasm.LogCritical(msg)
 	case ctypes.RuleSeverityAlert:
