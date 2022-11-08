@@ -49,7 +49,7 @@ func handlePluginConfigurationKeywords(configLine string) string {
 	for k, v := range keywordsDict {
 		re := regexp.MustCompile(`(?i)include ` + k)
 		// no limit on replacements to address multiple inlined entries
-		configLine = re.ReplaceAllString(configLine, "include "+v)
+		configLine = re.ReplaceAllString(configLine, "Include "+v)
 	}
 	return configLine
 }
