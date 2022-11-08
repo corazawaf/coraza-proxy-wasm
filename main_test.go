@@ -200,6 +200,17 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 			responded403:       true,
 			respondedNullBody:  false,
 		},
+		// {
+		// 	name: "request body accepted, no access",
+		// 	inlineRules: `
+		// SecRuleEngine On\nSecRequestBodyAccess Off\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
+		// `,
+		// 	requestHdrsAction:  types.ActionContinue,
+		// 	requestBodyAction:  types.ActionContinue,
+		// 	responseHdrsAction: types.ActionContinue,
+		// 	responded403:       false,
+		// 	respondedNullBody:  false,
+		// },
 		{
 			name: "status accepted",
 			inlineRules: `
@@ -321,6 +332,17 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 			responded403:       false,
 			respondedNullBody:  true,
 		},
+		// 		{
+		// 			name: "response body accepted, no response body access",
+		// 			inlineRules: `
+		// SecRuleEngine On\nSecResponseBodyAccess Off\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
+		// `,
+		// 			requestHdrsAction:  types.ActionContinue,
+		// 			requestBodyAction:  types.ActionContinue,
+		// 			responseHdrsAction: types.ActionContinue,
+		// 			responded403:       false,
+		// 			respondedNullBody:  false,
+		// 		},
 	}
 
 	vmTest(t, func(t *testing.T, vm types.VMContext) {
@@ -380,6 +402,7 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 				}
 
 				if responseHdrsAction == types.ActionContinue {
+					responseBodyAccess := strings.Contains(tt.inlineRules, "SecResponseBodyAccess On")
 					for i := 0; i < len(respBody); i += 5 {
 						eos := i+5 >= len(respBody)
 						var body []byte
@@ -388,11 +411,13 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 						} else {
 							body = respBody[i : i+5]
 						}
-						action := host.CallOnResponseBody(id, body, eos)
+						responseBodyAction := host.CallOnResponseBody(id, body, eos)
 						if eos {
-							require.Equal(t, types.ActionContinue, action)
+							require.Equal(t, types.ActionContinue, responseBodyAction)
+						} else if responseBodyAccess {
+							require.Equal(t, types.ActionPause, responseBodyAction)
 						} else {
-							require.Equal(t, types.ActionPause, action)
+							require.Equal(t, types.ActionContinue, responseBodyAction)
 						}
 					}
 				}

@@ -267,7 +267,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		return types.ActionContinue
 	}
 
-	if bodySize > ctx.responseBodySize {
+	if bodySize > 0 {
 		body, err := proxywasm.GetHttpResponseBody(ctx.responseBodySize, bodySize)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to get response body: %v", err)
