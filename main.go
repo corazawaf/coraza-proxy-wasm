@@ -174,6 +174,12 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	defer logTime("OnHttpRequestBody", currentTime())
 	tx := ctx.tx
 
+	// Do not perform any action related to request body if SecRequestBodyAccess is set to false
+	if !tx.RequestBodyAccessible() {
+		proxywasm.LogInfo("skipping request body inspection, SecRequestBodyAccess is off.")
+		return types.ActionContinue
+	}
+
 	if bodySize > 0 {
 		body, err := proxywasm.GetHttpRequestBody(0, bodySize)
 		if err != nil {
@@ -255,7 +261,13 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	defer logTime("OnHttpResponseBody", currentTime())
 	tx := ctx.tx
 
-	if bodySize > 0 {
+	// Do not perform any action related to response body if SecResponseBodyAccess is set to false
+	if !tx.ResponseBodyAccessible() {
+		proxywasm.LogInfo("skipping response body inspection, SecResponseBodyAccess is off.")
+		return types.ActionContinue
+	}
+
+	if bodySize > ctx.responseBodySize {
 		body, err := proxywasm.GetHttpResponseBody(ctx.responseBodySize, bodySize)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to get response body: %v", err)
