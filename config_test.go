@@ -51,6 +51,28 @@ func TestParsePluginConfiguration(t *testing.T) {
 				rules: []string{"SecRuleEngine On", "Include crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
 			},
 		},
+		{
+			name: "inline many entries, with keyword",
+			config: `
+			{
+				"rules": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""]
+			}
+			`,
+			expectConfig: pluginConfiguration{
+				rules: []string{"SecRuleEngine On", "Include crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
+			},
+		},
+		{
+			name: "list with keywords lowecase",
+			config: `
+			{ 
+				"rules": ["include @recommended-conf", "Include @crs-conf", "include @owasp_crs/*.conf"]
+			}
+			`,
+			expectConfig: pluginConfiguration{
+				rules: []string{"Include coraza.conf-recommended.conf", "Include crs-setup.conf.example", "Include crs/*.conf"},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
