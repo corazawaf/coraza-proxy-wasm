@@ -5,14 +5,13 @@ package main
 
 import (
 	"embed"
-	"io/fs"
-	"strconv"
-	"strings"
-
 	"github.com/corazawaf/coraza/v3"
 	ctypes "github.com/corazawaf/coraza/v3/types"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
+	"io/fs"
+	"strconv"
+	"strings"
 
 	"github.com/corazawaf/coraza-proxy-wasm/internal/bodyprocessors"
 	"github.com/corazawaf/coraza-proxy-wasm/internal/operators"

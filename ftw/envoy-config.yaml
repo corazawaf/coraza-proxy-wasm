@@ -48,8 +48,7 @@ static_resources:
                           vm_id: "my_vm_id"
                           environment_variables:
                             key_values:
-                              GC_PRINT_VERBOSE_STATS: "1"
-                              GC_DUMP_REGULARLY: "1"
+                              GC_TRACE: "0x0846ced8"
                           code:
                             local:
                               filename: "build/main.wasm"
