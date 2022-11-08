@@ -46,18 +46,28 @@ func GC_malloc(size uintptr) unsafe.Pointer
 //export GC_add_roots
 func GC_add_roots(from uintptr, to uintptr)
 
+//export GC_clear_roots
+func GC_clear_roots()
+
 //export GC_gcollect
 func GC_gcollect()
 
 //export GC_get_all_interior_pointers
 func GC_get_all_interior_pointers() int32
 
+//export GC_set_on_collection_event
+func GC_set_on_collection_event(fPtr uintptr)
+
+func onCollectionEvent(eventType uint32) {
+	println("event", eventType)
+}
+
 // Initialize the memory allocator.
 // No memory may be allocated before this is called. That means the runtime and
 // any packages the runtime depends upon may not allocate memory during package
 // initialization.
 func init() {
-	// GC_add_roots(globalsStart, globalsEnd)
+	GC_add_roots(globalsStart, globalsEnd)
 }
 
 // alloc tries to find some free space on the heap, possibly doing a garbage
@@ -65,6 +75,9 @@ func init() {
 //
 //go:linkname alloc runtime.alloc
 func alloc(size uintptr, layout unsafe.Pointer) unsafe.Pointer {
+	GC_clear_roots()
+	GC_add_roots(globalsStart, globalsEnd)
+	addStackRoots()
 	buf := GC_malloc(size)
 	memzero(buf, size)
 	return buf
