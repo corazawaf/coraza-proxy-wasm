@@ -40,6 +40,11 @@ import (
 	"unsafe"
 )
 
+/*
+void onCollectionEvent();
+*/
+import "C"
+
 //export GC_malloc
 func GC_malloc(size uintptr) unsafe.Pointer
 
@@ -56,10 +61,22 @@ func GC_gcollect()
 func GC_get_all_interior_pointers() int32
 
 //export GC_set_on_collection_event
-func GC_set_on_collection_event(fPtr uintptr)
+func GC_set_on_collection_event(f unsafe.Pointer)
 
+const (
+	gcEventStart = 0
+	gcEventEnd   = 5
+)
+
+//export onCollectionEvent
 func onCollectionEvent(eventType uint32) {
-	println("event", eventType)
+	switch eventType {
+	case gcEventStart:
+		GC_add_roots(globalsStart, globalsEnd)
+		addStackRoots()
+	case gcEventEnd:
+		GC_clear_roots()
+	}
 }
 
 // Initialize the memory allocator.
@@ -67,7 +84,7 @@ func onCollectionEvent(eventType uint32) {
 // any packages the runtime depends upon may not allocate memory during package
 // initialization.
 func init() {
-	GC_add_roots(globalsStart, globalsEnd)
+	GC_set_on_collection_event(C.onCollectionEvent)
 }
 
 // alloc tries to find some free space on the heap, possibly doing a garbage
@@ -75,9 +92,6 @@ func init() {
 //
 //go:linkname alloc runtime.alloc
 func alloc(size uintptr, layout unsafe.Pointer) unsafe.Pointer {
-	GC_clear_roots()
-	GC_add_roots(globalsStart, globalsEnd)
-	addStackRoots()
 	buf := GC_malloc(size)
 	memzero(buf, size)
 	return buf

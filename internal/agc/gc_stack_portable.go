@@ -57,5 +57,5 @@ func printStack() {
 // construction. Calls to it are later replaced with regular stack bookkeeping
 // code.
 //
-//go:linkname trackPointer runtime.trackPointer
+//go:extern runtime.trackPointer
 func trackPointer(ptr unsafe.Pointer)
