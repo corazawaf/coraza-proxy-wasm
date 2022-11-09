@@ -175,23 +175,25 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	defer logTime("OnHttpRequestBody", currentTime())
 	tx := ctx.tx
 
-	if bodySize > 0 {
-		body, err := proxywasm.GetHttpRequestBody(ctx.requestBodySize, bodySize)
+	ctx.requestBodySize += bodySize
+	// Wait until we see the entire body. It has to be buffered in order to check that it is fully legit
+	// before sending it upstream
+	if !endOfStream {
+		return types.ActionPause
+	}
+
+	if ctx.requestBodySize > 0 {
+		body, err := proxywasm.GetHttpRequestBody(0, ctx.requestBodySize)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to get request body: %v", err)
 			return types.ActionContinue
 		}
-		ctx.requestBodySize += bodySize
 
 		_, err = tx.RequestBodyWriter().Write(body)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to read request body: %v", err)
 			return types.ActionContinue
 		}
-	}
-
-	if !endOfStream {
-		return types.ActionPause
 	}
 
 	ctx.processedRequestBody = true
