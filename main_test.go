@@ -62,8 +62,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "url accepted",
 			inlineRules: `
-		SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -73,8 +73,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "url denied",
 			inlineRules: `
-		SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello?name=panda\" \"id:101,phase:1,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello?name=panda\" \"id:101,phase:1,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionPause,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -84,8 +84,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "method accepted",
 			inlineRules: `
-		SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq post\" \"id:101,phase:1,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq post\" \"id:101,phase:1,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -95,8 +95,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "method denied",
 			inlineRules: `
-		SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq get\" \"id:101,phase:1,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq get\" \"id:101,phase:1,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionPause,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -106,8 +106,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "protocol accepted",
 			inlineRules: `
-SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/2.0\" \"id:101,phase:1,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/2.0\" \"id:101,phase:1,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -116,8 +116,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/2.0\" \"id:101,phase:1,
 		{
 			name: "protocol denied",
 			inlineRules: `
-SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionPause,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -126,8 +126,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "request header name accepted",
 			inlineRules: `
-		SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq accept-encoding\" \"id:101,phase:1,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq accept-encoding\" \"id:101,phase:1,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -137,8 +137,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "request header name denied",
 			inlineRules: `
-		SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq user-agent\" \"id:101,phase:1,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq user-agent\" \"id:101,phase:1,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionPause,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -148,8 +148,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "request header value accepted",
 			inlineRules: `
-		SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq rusttest\" \"id:101,phase:1,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq rusttest\" \"id:101,phase:1,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -159,8 +159,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "request header value denied",
 			inlineRules: `
-		SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq gotest\" \"id:101,phase:1,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq gotest\" \"id:101,phase:1,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionPause,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -170,8 +170,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "request body accepted",
 			inlineRules: `
-		SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=yogi\" \"id:101,phase:2,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=yogi\" \"id:101,phase:2,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -181,8 +181,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "request body denied, end of body",
 			inlineRules: `
-		SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=pooh\" \"id:101,phase:2,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=pooh\" \"id:101,phase:2,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionPause,
 			responseHdrsAction: types.ActionContinue,
@@ -192,8 +192,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "request body denied, start of body",
 			inlineRules: `
-		SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionPause,
 			responseHdrsAction: types.ActionContinue,
@@ -214,8 +214,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "status accepted",
 			inlineRules: `
-		SecRuleEngine On\nSecRule RESPONSE_STATUS \"500\" \"id:101,phase:3,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule RESPONSE_STATUS \"500\" \"id:101,phase:3,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -225,8 +225,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "status denied",
 			inlineRules: `
-		SecRuleEngine On\nSecRule RESPONSE_STATUS \"200\" \"id:101,phase:3,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule RESPONSE_STATUS \"200\" \"id:101,phase:3,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionPause,
@@ -236,8 +236,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "status accepted rx",
 			inlineRules: `
-		SecRuleEngine On\nSecRule RESPONSE_STATUS \"@rx [^\\d]+\" \"id:101,phase:3,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule RESPONSE_STATUS \"@rx [^\\d]+\" \"id:101,phase:3,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -247,8 +247,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "status denied rx",
 			inlineRules: `
-		SecRuleEngine On\nSecRule RESPONSE_STATUS \"@rx [\\d]+\" \"id:101,phase:3,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule RESPONSE_STATUS \"@rx [\\d]+\" \"id:101,phase:3,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionPause,
@@ -258,8 +258,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "response header name accepted",
 			inlineRules: `
-		SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq transfer-encoding\" \"id:101,phase:3,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq transfer-encoding\" \"id:101,phase:3,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -269,8 +269,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "response header name denied",
 			inlineRules: `
-		SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq server\" \"id:101,phase:3,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq server\" \"id:101,phase:3,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionPause,
@@ -280,8 +280,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "response header value accepted",
 			inlineRules: `
-		SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq rusttest\" \"id:101,phase:3,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq rusttest\" \"id:101,phase:3,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -291,8 +291,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "response header value denied",
 			inlineRules: `
-		SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq gotest\" \"id:101,phase:3,t:lowercase,deny\"
-		`,
+				SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq gotest\" \"id:101,phase:3,t:lowercase,deny\"
+				`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionPause,
@@ -302,8 +302,8 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "response body accepted",
 			inlineRules: `
-SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains pooh\" \"id:101,phase:4,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains pooh\" \"id:101,phase:4,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -313,8 +313,8 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains po
 		{
 			name: "response body denied, end of body",
 			inlineRules: `
-SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains yogi\" \"id:101,phase:4,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains yogi\" \"id:101,phase:4,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -332,17 +332,17 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 			responded403:       false,
 			respondedNullBody:  true,
 		},
-		// 		{
-		// 			name: "response body accepted, no response body access",
-		// 			inlineRules: `
-		// SecRuleEngine On\nSecResponseBodyAccess Off\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
-		// `,
-		// 			requestHdrsAction:  types.ActionContinue,
-		// 			requestBodyAction:  types.ActionContinue,
-		// 			responseHdrsAction: types.ActionContinue,
-		// 			responded403:       false,
-		// 			respondedNullBody:  false,
-		// 		},
+		{
+			name: "response body accepted, no response body access",
+			inlineRules: `
+		SecRuleEngine On\nSecResponseBodyAccess Off\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
+		`,
+			requestHdrsAction:  types.ActionContinue,
+			requestBodyAction:  types.ActionContinue,
+			responseHdrsAction: types.ActionContinue,
+			responded403:       false,
+			respondedNullBody:  false,
+		},
 	}
 
 	vmTest(t, func(t *testing.T, vm types.VMContext) {

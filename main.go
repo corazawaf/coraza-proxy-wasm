@@ -267,24 +267,28 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		return types.ActionContinue
 	}
 
-	if bodySize > 0 {
-		body, err := proxywasm.GetHttpResponseBody(ctx.responseBodySize, bodySize)
+	ctx.responseBodySize += bodySize
+	// Wait until we see the entire body. It has to be buffered in order to check that it is fully legit
+	// before sending it upstream
+	if !endOfStream {
+		// TODO(M4tteoP): Update response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
+		return types.ActionPause
+	}
+
+	if ctx.responseBodySize > 0 {
+		body, err := proxywasm.GetHttpResponseBody(0, ctx.responseBodySize)
+		if len(body) != ctx.responseBodySize {
+			proxywasm.LogDebugf("warning: retrieved response body size different from the sum of all bodySizes. %d != %d", len(body), ctx.responseBodySize)
+		}
 		if err != nil {
 			proxywasm.LogCriticalf("failed to get response body: %v", err)
 			return types.ActionContinue
 		}
-		ctx.responseBodySize += bodySize
 		_, err = tx.ResponseBodyWriter().Write(body)
 		if err != nil {
-			proxywasm.LogCriticalf("failed to read response body: %v", err)
+			proxywasm.LogCriticalf("failed to write response body: %v", err)
 			return types.ActionContinue
 		}
-	}
-
-	// Response body has to be buffered in order to check that it is fully legit
-	if !endOfStream {
-		// TODO(M4tteoP): Update response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
-		return types.ActionPause
 	}
 
 	// We have already sent response headers, an unauthorized response can not be sent anymore,
