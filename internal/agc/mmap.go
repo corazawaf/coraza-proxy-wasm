@@ -16,6 +16,9 @@ int errno;
 */
 import "C"
 
+// Must match bdwgc value of HBLKSIZE
+const hBlkSize = 4096
+
 //export mi_zalloc_aligned
 func mi_zalloc_aligned(size uintptr, alignment uintptr) unsafe.Pointer
 
@@ -24,7 +27,7 @@ func mi_free(ptr unsafe.Pointer)
 
 //export mmap
 func mmap(_ unsafe.Pointer, length uintptr, _ int32, _ int32, _ int32, _ uint64) unsafe.Pointer {
-	buf := mi_zalloc_aligned(length, 4096)
+	buf := mi_zalloc_aligned(length, hBlkSize)
 	if buf == nil {
 		C.errno = 132 /* ENOMEM */
 		return unsafe.Add(unsafe.Pointer(uintptr(0)), -1)
