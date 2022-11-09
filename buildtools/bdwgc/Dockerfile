@@ -11,7 +11,9 @@ ADD bdwgc.patch bdwgc.patch
 RUN patch -p1 < bdwgc.patch
 RUN ./autogen.sh
 
-ENV CFLAGS ${CFLAGS} -D_WASI_EMULATED_MMAN -DENABLE_TRACE
+# -D_WASI_EMULATED_MMAN allows wasi-libc's mmap header files to be included. We do not actually use
+# the library itself, instead reimplementing in mmap.go
+ENV CFLAGS ${CFLAGS} -D_WASI_EMULATED_MMAN
 
 # host is required by configure but not used so set it arbitrarily
 RUN ./configure --disable-threads --enable-mmap --disable-shared --disable-gcj-support --disable-java-finalization --disable-atomic-uncollectible --host=i686-pc-linux-gnu

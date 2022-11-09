@@ -27,7 +27,7 @@ func mmap(_ unsafe.Pointer, length uintptr, _ int32, _ int32, _ int32, _ uint64)
 	buf := mi_zalloc_aligned(length, 4096)
 	if buf == nil {
 		C.errno = 132 /* ENOMEM */
-		return unsafe.Add(unsafe.Pointer(0), -1)
+		return unsafe.Add(unsafe.Pointer(uintptr(0)), -1)
 	}
 	return buf
 }
