@@ -18,11 +18,9 @@ type stackChainObject struct {
 }
 
 func addStackRoots() {
-	stackObject := stackChainStart
-	for stackObject != nil {
+	for stackObject := stackChainStart; stackObject != nil; stackObject = stackObject.parent {
 		start := uintptr(unsafe.Pointer(stackObject)) + unsafe.Sizeof(uintptr(0))*2
 		end := start + stackObject.numSlots*unsafe.Alignof(uintptr(0))
 		GC_add_roots(start, end)
-		stackObject = stackObject.parent
 	}
 }
