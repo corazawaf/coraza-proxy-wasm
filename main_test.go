@@ -568,7 +568,8 @@ func TestEmptyBody(t *testing.T) {
 	vmTest(t, func(t *testing.T, vm types.VMContext) {
 		opt := proxytest.
 			NewEmulatorOption().
-			WithVMContext(vm)
+			WithVMContext(vm).
+			WithPluginConfiguration([]byte(`{ "rules": [ "SecRequestBodyAccess On", "SecResponseBodyAccess On" ] }`))
 
 		host, reset := proxytest.NewHostEmulator(opt)
 		defer reset()
