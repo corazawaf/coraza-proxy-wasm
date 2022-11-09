@@ -76,6 +76,11 @@ jobs:
       - name: Run regression tests (ftw)
         run: go run mage.go ftw
 
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ftw-envoy-logs
+          path: build/ftw-envoy.log
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 

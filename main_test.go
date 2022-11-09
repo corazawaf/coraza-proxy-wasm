@@ -36,7 +36,7 @@ func TestLifecycle(t *testing.T) {
 	respHdrs := [][2]string{
 		{":status", "200"},
 		{"Server", "gotest"},
-		{"Content-Length", "11"},
+		{"Content-Length", "12"},
 		{"Content-Type", "text/plain"},
 	}
 	respBody := []byte(`Hello, yogi!`)
@@ -48,6 +48,7 @@ func TestLifecycle(t *testing.T) {
 		requestBodyAction  types.Action
 		responseHdrsAction types.Action
 		responded403       bool
+		respondedNullBody  bool
 	}{
 		{
 			name:               "no rules",
@@ -56,46 +57,51 @@ func TestLifecycle(t *testing.T) {
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
+			respondedNullBody:  false,
 		},
 		{
 			name: "url accepted",
 			inlineRules: `
-SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
+			respondedNullBody:  false,
 		},
 		{
 			name: "url denied",
 			inlineRules: `
-SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello?name=panda\" \"id:101,phase:1,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello?name=panda\" \"id:101,phase:1,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionPause,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       true,
+			respondedNullBody:  false,
 		},
 		{
 			name: "method accepted",
 			inlineRules: `
-SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq post\" \"id:101,phase:1,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq post\" \"id:101,phase:1,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
+			respondedNullBody:  false,
 		},
 		{
 			name: "method denied",
 			inlineRules: `
-SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq get\" \"id:101,phase:1,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_METHOD \"@streq get\" \"id:101,phase:1,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionPause,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       true,
+			respondedNullBody:  false,
 		},
 		{
 			name: "protocol accepted",
@@ -120,152 +126,167 @@ SecRuleEngine On\nSecRule REQUEST_PROTOCOL \"@streq http/1.1\" \"id:101,phase:1,
 		{
 			name: "request header name accepted",
 			inlineRules: `
-SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq accept-encoding\" \"id:101,phase:1,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq accept-encoding\" \"id:101,phase:1,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
+			respondedNullBody:  false,
 		},
 		{
 			name: "request header name denied",
 			inlineRules: `
-SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq user-agent\" \"id:101,phase:1,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_HEADERS_NAMES \"@streq user-agent\" \"id:101,phase:1,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionPause,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       true,
+			respondedNullBody:  false,
 		},
 		{
 			name: "request header value accepted",
 			inlineRules: `
-SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq rusttest\" \"id:101,phase:1,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq rusttest\" \"id:101,phase:1,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
+			respondedNullBody:  false,
 		},
 		{
 			name: "request header value denied",
 			inlineRules: `
-SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq gotest\" \"id:101,phase:1,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq gotest\" \"id:101,phase:1,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionPause,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       true,
+			respondedNullBody:  false,
 		},
 		{
 			name: "request body accepted",
 			inlineRules: `
-SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=yogi\" \"id:101,phase:2,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=yogi\" \"id:101,phase:2,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
+			respondedNullBody:  false,
 		},
 		{
 			name: "request body denied, end of body",
 			inlineRules: `
-SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=pooh\" \"id:101,phase:2,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"name=pooh\" \"id:101,phase:2,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionPause,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       true,
+			respondedNullBody:  false,
 		},
 		{
 			name: "request body denied, start of body",
 			inlineRules: `
-SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionPause,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       true,
+			respondedNullBody:  false,
 		},
 		{
 			name: "status accepted",
 			inlineRules: `
-SecRuleEngine On\nSecRule RESPONSE_STATUS \"500\" \"id:101,phase:3,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule RESPONSE_STATUS \"500\" \"id:101,phase:3,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
+			respondedNullBody:  false,
 		},
 		{
 			name: "status denied",
 			inlineRules: `
-SecRuleEngine On\nSecRule RESPONSE_STATUS \"200\" \"id:101,phase:3,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule RESPONSE_STATUS \"200\" \"id:101,phase:3,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionPause,
 			responded403:       true,
+			respondedNullBody:  false,
 		},
 		{
 			name: "status accepted rx",
 			inlineRules: `
-SecRuleEngine On\nSecRule RESPONSE_STATUS \"@rx [^\\d]+\" \"id:101,phase:3,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule RESPONSE_STATUS \"@rx [^\\d]+\" \"id:101,phase:3,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
+			respondedNullBody:  false,
 		},
 		{
 			name: "status denied rx",
 			inlineRules: `
-SecRuleEngine On\nSecRule RESPONSE_STATUS \"@rx [\\d]+\" \"id:101,phase:3,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule RESPONSE_STATUS \"@rx [\\d]+\" \"id:101,phase:3,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionPause,
 			responded403:       true,
+			respondedNullBody:  false,
 		},
 		{
 			name: "response header name accepted",
 			inlineRules: `
-SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq transfer-encoding\" \"id:101,phase:3,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq transfer-encoding\" \"id:101,phase:3,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
+			respondedNullBody:  false,
 		},
 		{
 			name: "response header name denied",
 			inlineRules: `
-SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq server\" \"id:101,phase:3,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq server\" \"id:101,phase:3,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionPause,
 			responded403:       true,
+			respondedNullBody:  false,
 		},
 		{
 			name: "response header value accepted",
 			inlineRules: `
-SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq rusttest\" \"id:101,phase:3,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq rusttest\" \"id:101,phase:3,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
+			respondedNullBody:  false,
 		},
 		{
 			name: "response header value denied",
 			inlineRules: `
-SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq gotest\" \"id:101,phase:3,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq gotest\" \"id:101,phase:3,t:lowercase,deny\"
+		`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionPause,
 			responded403:       true,
+			respondedNullBody:  false,
 		},
 		{
 			name: "response body accepted",
@@ -276,6 +297,7 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains po
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
+			respondedNullBody:  false,
 		},
 		{
 			name: "response body denied, end of body",
@@ -286,6 +308,7 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains yo
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
+			respondedNullBody:  true,
 		},
 		{
 			name: "response body denied, start of body",
@@ -296,6 +319,7 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
+			respondedNullBody:  true,
 		},
 	}
 
@@ -365,7 +389,11 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 							body = respBody[i : i+5]
 						}
 						action := host.CallOnResponseBody(id, body, eos)
-						require.Equal(t, types.ActionContinue, action)
+						if eos {
+							require.Equal(t, types.ActionContinue, action)
+						} else {
+							require.Equal(t, types.ActionPause, action)
+						}
 					}
 				}
 
@@ -378,6 +406,11 @@ SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains he
 					require.EqualValues(t, 403, pluginResp.StatusCode)
 				} else {
 					require.Nil(t, pluginResp)
+				}
+				if tt.respondedNullBody {
+					pluginBodyResp := host.GetCurrentResponseBody(id)
+					require.NotNil(t, pluginBodyResp)
+					require.EqualValues(t, byte('\x00'), pluginBodyResp[0])
 				}
 			})
 		}
@@ -524,7 +557,7 @@ func TestEmptyBody(t *testing.T) {
 		require.Equal(t, types.ActionContinue, action)
 
 		action = host.CallOnResponseBody(id, []byte{}, false)
-		require.Equal(t, types.ActionContinue, action)
+		require.Equal(t, types.ActionPause, action)
 		action = host.CallOnResponseBody(id, []byte{}, true)
 		require.Equal(t, types.ActionContinue, action)
 
