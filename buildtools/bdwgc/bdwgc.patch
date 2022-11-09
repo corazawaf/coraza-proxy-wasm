@@ -12,7 +12,7 @@ index a53e12c0..6e7be764 100644
  # if !defined(GC_NO_TYPES) && !defined(SN_TARGET_PSP2) \
       && !defined(__CC_ARM)
 diff --git a/include/private/gc_priv.h b/include/private/gc_priv.h
-index 2ffd4dd0..ef5a7007 100644
+index 2ffd4dd0..28ed5100 100644
 --- a/include/private/gc_priv.h
 +++ b/include/private/gc_priv.h
 @@ -838,7 +838,9 @@ EXTERN_C_END
@@ -20,7 +20,7 @@ index 2ffd4dd0..ef5a7007 100644
  #endif /* DARWIN */
  
 -#include <setjmp.h>
-+#if !defined(WASI)
++#if !defined(GC_NO_SIGSETJMP)
 +# include <setjmp.h>
 +#endif
  
@@ -64,22 +64,8 @@ index 2de01afe..cf25e78c 100644
  #   if defined(__QNX__)
  #     define OS_TYPE "QNX"
  #     define SA_RESTART 0
-diff --git a/mark_rts.c b/mark_rts.c
-index a0d67641..3f6fa10c 100644
---- a/mark_rts.c
-+++ b/mark_rts.c
-@@ -735,7 +735,9 @@ STATIC void GC_push_all_stack_partially_eager(ptr_t bottom, ptr_t top,
-               && (word)cold_gc_frame <= (word)top);
- #   ifdef STACK_GROWS_DOWN
-         GC_push_all(cold_gc_frame - sizeof(ptr_t), top);
-+        GC_printf("***push_all from %p to %p\n", cold_gc_frame - sizeof(ptr_t), top);
-         GC_push_all_eager(bottom, cold_gc_frame);
-+        GC_printf("***push_all_eager from %p to %p\n", bottom, cold_gc_frame);
- #   else /* STACK_GROWS_UP */
-         GC_push_all(bottom, cold_gc_frame + sizeof(ptr_t));
-         GC_push_all_eager(cold_gc_frame, top);
 diff --git a/misc.c b/misc.c
-index 64eeb7e4..406d5b93 100644
+index 64eeb7e4..273a1fa7 100644
 --- a/misc.c
 +++ b/misc.c
 @@ -20,7 +20,7 @@
@@ -90,15 +76,6 @@ index 64eeb7e4..406d5b93 100644
 +#if !defined(MSWINCE) && !defined(WASI)
  # include <signal.h>
  #endif
- 
-@@ -823,7 +823,7 @@ GC_API int GC_CALL GC_is_init_called(void)
- #if !defined(OS2) && !defined(MACOS) && !defined(GC_ANDROID_LOG) \
-     && !defined(NN_PLATFORM_CTR) && !defined(NINTENDO_SWITCH) \
-     && (!defined(MSWIN32) || defined(CONSOLE_LOG)) && !defined(MSWINCE)
--  STATIC int GC_stdout = GC_DEFAULT_STDOUT_FD;
-+  STATIC int GC_stdout = GC_DEFAULT_STDERR_FD;
-   STATIC int GC_stderr = GC_DEFAULT_STDERR_FD;
-   STATIC int GC_log = GC_DEFAULT_STDERR_FD;
  
 diff --git a/os_dep.c b/os_dep.c
 index e116ad02..4bd9031c 100644

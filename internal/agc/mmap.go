@@ -8,6 +8,11 @@ import "unsafe"
 // we wouldn't exercise the code path, its use of pread is incompatible with Envoy.
 // https://github.com/WebAssembly/wasi-libc/blob/5d8a1409aa85acf8dbb197e13d33489ad1eac656/libc-bottom-half/mman/mman.c
 
+/*
+int errno;
+*/
+import "C"
+
 //export mi_zalloc_aligned
 func mi_zalloc_aligned(size uintptr, alignment uintptr) unsafe.Pointer
 
@@ -18,7 +23,8 @@ func mi_free(ptr unsafe.Pointer)
 func mmap(_ unsafe.Pointer, length uintptr, _ int32, _ int32, _ int32, _ uint64) unsafe.Pointer {
 	buf := mi_zalloc_aligned(length, 4096)
 	if buf == nil {
-		panic("nil")
+		C.errno = 132 /* ENOMEM */
+		return unsafe.Add(unsafe.Pointer(0), -1)
 	}
 	return buf
 }
