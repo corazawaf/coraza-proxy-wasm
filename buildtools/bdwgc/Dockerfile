@@ -19,4 +19,4 @@ ENV CFLAGS ${CFLAGS} -D_WASI_EMULATED_MMAN
 RUN ./configure --disable-threads --enable-mmap --disable-shared --disable-gcj-support --disable-java-finalization --disable-atomic-uncollectible --host=i686-pc-linux-gnu
 RUN make
 
-CMD ["cp", "/bdwgc/.libs/libcord.a", "/bdwgc/.libs/libgc.a", "/out/"]
+CMD ["cp", "/bdwgc/.libs/libgc.a", "/out/"]
