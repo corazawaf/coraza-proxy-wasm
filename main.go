@@ -269,7 +269,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 
 	ctx.responseBodySize += bodySize
 	// Wait until we see the entire body. It has to be buffered in order to check that it is fully legit
-	// before sending it upstream
+	// before sending it downstream
 	if !endOfStream {
 		// TODO(M4tteoP): Update response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
 		return types.ActionPause
