@@ -9,6 +9,4 @@
 // order matters, this package should be the first package to be initialized - any packages
 // initialized before cannot allocate memory. For that reason, we have named this agc instead
 // of gc.
-//
-// Currently, only one block can be allocated meaning this has a fixed-size heap.
 package agc
