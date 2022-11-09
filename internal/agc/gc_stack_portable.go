@@ -26,10 +26,3 @@ func addStackRoots() {
 		stackObject = stackObject.parent
 	}
 }
-
-// trackPointer is a stub function call inserted by the compiler during IR
-// construction. Calls to it are later replaced with regular stack bookkeeping
-// code.
-//
-//go:extern runtime.trackPointer
-func trackPointer(ptr unsafe.Pointer)
