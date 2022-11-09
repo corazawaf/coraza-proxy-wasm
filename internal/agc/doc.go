@@ -1,9 +1,8 @@
 // Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package agc is a custom gargabe gollector for TinyGo. The main difference is instead of taking
-// ownership of the entire process heap, it uses malloc to allocate blocks for the GC to then
-// assign to allocated objects.
+// Package agc is a custom garbage collector for TinyGo. It delegates to bdwgc for actual
+// allocation and collection.
 //
 // Unfortunately, we must rely on a package init() method for initializing the heap because we
 // cannot override TinyGo's initHeap function that normally does it. This means initialization
