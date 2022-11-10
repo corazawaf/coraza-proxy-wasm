@@ -11,10 +11,10 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-var keywordsDict = map[string]string{
-	"@recommended-conf": "coraza.conf-recommended.conf",
-	"@crs-conf":         "crs-setup.conf.example",
-	"@owasp_crs":        "crs",
+var keywordsDict = map[*regexp.Regexp]string{
+	regexp.MustCompile("(?i)include @recommended-conf"): "coraza.conf-recommended.conf",
+	regexp.MustCompile("(?i)include @crs-conf"):         "crs-setup.conf.example",
+	regexp.MustCompile("(?i)include @owasp_crs"):        "crs",
 }
 
 // pluginConfiguration is a type to represent an example configuration for this wasm plugin.
@@ -46,10 +46,9 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 // handlePluginConfigurationKeywords replaces high level configuration keywords
 // with the internal paths
 func handlePluginConfigurationKeywords(configLine string) string {
-	for k, v := range keywordsDict {
-		re := regexp.MustCompile(`(?i)include ` + k)
+	for rxKey, val := range keywordsDict {
 		// no limit on replacements to address multiple inlined entries
-		configLine = re.ReplaceAllString(configLine, "Include "+v)
+		configLine = rxKey.ReplaceAllString(configLine, "Include "+val)
 	}
 	return configLine
 }
