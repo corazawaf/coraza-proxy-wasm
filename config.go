@@ -11,10 +11,16 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-var keywordsDict = map[*regexp.Regexp]string{
-	regexp.MustCompile("(?i)include @recommended-conf"): "coraza.conf-recommended.conf",
-	regexp.MustCompile("(?i)include @crs-conf"):         "crs-setup.conf.example",
-	regexp.MustCompile("(?i)include @owasp_crs"):        "crs",
+var keywordsDict = []keyword{
+	{key: "@recommended-conf", tran: "coraza.conf-recommended.conf"},
+	{key: "@crs-conf", tran: "crs-setup.conf.example"},
+	{key: "@owasp_crs", tran: "crs"},
+}
+
+type keyword struct {
+	key   string
+	tran  string
+	keyRx *regexp.Regexp
 }
 
 // pluginConfiguration is a type to represent an example configuration for this wasm plugin.
@@ -24,6 +30,10 @@ type pluginConfiguration struct {
 
 func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 	config := pluginConfiguration{}
+	// initilizes keywords regexes
+	for keyId := range keywordsDict {
+		keywordsDict[keyId].keyRx = regexp.MustCompile(`(?i)include ` + keywordsDict[keyId].key)
+	}
 
 	data = bytes.TrimSpace(data)
 	if len(data) == 0 {
@@ -46,9 +56,9 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 // handlePluginConfigurationKeywords replaces high level configuration keywords
 // with the internal paths
 func handlePluginConfigurationKeywords(configLine string) string {
-	for rxKey, val := range keywordsDict {
+	for _, keyw := range keywordsDict {
 		// no limit on replacements to address multiple inlined entries
-		configLine = rxKey.ReplaceAllString(configLine, "Include "+val)
+		configLine = keyw.keyRx.ReplaceAllString(configLine, "Include "+keyw.tran)
 	}
 	return configLine
 }

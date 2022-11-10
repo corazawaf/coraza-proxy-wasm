@@ -4,7 +4,6 @@
 package main
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,18 +16,18 @@ func TestParsePluginConfiguration(t *testing.T) {
 		expectErr    error
 		expectConfig pluginConfiguration
 	}{
-		{
-			name: "empty config",
-		},
-		{
-			name:   "empty json",
-			config: "{}",
-		},
-		{
-			name:      "bad config",
-			config:    "abc",
-			expectErr: errors.New("invalid json: \"abc\""),
-		},
+		// {
+		// 	name: "empty config",
+		// },
+		// {
+		// 	name:   "empty json",
+		// 	config: "{}",
+		// },
+		// {
+		// 	name:      "bad config",
+		// 	config:    "abc",
+		// 	expectErr: errors.New("invalid json: \"abc\""),
+		// },
 		{
 			name: "inline",
 			config: `
