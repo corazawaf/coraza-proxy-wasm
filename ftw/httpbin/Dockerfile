@@ -1,3 +1,6 @@
+# Copyright The OWASP Coraza contributors
+# SPDX-License-Identifier: Apache-2.0
+
 # TODO(anuraaga): Remove this Dockerfile once a new version of the official image is released
 FROM golang:1.19-alpine
 
