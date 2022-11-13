@@ -1,0 +1,14 @@
+apiVersion: extensions.istio.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: coraza-waf
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  url: oci://corazawaf/coraza-proxy-wasm:latest
+  imagePullPolicy: IfNotPresent
+  phase: AUTHN
+  pluginConfig:
+    rules:
+      - "Include crs/*.conf"

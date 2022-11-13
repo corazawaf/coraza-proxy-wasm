@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
@@ -222,9 +223,157 @@ func UpdateLibs() error {
 	return nil
 }
 
-// E2e runs e2e tests with a built plugin against the example deployment. Requires docker-compose.
 func E2e() error {
+	mg.SerialDeps(E2eEnvoy, E2eIstio)
+	return nil
+}
+
+// E2e runs e2e tests with a built plugin against the example deployment. Requires docker-compose.
+func E2eEnvoy() error {
 	return sh.RunV("docker-compose", "-f", "e2e/docker-compose.yml", "up", "--abort-on-container-exit", "tests")
+}
+
+func runK8sApply(file string, replacementKV ...string) error {
+	fmt.Printf("Applying %q\n", file)
+	if len(replacementKV) == 0 {
+		return sh.RunV("kubectl", "apply", "-f", file)
+	}
+
+	if len(replacementKV)%2 != 0 {
+		return errors.New("missing value for a replacement pair")
+	}
+
+	manifest, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+
+	patchedManifest := string(manifest)
+	for i := 0; i < len(replacementKV)/2; i++ {
+		patchedManifest = strings.Replace(patchedManifest, replacementKV[2*i], replacementKV[2*i+1], 1)
+	}
+
+	f, err := os.CreateTemp("", filepath.Base(file))
+	if err != nil {
+		return err
+	}
+	f.Write([]byte(patchedManifest))
+	defer os.Remove(f.Name())
+
+	if err := sh.RunV("kubectl", "apply", "-f", f.Name()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// References
+// - https://kind.sigs.k8s.io/docs/user/loadbalancer/
+func E2eIstio() error {
+	const (
+		clusterName = "coraza-proxy-wasm-e2e"
+	)
+
+	var (
+		kind = "kind"
+		//istioCTL = "/Users/jcchavezs/.getmesh/bin/getmesh istioctl"
+		//kubeCTL     = "kubectl"
+		dockerImage = fmt.Sprintf("corazawaf/coraza-proxy-wasm:%d", time.Now().Unix())
+	)
+
+	if clusters, err := sh.Output(kind, "get", "clusters"); err != nil {
+		return err
+	} else if !strings.Contains(clusters, clusterName) {
+		err := sh.RunV(kind, "create", "cluster", "--name", clusterName, "--config", "./e2e/istio/cluster.yaml")
+		if err != nil {
+			return err
+		}
+	}
+	//defer sh.RunV("kind", "delete", "cluster", "--name", clusterName)
+
+	if err := sh.RunV("/Users/jcchavezs/.getmesh/bin/getmesh", "istioctl", "install", "--set", "profile=demo", "-y"); err != nil {
+		return err
+	}
+
+	if err := sh.Run("kubectl", "label", "namespace", "default", "istio-injection=enabled", "--overwrite=true"); err != nil {
+		return err
+	}
+	/*
+		if err := runK8sApply("https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml"); err != nil {
+			return err
+		}
+
+		sh.RunV(kubeCTL, "wait", "--namespace", "metallb-system",
+			"--for=condition=ready", "pod",
+			"--selector=app=metallb",
+			"--timeout=90s",
+		)
+
+		cidr, err := sh.Output("docker", "network", "inspect", "-f", "'{{.IPAM.Config}}'", "kind")
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(cidr)
+
+		if err := runK8sApply(
+			"./e2e/istio/metallb-config.yaml",
+			"${IP_START}", "172.19.255.200",
+			"${IP_END}", "172.19.255.250",
+		); err != nil {
+			return err
+		}
+	*/
+
+	if patch, err := os.ReadFile("./e2e/istio/patch-ingressgateway-nodeport.yaml"); err == nil {
+		if err := sh.RunV("kubectl", "patch", "service", "istio-ingressgateway", "-n", "istio-system", "--patch", string(patch)); err != nil {
+			return err
+		}
+	} else {
+		return err
+	}
+
+	if err := sh.Run("docker", "build", "-t", dockerImage, "."); err != nil {
+		return err
+	}
+
+	if err := sh.RunV(kind, "load", "docker-image", "kennethreitz/httpbin:latest", "--name", clusterName); err != nil {
+		return err
+	}
+
+	if err := sh.RunV(kind, "load", "docker-image", dockerImage, "--name", clusterName); err != nil {
+		return err
+	}
+
+	imageName, version, _ := strings.Cut(dockerImage, ":")
+	fmt.Printf("Waiting for %q to be loaded in control plane\n", dockerImage)
+	for {
+		images, err := sh.Output("docker", "exec", "-it", clusterName+"-control-plane", "crictl", "images")
+		if err != nil {
+			return err
+		}
+
+		if strings.Contains(images, imageName) && strings.Contains(images, version) {
+			break
+		}
+	}
+
+	/*if err := runK8sApply("./e2e/istio/wasmplugin.yaml", "${IMAGE}", dockerImage); err != nil {
+		return err
+	}
+
+	if err := runK8sApply("./e2e/istio/service.yaml"); err != nil {
+		return err
+	}
+
+	ip, err := sh.Output(kubeCTL, "get", "svc/foo-service", "-o=jsonpath='{.status.loadBalancer.ingress[0].ip}'")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(ip)
+	*/
+	return nil
 }
 
 // Ftw runs ftw tests with a built plugin and Envoy. Requires docker-compose.
