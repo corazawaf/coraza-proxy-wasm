@@ -44,7 +44,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 			name: "inline many entries",
 			config: `
 			{ 
-				"rules": ["SecRuleEngine On", "Include @owasp_@owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""]
+				"rules": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""]
 			}
 			`,
 			expectConfig: pluginConfiguration{
