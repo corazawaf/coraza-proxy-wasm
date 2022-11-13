@@ -663,7 +663,7 @@ func TestParseCRS(t *testing.T) {
 		opt := proxytest.
 			NewEmulatorOption().
 			WithVMContext(vm).
-			WithPluginConfiguration([]byte(`{ "rules": [ "Include ftw-config.conf", "Include coraza.conf-recommended.conf", "Include crs-setup.conf.example", "Include crs/*.conf" ] }`))
+			WithPluginConfiguration([]byte(`{ "rules": [ "Include @ftw-conf", "Include @recommended-conf", "Include crs-setup.conf.example", "Include crs/*.conf" ] }`))
 
 		host, reset := proxytest.NewHostEmulator(opt)
 		defer reset()
