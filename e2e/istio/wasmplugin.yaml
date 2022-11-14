@@ -6,7 +6,7 @@ spec:
   selector:
     matchLabels:
       istio: ingressgateway
-  url: oci://corazawaf/coraza-proxy-wasm:latest
+  url: oci://${IMAGE}
   imagePullPolicy: IfNotPresent
   phase: AUTHN
   pluginConfig:
