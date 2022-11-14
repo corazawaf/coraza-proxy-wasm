@@ -358,11 +358,11 @@ func E2eIstio() error {
 		}
 	}
 
-	/*if err := runK8sApply("./e2e/istio/wasmplugin.yaml", "${IMAGE}", dockerImage); err != nil {
+	if err := runK8sApply("./e2e/istio/wasmplugin.yaml", "${IMAGE}", dockerImage); err != nil {
 		return err
 	}
 
-	if err := runK8sApply("./e2e/istio/service.yaml"); err != nil {
+	/*if err := runK8sApply("./e2e/istio/service.yaml"); err != nil {
 		return err
 	}
 
