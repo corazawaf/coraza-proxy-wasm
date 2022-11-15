@@ -1,6 +1,8 @@
 // Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build tinygo
+
 package agc
 
 //export GC_get_gc_no
