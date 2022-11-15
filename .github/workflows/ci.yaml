@@ -19,7 +19,8 @@ env:
   # - istio 1.5.1 envoy version
   # - latest envoy master
   ENVOY_IMAGES: >
-    envoyproxy/envoy:v1.23-latest
+    envoyproxy/envoy:v1.24-latest
+    envoyproxy/envoy:v1.23.2
     envoyproxy/envoy-dev:1c86bac121ae73cefcba64ec0a863707b6cb8158
     envoyproxy/envoy-dev:latest
 
