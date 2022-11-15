@@ -67,10 +67,11 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	root = &rulesFS{
 		root,
 		map[string]string{
-			"@recommended-conf":    "coraza.conf-recommended.conf",
-			"@demo-conf":           "coraza-demo.conf",
-			"@crs-setup-demo-conf": "crs-setup-demo.conf",
-			"@ftw-conf":            "ftw-config.conf",
+			"@recommended-conf":       "coraza.conf-recommended.conf",
+			"@demo-conf":              "coraza-demo.conf",
+			"@crs-setup-demo-conf":    "crs-setup-demo.conf",
+			"@ftw-conf":               "ftw-config.conf",
+			"@crs-setup-conf-example": "crs-setup.conf.example",
 		},
 		map[string]string{
 			"@owasp_crs": "crs",
