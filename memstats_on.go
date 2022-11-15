@@ -6,24 +6,22 @@
 package main
 
 import (
-	"runtime"
-
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
+
+	"github.com/corazawaf/coraza-proxy-wasm/internal/agc"
 )
 
 func logMemStats() {
-	ms := runtime.MemStats{}
-	runtime.ReadMemStats(&ms)
+	ms := agc.MemStats{}
+	agc.ReadMemStats(&ms)
 	proxywasm.LogDebugf(
-		"Sys: %d, HeapSys: %d, HeapIdle: %d, HeapInuse: %d, HeapReleased: %d, TotalAlloc: %d, Mallocs: %d, Frees: %d, Live: %d, GCSys: %d",
+		"Sys: %d, HeapSys: %d, HeapAlloc: %d, HeapIdle: %d, HeapReleased: %d, TotalAlloc: %d, NumGC: %d, BytesSinceGC: %d",
 		ms.Sys,
 		ms.HeapSys,
+		ms.HeapAlloc,
 		ms.HeapIdle,
-		ms.HeapInuse,
 		ms.HeapReleased,
 		ms.TotalAlloc,
-		ms.Mallocs,
-		ms.Frees,
-		ms.Mallocs-ms.Frees,
-		ms.GCSys)
+		ms.NumGC,
+		ms.BytesSinceGC)
 }
