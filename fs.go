@@ -4,66 +4,55 @@
 package main
 
 import (
+	"fmt"
 	"io/fs"
-	"os"
-	"path"
 	"strings"
 )
 
-type embedFS interface {
-	fs.FS
-	ReadDir(name string) ([]fs.DirEntry, error)
-	ReadFile(name string) ([]byte, error)
-}
-
 type rulesFS struct {
-	fs           embedFS
+	fs           fs.FS
 	filesMapping map[string]string
 	dirsMapping  map[string]string
 }
 
-const pathSeparator = string(os.PathSeparator)
-
 func (r rulesFS) Open(name string) (fs.File, error) {
-	if strings.Contains(name, pathSeparator) {
-		// is not in root, hence we can do dir mapping
-		for a, dst := range r.dirsMapping {
-			prefix := a + pathSeparator
-			if strings.HasPrefix(name, prefix) {
-				return r.fs.Open(path.Join(dst, name[len(prefix):]))
-			}
-		}
-	}
-
-	for a, dst := range r.filesMapping {
-		if a == name {
-			return r.fs.Open(dst)
-		}
-	}
-
-	return r.fs.Open(name)
+	return r.fs.Open(r.mapPath(name))
 }
 
 func (r rulesFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	for a, dst := range r.dirsMapping {
 		if a == name {
-			return r.fs.ReadDir(dst)
+			return fs.ReadDir(r.fs, dst)
 		}
 
-		prefix := a + pathSeparator
+		prefix := a + "/"
 		if strings.HasPrefix(name, prefix) {
-			return r.fs.ReadDir(path.Join(dst, name[len(prefix):]))
+			return fs.ReadDir(r.fs, fmt.Sprintf("%s/%s", dst, name[len(prefix):]))
 		}
 	}
-	return r.fs.ReadDir(name)
+	return fs.ReadDir(r.fs, name)
 }
 
 func (r rulesFS) ReadFile(name string) ([]byte, error) {
-	for a, dst := range r.filesMapping {
-		if a == name {
-			return r.fs.ReadFile(dst)
+	return fs.ReadFile(r.fs, r.mapPath(name))
+}
+
+func (r rulesFS) mapPath(p string) string {
+	if strings.IndexByte(p, '/') != -1 {
+		// is not in root, hence we can do dir mapping
+		for a, dst := range r.dirsMapping {
+			prefix := a + "/"
+			if strings.HasPrefix(p, prefix) {
+				return fmt.Sprintf("%s/%s", dst, p[len(prefix):])
+			}
 		}
 	}
 
-	return r.fs.ReadFile(name)
+	for a, dst := range r.filesMapping {
+		if a == p {
+			return dst
+		}
+	}
+
+	return p
 }

@@ -65,7 +65,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	root, _ := fs.Sub(crs, "rules")
 
 	root = &rulesFS{
-		root.(embedFS),
+		root,
 		map[string]string{
 			"@recommended-conf":    "coraza.conf-recommended.conf",
 			"@demo-conf":           "coraza-demo.conf",
