@@ -3,7 +3,7 @@ module github.com/corazawaf/coraza-proxy-wasm
 go 1.19
 
 require (
-	github.com/corazawaf/coraza/v3 v3.0.0-20221102084932-9db5a595e205
+	github.com/corazawaf/coraza/v3 v3.0.0-20221108125006-22f2f33e5863
 	github.com/magefile/mage v1.14.0
 	github.com/stretchr/testify v1.8.0
 	github.com/tetratelabs/proxy-wasm-go-sdk v0.20.1-0.20221031045735-89d180d022a5
