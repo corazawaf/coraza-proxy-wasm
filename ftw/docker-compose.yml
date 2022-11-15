@@ -1,6 +1,6 @@
 services:
   httpbin:
-    image: kennethreitz/httpbin:latest
+    image: mccutchen/go-httpbin:v2.5.0
   chown:
     image: alpine:3.16
     command:

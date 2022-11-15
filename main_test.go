@@ -391,7 +391,7 @@ func TestLifecycle(t *testing.T) {
 						if eos {
 							require.Equal(t, tt.requestBodyAction, requestBodyAction)
 						} else {
-							require.Equal(t, types.ActionContinue, requestBodyAction)
+							require.Equal(t, types.ActionPause, requestBodyAction)
 						}
 					}
 				}
@@ -579,7 +579,7 @@ func TestEmptyBody(t *testing.T) {
 		id := host.InitializeHttpContext()
 
 		action := host.CallOnRequestBody(id, []byte{}, false)
-		require.Equal(t, types.ActionContinue, action)
+		require.Equal(t, types.ActionPause, action)
 		action = host.CallOnRequestBody(id, []byte{}, true)
 		require.Equal(t, types.ActionContinue, action)
 
@@ -690,7 +690,7 @@ func TestParseCRS(t *testing.T) {
 		opt := proxytest.
 			NewEmulatorOption().
 			WithVMContext(vm).
-			WithPluginConfiguration([]byte(`{ "rules": [ "Include ftw-config.conf", "Include coraza.conf-recommended.conf", "Include crs-setup.conf.example", "Include crs/*.conf" ] }`))
+			WithPluginConfiguration([]byte(`{ "rules": [ "Include @ftw-conf", "Include @recommended-conf", "Include crs-setup.conf.example", "Include @owasp_crs/*.conf" ] }`))
 
 		host, reset := proxytest.NewHostEmulator(opt)
 		defer reset()

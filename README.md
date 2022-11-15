@@ -88,7 +88,7 @@ configuration:
     "@type": "type.googleapis.com/google.protobuf.StringValue"
     value: |
     {
-        "rules": [ "SecDebugLogLevel 5", "SecRuleEngine On", "Include crs/*.conf" ]
+        "rules": [ "SecDebugLogLevel 5", "SecRuleEngine On", "Include @owasp_crs/*.conf" ]
     }
 ```
 
@@ -99,7 +99,7 @@ configuration:
     "@type": "type.googleapis.com/google.protobuf.StringValue"
     value: |
     {
-        "rules": [ "SecDebugLogLevel 5", "SecRuleEngine On", "Include crs/REQUEST-901-INITIALIZATION.conf" ]
+        "rules": [ "SecDebugLogLevel 5", "SecRuleEngine On", "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf" ]
     }
 ```
 
@@ -115,7 +115,7 @@ Take a look at its config file [ftw.yml](./ftw/ftw.yml) for details about tests 
 
 ## Example: Spinning up the coraza-wasm-filter for manual tests
 
-Once the filter is built, via the commands `mage runExample` and `mage teardownExample` you can spin up and tear down the test environment. Envoy with the coraza-wasm filter will be reachable at `localhost:8080`. The filter is configured with the CRS loaded working in Anomaly Scoring mode. For details and locally tweaking the configuration refer to [coraza-demo.conf](./rules/coraza-demo.conf) and [crs-setup-demo.conf](./rules/crs-setup-demo.conf).
+Once the filter is built, via the commands `mage runExample` and `mage teardownExample` you can spin up and tear down the test environment. Envoy with the coraza-wasm filter will be reachable at `localhost:8080`. The filter is configured with the CRS loaded working in Anomaly Scoring mode. For details and locally tweaking the configuration refer to [@demo-conf](./rules/coraza-demo.conf) and [@crs-setup-demo-conf](./rules/crs-setup-demo.conf).
 In order to monitor envoy logs while performing requests you can run:
 
 - Envoy logs: `docker-compose -f ./example/docker-compose.yml logs -f envoy-logs`.

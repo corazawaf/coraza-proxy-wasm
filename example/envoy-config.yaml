@@ -42,10 +42,10 @@ static_resources:
                           value: |
                             {
                               "rules": [
-                                "Include coraza-demo.conf",
-                                "Include crs-setup-demo.conf",
+                                "Include @demo-conf",
+                                "Include @crs-setup-demo-conf",
                                 "SecDebugLogLevel 3",
-                                "Include crs/*.conf",
+                                "Include @owasp_crs/*.conf",
                                 "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
                               ]
                             }

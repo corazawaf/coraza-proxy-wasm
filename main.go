@@ -64,6 +64,19 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 	root, _ := fs.Sub(crs, "rules")
 
+	root = &rulesFS{
+		root,
+		map[string]string{
+			"@recommended-conf":    "coraza.conf-recommended.conf",
+			"@demo-conf":           "coraza-demo.conf",
+			"@crs-setup-demo-conf": "crs-setup-demo.conf",
+			"@ftw-conf":            "ftw-config.conf",
+		},
+		map[string]string{
+			"@owasp_crs": "crs",
+		},
+	}
+
 	// First we initialize our waf and our seclang parser
 	conf := coraza.NewWAFConfig().
 		WithErrorLogger(logError).
@@ -107,6 +120,7 @@ type httpContext struct {
 	httpProtocol          string
 	processedRequestBody  bool
 	processedResponseBody bool
+	requestBodySize       int
 	responseBodySize      int
 	metrics               *wafMetrics
 }
@@ -180,8 +194,15 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		return types.ActionContinue
 	}
 
-	if bodySize > 0 {
-		body, err := proxywasm.GetHttpRequestBody(0, bodySize)
+	ctx.requestBodySize += bodySize
+	// Wait until we see the entire body. It has to be buffered in order to check that it is fully legit
+	// before sending it upstream
+	if !endOfStream {
+		return types.ActionPause
+	}
+
+	if ctx.requestBodySize > 0 {
+		body, err := proxywasm.GetHttpRequestBody(0, ctx.requestBodySize)
 		if err != nil {
 			proxywasm.LogCriticalf("failed to get request body: %v", err)
 			return types.ActionContinue
@@ -192,10 +213,6 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 			proxywasm.LogCriticalf("failed to read request body: %v", err)
 			return types.ActionContinue
 		}
-	}
-
-	if !endOfStream {
-		return types.ActionContinue
 	}
 
 	ctx.processedRequestBody = true
