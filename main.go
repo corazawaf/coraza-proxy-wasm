@@ -64,6 +64,19 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 	root, _ := fs.Sub(crs, "rules")
 
+	root = &rulesFS{
+		root,
+		map[string]string{
+			"@recommended-conf":    "coraza.conf-recommended.conf",
+			"@demo-conf":           "coraza-demo.conf",
+			"@crs-setup-demo-conf": "crs-setup-demo.conf",
+			"@ftw-conf":            "ftw-config.conf",
+		},
+		map[string]string{
+			"@owasp_crs": "crs",
+		},
+	}
+
 	// First we initialize our waf and our seclang parser
 	conf := coraza.NewWAFConfig().
 		WithErrorLogger(logError).

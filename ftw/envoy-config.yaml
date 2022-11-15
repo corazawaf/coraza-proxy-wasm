@@ -37,10 +37,10 @@ static_resources:
                           value: |
                             {
                               "rules": [
-                                "Include coraza.conf-recommended.conf",
-                                "Include ftw-config.conf",
+                                "Include @recommended-conf",
+                                "Include @ftw-conf",
                                 "Include crs-setup.conf.example",
-                                "Include crs/*.conf"
+                                "Include @owasp_crs/*.conf"
                               ]
                             }
                         vm_config:
