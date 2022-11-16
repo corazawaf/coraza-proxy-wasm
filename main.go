@@ -5,8 +5,6 @@ package main
 
 import (
 	"bytes"
-	"embed"
-	"io/fs"
 	"strconv"
 	"strings"
 
@@ -17,10 +15,8 @@ import (
 
 	"github.com/corazawaf/coraza-proxy-wasm/internal/bodyprocessors"
 	"github.com/corazawaf/coraza-proxy-wasm/internal/operators"
+	"github.com/corazawaf/coraza-proxy-wasm/rules"
 )
-
-//go:embed rules
-var crs embed.FS
 
 func main() {
 	bodyprocessors.Register()
@@ -62,21 +58,6 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		return types.OnPluginStartStatusFailed
 	}
 
-	root, _ := fs.Sub(crs, "rules")
-
-	root = &rulesFS{
-		root,
-		map[string]string{
-			"@recommended-conf":    "coraza.conf-recommended.conf",
-			"@demo-conf":           "coraza-demo.conf",
-			"@crs-setup-demo-conf": "crs-setup-demo.conf",
-			"@ftw-conf":            "ftw-config.conf",
-		},
-		map[string]string{
-			"@owasp_crs": "crs",
-		},
-	}
-
 	// First we initialize our waf and our seclang parser
 	conf := coraza.NewWAFConfig().
 		WithErrorLogger(logError).
@@ -86,7 +67,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 			// TinyGo compilation will prevent buffering request body to files anyways.
 			// TODO(anuraaga): Make this configurable in plugin configuration.
 			WithInMemoryLimit(1024 * 1024 * 1024)).
-		WithRootFS(root)
+		WithRootFS(rules.FS)
 
 	waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(config.rules, "\n")))
 	if err != nil {
