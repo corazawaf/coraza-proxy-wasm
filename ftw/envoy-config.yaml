@@ -39,7 +39,7 @@ static_resources:
                               "rules": [
                                 "Include @recommended-conf",
                                 "Include @ftw-conf",
-                                "Include crs-setup.conf.example",
+                                "Include @crs-setup-conf",
                                 "Include @owasp_crs/*.conf"
                               ]
                             }

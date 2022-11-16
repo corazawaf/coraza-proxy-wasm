@@ -21,7 +21,7 @@ var (
 	}
 
 	files = []string{
-		"Include crs-setup.conf.example",
+		"Include @crs-setup-conf",
 		"Include @recommended-conf",
 		"Include @ftw-conf",
 		"Include @owasp_crs/*.conf",
