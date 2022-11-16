@@ -13,14 +13,10 @@ env:
   GO_VERSION: 1.19
   TINYGO_VERSION: 0.26.0
   WABT_VERSION: 1.0.29
-  # The SHA of the envoy version comes from https://github.com/istio/proxy/blob/master/WORKSPACE#L42
-  # Here we aim to support:
-  # - istio 1.5.0 envoy version
-  # - istio 1.5.1 envoy version
-  # - latest envoy master
+  # Test against latest two releases and latest dev
   ENVOY_IMAGES: >
+    envoyproxy/envoy:v1.24-latest
     envoyproxy/envoy:v1.23-latest
-    envoyproxy/envoy-dev:1c86bac121ae73cefcba64ec0a863707b6cb8158
     envoyproxy/envoy-dev:latest
 
 jobs:
