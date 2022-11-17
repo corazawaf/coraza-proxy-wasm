@@ -1,12 +1,40 @@
 // Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package rules
 
 import (
+	"embed"
 	"fmt"
 	"io/fs"
 	"strings"
+
+	"github.com/corazawaf/coraza/v3"
+)
+
+// NewEmbeddedRulesConfig returns a coraza.WAFConfig that uses the embedded filesystem as the source
+// of rules.
+func NewEmbeddedRulesConfig() coraza.WAFConfig {
+	return coraza.NewWAFConfig().WithRootFS(root)
+}
+
+var (
+	//go:embed crs/* *.conf *.example
+	rules embed.FS
+
+	root = &rulesFS{
+		rules,
+		map[string]string{
+			"@recommended-conf":    "coraza.conf-recommended.conf",
+			"@demo-conf":           "coraza-demo.conf",
+			"@crs-setup-demo-conf": "crs-setup-demo.conf",
+			"@ftw-conf":            "ftw-config.conf",
+			"@crs-setup-conf":      "crs-setup.conf.example",
+		},
+		map[string]string{
+			"@owasp_crs": "crs",
+		},
+	}
 )
 
 type rulesFS struct {
