@@ -1,13 +1,37 @@
 // Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package wasmplugin
 
 import (
+	"embed"
 	"fmt"
 	"io/fs"
 	"strings"
 )
+
+var (
+	//go:embed rules
+	crs  embed.FS
+	root fs.FS
+)
+
+func init() {
+	rules, _ := fs.Sub(crs, "rules")
+	root = &rulesFS{
+		rules,
+		map[string]string{
+			"@recommended-conf":    "coraza.conf-recommended.conf",
+			"@demo-conf":           "coraza-demo.conf",
+			"@crs-setup-demo-conf": "crs-setup-demo.conf",
+			"@ftw-conf":            "ftw-config.conf",
+			"@crs-setup-conf":      "crs-setup.conf.example",
+		},
+		map[string]string{
+			"@owasp_crs": "crs",
+		},
+	}
+}
 
 type rulesFS struct {
 	fs           fs.FS
