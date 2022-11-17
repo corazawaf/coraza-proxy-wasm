@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"fortio.org/fortio/fhttp"
@@ -14,6 +15,19 @@ import (
 
 // LoadTest runs load tests against the ftw deployment.
 func LoadTest() error {
+	for _, threads := range []int{1, 2, 4} {
+		for _, payloadSize := range []int{0, 100, 1000, 10000, 100000, 1000000} {
+			for _, conf := range []string{"envoy-config.yaml", "envoy-config-nowasm.yaml"} {
+				if err := doLoadTest(conf, payloadSize, threads); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func doLoadTest(conf string, payloadSize int, threads int) error {
 	if err := sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "build", "--pull"); err != nil {
 		return err
 	}
@@ -21,22 +35,31 @@ func LoadTest() error {
 		_ = sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "kill")
 		_ = sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "down", "-v")
 	}()
-	if err := sh.RunV("docker-compose", "--file", "ftw/docker-compose.yml", "run", "--service-ports", "--rm", "-d", "envoy"); err != nil {
+	if err := sh.RunWithV(map[string]string{"ENVOY_CONFIG": fmt.Sprintf("/conf/%s", conf)}, "docker-compose",
+		"--file", "ftw/docker-compose.yml", "run", "--service-ports", "--rm", "-d", "envoy"); err != nil {
 		return err
+	}
+
+	// Wait for Envoy to start.
+	for i := 0; i < 1000; i++ {
+		if resp, err := http.Get("http://localhost:8080/anything"); err == nil && resp.StatusCode == 200 {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	opts := &fhttp.HTTPRunnerOptions{
 		RunnerOptions: periodic.RunnerOptions{
 			QPS:        100,
-			NumThreads: 1,
+			NumThreads: threads,
 			Duration:   10 * time.Second,
 		},
-		AllowInitialErrors: true,
 		HTTPOptions: fhttp.HTTPOptions{
 			URL: "http://localhost:8080/",
 		},
 	}
 
+	fmt.Printf("Running load test with config=%s, payloadSize=%d, threads=%d\n", conf, payloadSize, threads)
 	res, err := fhttp.RunHTTPTest(opts)
 	if err != nil {
 		return err
