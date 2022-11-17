@@ -1,6 +1,6 @@
 services:
   httpbin:
-    image: kennethreitz/httpbin:latest
+    image: mccutchen/go-httpbin:v2.5.0
   envoy:
     depends_on:
       - httpbin
