@@ -1,38 +1,13 @@
 // Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package rules
+package main
 
 import (
-	"embed"
 	"fmt"
 	"io/fs"
 	"strings"
 )
-
-var (
-	//go:embed crs/* *.conf *.example
-	rules embed.FS
-	// FS is the filesystem that contains the embedded rule set and recommended
-	// configurations
-	FS fs.FS
-)
-
-func init() {
-	FS = &rulesFS{
-		rules,
-		map[string]string{
-			"@recommended-conf":    "coraza.conf-recommended.conf",
-			"@demo-conf":           "coraza-demo.conf",
-			"@crs-setup-demo-conf": "crs-setup-demo.conf",
-			"@ftw-conf":            "ftw-config.conf",
-			"@crs-setup-conf":      "crs-setup.conf.example",
-		},
-		map[string]string{
-			"@owasp_crs": "crs",
-		},
-	}
-}
 
 type rulesFS struct {
 	fs           fs.FS
