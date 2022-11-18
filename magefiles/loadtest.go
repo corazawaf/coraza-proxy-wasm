@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"fortio.org/fortio/fnet"
 	"net/http"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 // LoadTest runs load tests against the ftw deployment.
 func LoadTest() error {
 	for _, threads := range []int{1, 2, 4} {
-		for _, payloadSize := range []int{0, 100, 1000, 10000, 100000, 1000000} {
+		for _, payloadSize := range []int{0, 100, 1000, 10000} {
 			for _, conf := range []string{"envoy-config.yaml", "envoy-config-nowasm.yaml"} {
 				if err := doLoadTest(conf, payloadSize, threads); err != nil {
 					return err
@@ -42,8 +43,15 @@ func doLoadTest(conf string, payloadSize int, threads int) error {
 
 	// Wait for Envoy to start.
 	for i := 0; i < 1000; i++ {
-		if resp, err := http.Get("http://localhost:8080/anything"); err == nil && resp.StatusCode == 200 {
-			break
+		if resp, err := http.Get("http://localhost:8080/anything"); err != nil {
+			continue
+		} else {
+			if resp.Body != nil {
+				resp.Body.Close()
+			}
+			if resp.StatusCode == http.StatusOK {
+				break
+			}
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
@@ -55,7 +63,8 @@ func doLoadTest(conf string, payloadSize int, threads int) error {
 			Duration:   10 * time.Second,
 		},
 		HTTPOptions: fhttp.HTTPOptions{
-			URL: "http://localhost:8080/",
+			URL:     "http://localhost:8080/anything",
+			Payload: fnet.GenerateRandomPayload(payloadSize),
 		},
 	}
 
