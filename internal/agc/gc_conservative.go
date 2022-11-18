@@ -37,54 +37,28 @@ package agc
 // Moss.
 
 import (
+	"runtime/volatile"
 	"unsafe"
 )
-
-/*
-void onCollectionEvent();
-*/
-import "C"
 
 //export GC_malloc
 func GC_malloc(size uintptr) unsafe.Pointer
 
-//export GC_add_roots
-func GC_add_roots(from uintptr, to uintptr)
-
-//export GC_clear_roots
-func GC_clear_roots()
-
 //export GC_gcollect
 func GC_gcollect()
-
-//export GC_get_all_interior_pointers
-func GC_get_all_interior_pointers() int32
-
-//export GC_set_on_collection_event
-func GC_set_on_collection_event(f unsafe.Pointer)
-
-const (
-	gcEventStart = 0
-	gcEventEnd   = 5
-)
-
-//export onCollectionEvent
-func onCollectionEvent(eventType uint32) {
-	switch eventType {
-	case gcEventStart:
-		GC_add_roots(globalsStart, globalsEnd)
-		addStackRoots()
-	case gcEventEnd:
-		GC_clear_roots()
-	}
-}
 
 // Initialize the memory allocator.
 // No memory may be allocated before this is called. That means the runtime and
 // any packages the runtime depends upon may not allocate memory during package
 // initialization.
 func init() {
-	GC_set_on_collection_event(C.onCollectionEvent)
+	// GC_set_on_collection_event(C.onCollectionEvent)
+	// Hack to force LLVM to consider stackChainStart to be live.
+	// Without this hack, loads and stores may be considered dead and objects on
+	// the stack might not be correctly tracked. With this volatile load, LLVM
+	// is forced to consider stackChainStart (and everything it points to) as
+	// live.
+	volatile.LoadUint32((*uint32)(unsafe.Pointer(&stackChainStart)))
 }
 
 // alloc tries to find some free space on the heap, possibly doing a garbage
