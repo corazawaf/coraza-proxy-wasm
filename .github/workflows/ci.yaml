@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "*"
     paths-ignore:
       - "**/*.md"
       - "LICENSE"
@@ -104,7 +106,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          push: ${{ github.event_name == 'push' }}
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
