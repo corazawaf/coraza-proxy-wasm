@@ -5,22 +5,10 @@
 
 package agc
 
-import (
-	"unsafe"
-)
-
 //go:extern runtime.stackChainStart
 var stackChainStart *stackChainObject
 
 type stackChainObject struct {
 	parent   *stackChainObject
 	numSlots uintptr
-}
-
-func addStackRoots() {
-	for stackObject := stackChainStart; stackObject != nil; stackObject = stackObject.parent {
-		start := uintptr(unsafe.Pointer(stackObject)) + unsafe.Sizeof(uintptr(0))*2
-		end := start + stackObject.numSlots*unsafe.Alignof(uintptr(0))
-		GC_add_roots(start, end)
-	}
 }
