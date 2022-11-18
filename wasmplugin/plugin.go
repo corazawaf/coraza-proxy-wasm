@@ -14,14 +14,18 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 )
 
-type VMContext struct {
+type vmContext struct {
 	// Embed the default VM context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultVMContext
 }
 
+func NewVMContext() types.VMContext {
+	return &vmContext{}
+}
+
 // Override types.DefaultVMContext.
-func (*VMContext) NewPluginContext(contextID uint32) types.PluginContext {
+func (*vmContext) NewPluginContext(contextID uint32) types.PluginContext {
 	return &corazaPlugin{}
 }
 

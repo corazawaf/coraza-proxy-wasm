@@ -14,5 +14,5 @@ import (
 func main() {
 	bodyprocessors.Register()
 	operators.Register()
-	proxywasm.SetVMContext(&wasmplugin.VMContext{})
+	proxywasm.SetVMContext(wasmplugin.NewVMContext())
 }

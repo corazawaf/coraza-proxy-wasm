@@ -801,7 +801,7 @@ func vmTest(t *testing.T, f func(*testing.T, types.VMContext)) {
 	t.Helper()
 
 	t.Run("go", func(t *testing.T) {
-		f(t, &wasmplugin.VMContext{})
+		f(t, wasmplugin.NewVMContext())
 	})
 
 	t.Run("wasm", func(t *testing.T) {
