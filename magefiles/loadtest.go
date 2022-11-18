@@ -5,11 +5,11 @@ package main
 
 import (
 	"fmt"
-	"fortio.org/fortio/fnet"
 	"net/http"
 	"time"
 
 	"fortio.org/fortio/fhttp"
+	"fortio.org/fortio/fnet"
 	"fortio.org/fortio/periodic"
 	"github.com/magefile/mage/sh"
 )
