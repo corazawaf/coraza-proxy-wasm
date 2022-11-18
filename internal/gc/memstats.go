@@ -3,7 +3,7 @@
 
 //go:build tinygo
 
-package agc
+package gc
 
 //export GC_get_gc_no
 func GC_get_gc_no() uint32
