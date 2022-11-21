@@ -12,6 +12,7 @@ on:
     paths:
       - buildtools/wasi-sdk/**
       - .github/workflows/buildtools-wasi-sdk.yaml
+  workflow_dispatch:
 
 jobs:
   build:
