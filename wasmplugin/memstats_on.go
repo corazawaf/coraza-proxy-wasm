@@ -3,7 +3,7 @@
 
 //go:build memstats
 
-package main
+package wasmplugin
 
 import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
