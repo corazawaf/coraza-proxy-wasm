@@ -3,7 +3,7 @@
 
 //go:build !timing
 
-package main
+package wasmplugin
 
 import (
 	"time"

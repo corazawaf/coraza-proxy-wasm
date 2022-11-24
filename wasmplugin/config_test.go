@@ -1,7 +1,7 @@
 // Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package wasmplugin
 
 import (
 	"errors"
