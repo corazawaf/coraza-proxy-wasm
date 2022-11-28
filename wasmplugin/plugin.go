@@ -411,9 +411,11 @@ type AddressInfo struct {
 	port int
 }
 
+var addressRegex = regexp.MustCompile(`(.*):([0-9]+)$`)
+
 func parseAddress(rawAddress []byte) (AddressInfo, error) {
 	// Split address and port
-	splittedAddr := regexp.MustCompile(`(.*):([0-9]+)$`).FindStringSubmatch(string(rawAddress))
+	splittedAddr := addressRegex.FindStringSubmatch(string(rawAddress))
 	if splittedAddr == nil {
 		return AddressInfo{
 			IP:   "",
