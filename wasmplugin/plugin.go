@@ -5,6 +5,8 @@ package wasmplugin
 
 import (
 	"bytes"
+	"errors"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -110,6 +112,30 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	// and its request properties, but they may not be true of other proxies implementing
 	// proxy-wasm.
 
+	if tx.IsRuleEngineOff() {
+		return types.ActionContinue
+	}
+
+	srcAddressRaw, err := proxywasm.GetProperty([]string{"source", "address"})
+	if err != nil {
+		proxywasm.LogWarnf("failed to get source address: %v", err)
+	}
+	srcAddress, err := parseAddress(srcAddressRaw)
+	if err != nil {
+		proxywasm.LogWarnf("failed to parse source address: %v", err)
+	}
+
+	dstAddressRaw, err := proxywasm.GetProperty([]string{"destination", "address"})
+	if err != nil {
+		proxywasm.LogWarnf("failed to get destination address: %v", err)
+	}
+	dstAddress, err := parseAddress(dstAddressRaw)
+	if err != nil {
+		proxywasm.LogWarnf("failed to parse destination address: %v", err)
+	}
+
+	tx.ProcessConnection(srcAddress.IP, srcAddress.port, dstAddress.IP, dstAddress.port)
+
 	// Note the pseudo-header :path includes the query.
 	// See https://httpwg.org/specs/rfc9113.html#rfc.section.8.3.1
 	uri, err := proxywasm.GetHttpRequestHeader(":path")
@@ -163,6 +189,10 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	defer logTime("OnHttpRequestBody", currentTime())
 	tx := ctx.tx
 
+	if tx.IsRuleEngineOff() {
+		return types.ActionContinue
+	}
+
 	// Do not perform any action related to request body if SecRequestBodyAccess is set to false
 	if !tx.RequestBodyAccessible() {
 		proxywasm.LogDebug("skipping request body inspection, SecRequestBodyAccess is off.")
@@ -206,6 +236,10 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
 	defer logTime("OnHttpResponseHeaders", currentTime())
 	tx := ctx.tx
+
+	if tx.IsRuleEngineOff() {
+		return types.ActionContinue
+	}
 
 	// Requests without body won't call OnHttpRequestBody, but there are rules in the request body
 	// phase that still need to be executed. If they haven't been executed yet, now is the time.
@@ -252,6 +286,10 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types.Action {
 	defer logTime("OnHttpResponseBody", currentTime())
 	tx := ctx.tx
+
+	if tx.IsRuleEngineOff() {
+		return types.ActionContinue
+	}
 
 	// Do not perform any action related to response body if SecResponseBodyAccess is set to false
 	if !tx.ResponseBodyAccessible() {
@@ -312,17 +350,19 @@ func (ctx *httpContext) OnHttpStreamDone() {
 	defer logTime("OnHttpStreamDone", currentTime())
 	tx := ctx.tx
 
-	// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
-	// phase that still need to be executed. If they haven't been executed yet, now is the time.
-	if !ctx.processedResponseBody {
-		ctx.processedResponseBody = true
-		_, err := tx.ProcessResponseBody()
-		if err != nil {
-			proxywasm.LogCriticalf("failed to process response body: %v", err)
+	if !tx.IsRuleEngineOff() {
+		// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
+		// phase that still need to be executed. If they haven't been executed yet, now is the time.
+		if !ctx.processedResponseBody {
+			ctx.processedResponseBody = true
+			_, err := tx.ProcessResponseBody()
+			if err != nil {
+				proxywasm.LogCriticalf("failed to process response body: %v", err)
+			}
 		}
+		ctx.tx.ProcessLogging()
 	}
 
-	ctx.tx.ProcessLogging()
 	_ = ctx.tx.Close()
 	proxywasm.LogInfof("%d finished", ctx.contextID)
 	logMemStats()
@@ -364,4 +404,25 @@ func logError(error ctypes.MatchedRule) {
 	case ctypes.RuleSeverityDebug:
 		proxywasm.LogDebug(msg)
 	}
+}
+
+type AddressInfo struct {
+	IP   string
+	port int
+}
+
+func parseAddress(rawAddress []byte) (AddressInfo, error) {
+	// Split address and port
+	splittedAddr := regexp.MustCompile(`(.*):([0-9]+)$`).FindStringSubmatch(string(rawAddress))
+	if splittedAddr == nil {
+		return AddressInfo{
+			IP:   "",
+			port: 0,
+		}, errors.New("no match parsing address")
+	}
+	port, err := strconv.Atoi(splittedAddr[2])
+	return AddressInfo{
+		IP:   splittedAddr[1],
+		port: port,
+	}, err
 }
