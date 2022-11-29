@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/proxytest"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
+
+	"github.com/corazawaf/coraza-proxy-wasm/wasmplugin"
 )
 
 func checkTXMetric(t *testing.T, host proxytest.HostEmulator, expectedCounter int) {
@@ -799,7 +801,7 @@ func vmTest(t *testing.T, f func(*testing.T, types.VMContext)) {
 	t.Helper()
 
 	t.Run("go", func(t *testing.T) {
-		f(t, &vmContext{})
+		f(t, wasmplugin.NewVMContext())
 	})
 
 	t.Run("wasm", func(t *testing.T) {

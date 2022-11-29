@@ -3,7 +3,7 @@
 
 //go:build !memstats
 
-package main
+package wasmplugin
 
 func logMemStats() {
 	// no-op without build tag

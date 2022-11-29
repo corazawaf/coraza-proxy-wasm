@@ -1,7 +1,7 @@
 // Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package main
+package wasmplugin
 
 import (
 	"bytes"
@@ -28,7 +28,6 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 	}
 
 	jsonData := gjson.ParseBytes(data)
-	config.rules = []string{}
 	jsonData.Get("rules").ForEach(func(_, value gjson.Result) bool {
 		config.rules = append(config.rules, value.String())
 		return true
