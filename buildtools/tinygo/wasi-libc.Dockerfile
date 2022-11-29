@@ -5,8 +5,9 @@ FROM ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-wasi-sdk:main
 
 RUN apt-get install -y git
 
-RUN git clone https://github.com/tinygo-org/tinygo --branch dev
+RUN git clone https://github.com/anuraaga/tinygo --branch custom-gc
 WORKDIR /tinygo
-RUN git fetch origin dev && git reset --hard 4daf4fa0a061e7e3b098a3b2a9d8bf022424c6d3
+# https://github.com/tinygo-org/tinygo/pull/3302
+RUN git fetch origin custom-gc && git reset --hard e27e61ed063c4febd053f3e1637e9f89b012ad1f
 RUN git submodule update --init lib/wasi-libc
 RUN make wasi-libc
