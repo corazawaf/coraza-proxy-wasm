@@ -3,12 +3,13 @@
 
 FROM ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-wasi-sdk:main
 
-RUN apt-get install -y patch
+RUN apt-get install -y autogen autoconf automake libtool
 
-RUN mkdir -p /libinjection && curl -L https://github.com/libinjection/libinjection/archive/49904c42a6e68dc8f16c022c693e897e4010a06c.tar.gz | tar -xz --strip-components 1 -C /libinjection
+RUN mkdir -p /libinjection && curl -L https://github.com/libinjection/libinjection/archive/bd86522711f6fd2b5f257023e19627fd6c1d5ca0.tar.gz | tar -xz --strip-components 1 -C /libinjection
 WORKDIR /libinjection
-ADD libinjection.patch libinjection.patch
-RUN patch -p1 < libinjection.patch
-RUN make -C src libinjection.a
+RUN ./autogen.sh && \
+    # host is required by configure but not used so set it arbitrarily
+    ./configure --host=i686-pc-linux-gnu --enable-shared=false && \
+    make
 
-CMD ["cp", "src/libinjection.a", "/out/libinjection.a"]
+CMD ["cp", "src/.libs/libinjection.a", "/out/libinjection.a"]
