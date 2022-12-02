@@ -5,8 +5,9 @@ package wasmplugin
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
-	"regexp"
+	"math"
 	"strconv"
 	"strings"
 
@@ -115,23 +116,47 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	if tx.IsRuleEngineOff() {
 		return types.ActionContinue
 	}
+	// default value instantiated, OnHttpRequestHeaders does not terminate if IP/Port retrieve goes wrong
+	var srcAddress, dstAddress AddressInfo
 
 	srcAddressRaw, err := proxywasm.GetProperty([]string{"source", "address"})
 	if err != nil {
 		proxywasm.LogWarnf("failed to get source address: %v", err)
+	} else {
+		srcAddress.IP, err = parseAddress(srcAddressRaw)
+		if err != nil {
+			proxywasm.LogWarnf("failed to parse source address: %v", err)
+		}
 	}
-	srcAddress, err := parseAddress(srcAddressRaw)
+
+	srcPortRaw, err := proxywasm.GetProperty([]string{"source", "port"})
 	if err != nil {
-		proxywasm.LogWarnf("failed to parse source address: %v", err)
+		proxywasm.LogInfof("failed to get source port: %v", err)
+	} else {
+		srcAddress.port, err = parsePort(srcPortRaw)
+		if err != nil {
+			proxywasm.LogWarnf("failed to parse source port: %v", err)
+		}
 	}
 
 	dstAddressRaw, err := proxywasm.GetProperty([]string{"destination", "address"})
 	if err != nil {
 		proxywasm.LogWarnf("failed to get destination address: %v", err)
+	} else {
+		dstAddress.IP, err = parseAddress(dstAddressRaw)
+		if err != nil {
+			proxywasm.LogWarnf("failed to parse destination address: %v", err)
+		}
 	}
-	dstAddress, err := parseAddress(dstAddressRaw)
+
+	dstPortRaw, err := proxywasm.GetProperty([]string{"destination", "port"})
 	if err != nil {
-		proxywasm.LogWarnf("failed to parse destination address: %v", err)
+		proxywasm.LogInfof("failed to get destination port: %v", err)
+	} else {
+		dstAddress.port, err = parsePort(dstPortRaw)
+		if err != nil {
+			proxywasm.LogWarnf("failed to parse destination port: %v", err)
+		}
 	}
 
 	tx.ProcessConnection(srcAddress.IP, srcAddress.port, dstAddress.IP, dstAddress.port)
@@ -411,20 +436,29 @@ type AddressInfo struct {
 	port int
 }
 
-var addressRegex = regexp.MustCompile(`(.*):([0-9]+)$`)
-
-func parseAddress(rawAddress []byte) (AddressInfo, error) {
+// Parsing address (e.g. "127.0.0.1:8080") to retrieve the IP
+func parseAddress(rawAddress []byte) (string, error) {
 	// Split address and port
-	splittedAddr := addressRegex.FindStringSubmatch(string(rawAddress))
-	if splittedAddr == nil {
-		return AddressInfo{
-			IP:   "",
-			port: 0,
-		}, errors.New("no match parsing address")
+	address := string(rawAddress)
+	lastColonsPos := strings.LastIndex(address, ":")
+	if lastColonsPos == -1 {
+		return "", errors.New("no match parsing address")
 	}
-	port, err := strconv.Atoi(splittedAddr[2])
-	return AddressInfo{
-		IP:   splittedAddr[1],
-		port: port,
-	}, err
+	return address[:lastColonsPos], nil
+}
+
+// Converts retrieved little-endian bytes into int
+func parsePort(b []byte) (int, error) {
+	// Port attribute ({"source", "port"}) is populated as uint64 (8 byte)
+	// Ref: https://github.com/envoyproxy/envoy/blob/1b3da361279a54956f01abba830fc5d3a5421828/source/common/network/utility.cc#L201
+	if len(b) < 4 {
+		return 0, errors.New("port bytes not found")
+	}
+	// 0 < Port number <= 65535, therefore the retrieved value should never exceed 16 bits
+	// and correctly fit int (at least 32 bits in size)
+	unsignedInt := binary.LittleEndian.Uint32(b)
+	if unsignedInt > math.MaxInt32 {
+		return 0, errors.New("port convertion error")
+	}
+	return int(unsignedInt), nil
 }
