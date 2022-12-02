@@ -158,7 +158,6 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 			proxywasm.LogWarnf("failed to parse destination port: %v", err)
 		}
 	}
-
 	tx.ProcessConnection(srcAddress.IP, srcAddress.port, dstAddress.IP, dstAddress.port)
 
 	// Note the pseudo-header :path includes the query.
@@ -440,12 +439,11 @@ type AddressInfo struct {
 // Parsing address (e.g. "127.0.0.1:8080") to retrieve the IP
 func parseAddress(rawAddress []byte) (string, error) {
 	// Split address and port
-	address := string(rawAddress)
-	lastColonsPos := strings.LastIndex(address, ":")
+	lastColonsPos := bytes.LastIndexByte(rawAddress, ':')
 	if lastColonsPos == -1 {
 		return "", errors.New("no match parsing address")
 	}
-	return address[:lastColonsPos], nil
+	return string(rawAddress[:lastColonsPos]), nil
 }
 
 // Converts retrieved little-endian bytes into int
