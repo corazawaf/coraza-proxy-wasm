@@ -385,6 +385,7 @@ func (ctx *httpContext) OnHttpStreamDone() {
 				proxywasm.LogCriticalf("failed to process response body: %v", err)
 			}
 		}
+		// TODO(M4tteoP): update it once the discussion in https://github.com/corazawaf/coraza/issues/520 is settled
 		ctx.tx.ProcessLogging()
 	}
 
