@@ -185,23 +185,19 @@ func Build() error {
 		}
 	}
 
-	//wd, err := os.Getwd()
-	//if err != nil {
-	//	return err
-	//}
-
-	if err := sh.RunV("tinygo", "build", "-gc=custom", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", buildTagArg); err != nil {
+	wd, err := os.Getwd()
+	if err != nil {
 		return err
 	}
-	/*
-	   	script := fmt.Sprintf(`
-	   cd /src && \
-	   tinygo build -gc=none -opt=2 -o %s -scheduler=none -target=wasi %s`, filepath.Join("build", "mainraw.wasm"), buildTagArg)
-	   	if err := sh.RunV("docker", "run", "--pull=always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo:main",
-	   		"bash", "-c", script); err != nil {
-	   		return err
-	   	}
-	*/
+
+	script := fmt.Sprintf(`
+cd /src && \
+tinygo build -gc=none -opt=2 -o %s -scheduler=none -target=wasi %s`, filepath.Join("build", "mainraw.wasm"), buildTagArg)
+	if err := sh.RunV("docker", "run", "--pull=always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo:sha-eadd078",
+		"bash", "-c", script); err != nil {
+		return err
+	}
+
 	return patchWasm(filepath.Join("build", "mainraw.wasm"), filepath.Join("build", "main.wasm"), initialPages)
 }
 
