@@ -164,7 +164,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	tx := ctx.tx
 
 	// Do not perform any action related to request body if SecRequestBodyAccess is set to false
-	if !tx.RequestBodyAccessible() {
+	if !tx.IsRequestBodyAccessible() {
 		proxywasm.LogDebug("skipping request body inspection, SecRequestBodyAccess is off.")
 		return types.ActionContinue
 	}
@@ -254,7 +254,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	tx := ctx.tx
 
 	// Do not perform any action related to response body if SecResponseBodyAccess is set to false
-	if !tx.ResponseBodyAccessible() {
+	if !tx.IsResponseBodyAccessible() {
 		proxywasm.LogDebug("skipping response body inspection, SecResponseBodyAccess is off.")
 		return types.ActionContinue
 	}
