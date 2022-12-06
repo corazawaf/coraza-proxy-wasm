@@ -6,26 +6,20 @@
 package gc
 
 import (
-	"runtime/volatile"
 	"unsafe"
 )
 
-//export GC_malloc
-func GC_malloc(size uintptr) unsafe.Pointer
+/*
+void* GC_malloc(unsigned int size);
+void GC_free(void* ptr);
+void GC_gcollect();
+*/
+import "C"
 
-//export GC_gcollect
-func GC_gcollect()
-
-// Initialize the memory allocator. Actually all we are doing here is forcing the compiler
-// to mark stackChainStart as volatile.
-func init() {
-	// GC_set_on_collection_event(C.onCollectionEvent)
-	// Hack to force LLVM to consider stackChainStart to be live.
-	// Without this hack, loads and stores may be considered dead and objects on
-	// the stack might not be correctly tracked. With this volatile load, LLVM
-	// is forced to consider stackChainStart (and everything it points to) as
-	// live.
-	volatile.LoadUint32((*uint32)(unsafe.Pointer(&stackChainStart)))
+// Initialize the memory allocator. We currently do not have anything needing initialization.
+//
+//go:linkname initHeap runtime.initHeap
+func initHeap() {
 }
 
 // alloc tries to find some free space on the heap, possibly doing a garbage
@@ -33,7 +27,7 @@ func init() {
 //
 //go:linkname alloc runtime.alloc
 func alloc(size uintptr, layout unsafe.Pointer) unsafe.Pointer {
-	buf := GC_malloc(size)
+	buf := C.GC_malloc(C.uint(size))
 	if buf == nil {
 		panic("out of memory")
 	}
@@ -41,15 +35,24 @@ func alloc(size uintptr, layout unsafe.Pointer) unsafe.Pointer {
 	return buf
 }
 
+//go:linkname free runtime.free
+func free(ptr unsafe.Pointer) {
+	C.GC_free(ptr)
+}
+
 // GC performs a garbage collection cycle.
+//
+//go:linkname GC runtime.GC
 func GC() {
-	GC_gcollect()
+	C.GC_gcollect()
 }
 
+//go:linkname KeepAlive runtime.KeepAlive
 func KeepAlive(x interface{}) {
-	// Unimplemented. Only required with SetFinalizer().
+	// Unimplemented for now.
 }
 
+//go:linkname SetFinalizer runtime.SetFinalizer
 func SetFinalizer(obj interface{}, finalizer interface{}) {
-	// Unimplemented.
+	// Unimplemented for now.
 }

@@ -165,7 +165,7 @@ func Build() error {
 		return err
 	}
 
-	buildTags := []string{"custommalloc"}
+	var buildTags []string
 	if os.Getenv("TIMING") == "true" {
 		buildTags = append(buildTags, "timing", "proxywasm_timing")
 	}
@@ -192,8 +192,8 @@ func Build() error {
 
 	script := fmt.Sprintf(`
 cd /src && \
-tinygo build -gc=none -opt=2 -o %s -scheduler=none -target=wasi %s`, filepath.Join("build", "mainraw.wasm"), buildTagArg)
-	if err := sh.RunV("docker", "run", "--pull=always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo:sha-eadd078",
+tinygo build -gc=custom -opt=2 -o %s -scheduler=none -target=wasi %s`, filepath.Join("build", "mainraw.wasm"), buildTagArg)
+	if err := sh.RunV("docker", "run", "--pull=always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo:sha-447795c",
 		"bash", "-c", script); err != nil {
 		return err
 	}
