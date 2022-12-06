@@ -218,7 +218,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	}
 
 	// Do not perform any action related to request body if SecRequestBodyAccess is set to false
-	if !tx.RequestBodyAccessible() {
+	if !tx.IsRequestBodyAccessible() {
 		proxywasm.LogDebug("skipping request body inspection, SecRequestBodyAccess is off.")
 		return types.ActionContinue
 	}
@@ -316,7 +316,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	}
 
 	// Do not perform any action related to response body if SecResponseBodyAccess is set to false
-	if !tx.ResponseBodyAccessible() {
+	if !tx.IsResponseBodyAccessible() {
 		proxywasm.LogDebug("skipping response body inspection, SecResponseBodyAccess is off.")
 		return types.ActionContinue
 	}
@@ -384,9 +384,10 @@ func (ctx *httpContext) OnHttpStreamDone() {
 				proxywasm.LogCriticalf("failed to process response body: %v", err)
 			}
 		}
-		// TODO(M4tteoP): update it once the discussion in https://github.com/corazawaf/coraza/issues/520 is settled
-		ctx.tx.ProcessLogging()
 	}
+	// ProcessLogging is still called even if RuleEngine is off for potential logs generated before the engine is turned off.
+	// Internally, if the engine is off, no log phase rules are evaluated
+	ctx.tx.ProcessLogging()
 
 	_ = ctx.tx.Close()
 	proxywasm.LogInfof("%d finished", ctx.contextID)
