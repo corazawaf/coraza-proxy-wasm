@@ -11,13 +11,13 @@ RUN curl -sS https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor > /etc/a
 
 RUN apt-get update && apt-get install -y clang-15 lld-15
 
-ADD https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-16/wasi-sysroot-16.0.tar.gz /
-RUN tar -xf wasi-sysroot-16.0.tar.gz
+ADD https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-17/wasi-sysroot-17.0.tar.gz /
+RUN tar -xf wasi-sysroot-17.0.tar.gz
 
-ADD https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-16/libclang_rt.builtins-wasm32-wasi-16.0.tar.gz /
+ADD https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-17/libclang_rt.builtins-wasm32-wasi-17.0.tar.gz /
 # APT repository and package only include major version but the directory includes a patch version.
 # We use a wildcard to make this compatible for any patch version.
-RUN tar -xf libclang_rt.builtins-wasm32-wasi-16.0.tar.gz -C /usr/lib/llvm-15/lib/clang/15.*/
+RUN tar -xf libclang_rt.builtins-wasm32-wasi-17.0.tar.gz -C /usr/lib/llvm-15/lib/clang/15.*/
 
 ENV CC clang-15
 ENV CXX clang++-15
