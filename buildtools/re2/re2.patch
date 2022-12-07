@@ -1,18 +1,3 @@
-diff --git a/Makefile b/Makefile
-index c24fd57..fad85a5 100644
---- a/Makefile
-+++ b/Makefile
-@@ -17,8 +17,8 @@ CXX?=g++
- CXXFLAGS?=-O3 -g
- LDFLAGS?=
- # required
--RE2_CXXFLAGS?=-pthread -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -I. $(CCICU) $(CCPCRE)
--RE2_LDFLAGS?=-pthread $(LDICU) $(LDPCRE)
-+RE2_CXXFLAGS?=-Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -I. $(CCICU) $(CCPCRE)
-+RE2_LDFLAGS?=$(LDICU) $(LDPCRE)
- AR?=ar
- ARFLAGS?=rsc
- NM?=nm
 diff --git a/util/mutex.h b/util/mutex.h
 index 4b6772a..10e6f57 100644
 --- a/util/mutex.h
