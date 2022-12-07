@@ -116,48 +116,10 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	if tx.IsRuleEngineOff() {
 		return types.ActionContinue
 	}
-	// default value instantiated, OnHttpRequestHeaders does not terminate if IP/Port retrieve goes wrong
-	var srcAddress, dstAddress AddressInfo
+	// OnHttpRequestHeaders does not terminate if IP/Port retrieve goes wrong
+	srcAddress := RetrieveAddressInfo("source")
+	dstAddress := RetrieveAddressInfo("destination")
 
-	srcAddressRaw, err := proxywasm.GetProperty([]string{"source", "address"})
-	if err != nil {
-		proxywasm.LogWarnf("failed to get source address: %v", err)
-	} else {
-		srcAddress.IP, err = parseAddress(srcAddressRaw)
-		if err != nil {
-			proxywasm.LogWarnf("failed to parse source address: %v", err)
-		}
-	}
-
-	srcPortRaw, err := proxywasm.GetProperty([]string{"source", "port"})
-	if err != nil {
-		proxywasm.LogInfof("failed to get source port: %v", err)
-	} else {
-		srcAddress.port, err = parsePort(srcPortRaw)
-		if err != nil {
-			proxywasm.LogWarnf("failed to parse source port: %v", err)
-		}
-	}
-
-	dstAddressRaw, err := proxywasm.GetProperty([]string{"destination", "address"})
-	if err != nil {
-		proxywasm.LogWarnf("failed to get destination address: %v", err)
-	} else {
-		dstAddress.IP, err = parseAddress(dstAddressRaw)
-		if err != nil {
-			proxywasm.LogWarnf("failed to parse destination address: %v", err)
-		}
-	}
-
-	dstPortRaw, err := proxywasm.GetProperty([]string{"destination", "port"})
-	if err != nil {
-		proxywasm.LogInfof("failed to get destination port: %v", err)
-	} else {
-		dstAddress.port, err = parsePort(dstPortRaw)
-		if err != nil {
-			proxywasm.LogWarnf("failed to parse destination port: %v", err)
-		}
-	}
 	tx.ProcessConnection(srcAddress.IP, srcAddress.port, dstAddress.IP, dstAddress.port)
 
 	// Note the pseudo-header :path includes the query.
@@ -437,7 +399,34 @@ type AddressInfo struct {
 	port int
 }
 
-// Parsing address (e.g. "127.0.0.1:8080") to retrieve the IP
+// Retrieves adddress properties from the proxy
+// Expected targets are "source" or "destination"
+// Envoy ref: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/attributes#connection-attributes
+func RetrieveAddressInfo(target string) AddressInfo {
+	var targetAddress AddressInfo
+	srcAddressRaw, err := proxywasm.GetProperty([]string{target, "address"})
+	if err != nil {
+		proxywasm.LogWarnf("failed to get %s address: %v", target, err)
+	} else {
+		targetAddress.IP, err = parseAddress(srcAddressRaw)
+		if err != nil {
+			proxywasm.LogWarnf("failed to parse %s address: %v", target, err)
+		}
+	}
+
+	srcPortRaw, err := proxywasm.GetProperty([]string{target, "port"})
+	if err != nil {
+		proxywasm.LogInfof("failed to get %s port: %v", target, err)
+	} else {
+		targetAddress.port, err = parsePort(srcPortRaw)
+		if err != nil {
+			proxywasm.LogWarnf("failed to parse %s port: %v", target, err)
+		}
+	}
+	return targetAddress
+}
+
+// Parses address (e.g. "127.0.0.1:8080") to retrieve the IP address
 func parseAddress(rawAddress []byte) (string, error) {
 	// Split address and port
 	lastColonsPos := bytes.LastIndexByte(rawAddress, ':')
@@ -447,7 +436,7 @@ func parseAddress(rawAddress []byte) (string, error) {
 	return string(rawAddress[:lastColonsPos]), nil
 }
 
-// Converts retrieved little-endian bytes into int
+// Converts port, retrieved as little-endian bytes, into int
 func parsePort(b []byte) (int, error) {
 	// Port attribute ({"source", "port"}) is populated as uint64 (8 byte)
 	// Ref: https://github.com/envoyproxy/envoy/blob/1b3da361279a54956f01abba830fc5d3a5421828/source/common/network/utility.cc#L201
