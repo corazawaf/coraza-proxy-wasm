@@ -9,6 +9,7 @@ RUN mkdir -p /re2 && curl -L https://github.com/google/re2/archive/refs/tags/202
 WORKDIR /re2
 ADD re2.patch re2.patch
 RUN patch -p1 < re2.patch
+ENV RE2_CXXFLAGS -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -I.
 RUN make obj/libre2.a
 
 RUN mkdir -p /cre2 && curl -L https://bitbucket.org/marcomaggi/cre2/downloads/cre2-0.4.0-devel.2.tar.gz | tar -xz --strip-components 1 -C /cre2
