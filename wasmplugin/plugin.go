@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"math"
+	"net"
 	"strconv"
 	"strings"
 
@@ -408,7 +409,7 @@ func RetrieveAddressInfo(target string) AddressInfo {
 	if err != nil {
 		proxywasm.LogWarnf("failed to get %s address: %v", target, err)
 	} else {
-		targetAddress.IP, err = parseAddress(srcAddressRaw)
+		targetAddress.IP, _, err = net.SplitHostPort(string(srcAddressRaw))
 		if err != nil {
 			proxywasm.LogWarnf("failed to parse %s address: %v", target, err)
 		}
@@ -424,16 +425,6 @@ func RetrieveAddressInfo(target string) AddressInfo {
 		}
 	}
 	return targetAddress
-}
-
-// Parses address (e.g. "127.0.0.1:8080") to retrieve the IP address
-func parseAddress(rawAddress []byte) (string, error) {
-	// Split address and port
-	lastColonsPos := bytes.LastIndexByte(rawAddress, ':')
-	if lastColonsPos == -1 {
-		return "", errors.New("no match parsing address")
-	}
-	return string(rawAddress[:lastColonsPos]), nil
 }
 
 // Converts port, retrieved as little-endian bytes, into int
