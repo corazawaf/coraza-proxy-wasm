@@ -118,10 +118,10 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		return types.ActionContinue
 	}
 	// OnHttpRequestHeaders does not terminate if IP/Port retrieve goes wrong
-	srcAddress := RetrieveAddressInfo("source")
-	dstAddress := RetrieveAddressInfo("destination")
+	srcIP, srcPort := retrieveAddressInfo("source")
+	dstIP, dstPort := retrieveAddressInfo("destination")
 
-	tx.ProcessConnection(srcAddress.IP, srcAddress.port, dstAddress.IP, dstAddress.port)
+	tx.ProcessConnection(srcIP, srcPort, dstIP, dstPort)
 
 	// Note the pseudo-header :path includes the query.
 	// See https://httpwg.org/specs/rfc9113.html#rfc.section.8.3.1
@@ -395,48 +395,46 @@ func logError(error ctypes.MatchedRule) {
 	}
 }
 
-type AddressInfo struct {
-	IP   string
-	port int
-}
-
 // Retrieves adddress properties from the proxy
 // Expected targets are "source" or "destination"
 // Envoy ref: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/attributes#connection-attributes
-func RetrieveAddressInfo(target string) AddressInfo {
-	var targetAddress AddressInfo
+func retrieveAddressInfo(target string) (string, int) {
+	var targetIP, targetPortStr string
+	var targetPort int
 	srcAddressRaw, err := proxywasm.GetProperty([]string{target, "address"})
 	if err != nil {
 		proxywasm.LogWarnf("failed to get %s address: %v", target, err)
 	} else {
-		targetAddress.IP, _, err = net.SplitHostPort(string(srcAddressRaw))
+		targetIP, targetPortStr, err = net.SplitHostPort(string(srcAddressRaw))
 		if err != nil {
 			proxywasm.LogWarnf("failed to parse %s address: %v", target, err)
 		}
 	}
-
 	srcPortRaw, err := proxywasm.GetProperty([]string{target, "port"})
 	if err != nil {
-		proxywasm.LogInfof("failed to get %s port: %v", target, err)
+		targetPort, err = strconv.Atoi(targetPortStr)
+		if err != nil {
+			proxywasm.LogInfof("failed to get %s port: %v", target, err)
+		}
 	} else {
-		targetAddress.port, err = parsePort(srcPortRaw)
+		targetPort, err = parsePort(srcPortRaw)
 		if err != nil {
 			proxywasm.LogWarnf("failed to parse %s port: %v", target, err)
 		}
 	}
-	return targetAddress
+	return targetIP, targetPort
 }
 
 // Converts port, retrieved as little-endian bytes, into int
 func parsePort(b []byte) (int, error) {
 	// Port attribute ({"source", "port"}) is populated as uint64 (8 byte)
 	// Ref: https://github.com/envoyproxy/envoy/blob/1b3da361279a54956f01abba830fc5d3a5421828/source/common/network/utility.cc#L201
-	if len(b) < 4 {
+	if len(b) < 8 {
 		return 0, errors.New("port bytes not found")
 	}
 	// 0 < Port number <= 65535, therefore the retrieved value should never exceed 16 bits
 	// and correctly fit int (at least 32 bits in size)
-	unsignedInt := binary.LittleEndian.Uint32(b)
+	unsignedInt := binary.LittleEndian.Uint64(b)
 	if unsignedInt > math.MaxInt32 {
 		return 0, errors.New("port convertion error")
 	}
