@@ -5,11 +5,10 @@ FROM ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-wasi-sdk:main
 
 RUN apt-get install -y patch
 
-RUN mkdir -p /re2 && curl -L https://github.com/google/re2/archive/refs/tags/2022-06-01.tar.gz | tar -xz --strip-components 1 -C /re2
+# Use post-release commit for now as it includes support for no-threads
+RUN mkdir -p /re2 && curl -L https://github.com/google/re2/archive/954656f47fe8fb505d4818da1e128417a79ea500.tar.gz | tar -xz --strip-components 1 -C /re2
 WORKDIR /re2
-ADD re2.patch re2.patch
-RUN patch -p1 < re2.patch
-ENV RE2_CXXFLAGS -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -I.
+ENV RE2_CXXFLAGS -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -I. -DRE2_NO_THREADS
 RUN make obj/libre2.a
 
 RUN mkdir -p /cre2 && curl -L https://bitbucket.org/marcomaggi/cre2/downloads/cre2-0.4.0-devel.2.tar.gz | tar -xz --strip-components 1 -C /cre2
