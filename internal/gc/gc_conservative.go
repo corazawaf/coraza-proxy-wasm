@@ -49,10 +49,13 @@ func GC() {
 
 //go:linkname KeepAlive runtime.KeepAlive
 func KeepAlive(x interface{}) {
-	// Unimplemented for now.
+	// no-op should be fine, pointers are tracked in a shadow stack which will keep references
+	// to pointers throughout a function call regardless of calling this.
+	// TODO(anuraaga): Verify this
 }
 
 //go:linkname SetFinalizer runtime.SetFinalizer
 func SetFinalizer(obj interface{}, finalizer interface{}) {
 	// Unimplemented for now.
+	// TODO(anuraaga): Try using GC_register_finalizer to implement
 }
