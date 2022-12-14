@@ -4,6 +4,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -793,6 +795,108 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:4,t:lower
 					require.Nil(t, pluginResp)
 				}
 			})
+		}
+	})
+}
+
+func TestRetrieveAddressInfo(t *testing.T) {
+	var unsetPort = -1
+	reqHdrs := [][2]string{
+		{":path", "/hello"},
+		{":method", "GET"},
+	}
+	testCases := []struct {
+		name              string
+		addressProperty   string
+		portProperty      int
+		expectIP          string
+		expectPort        int
+		requestHdrsAction types.Action
+	}{
+		{
+			name:              "IPv4 parse, usual circumstances",
+			addressProperty:   "127.0.0.1:5001",
+			portProperty:      50001,
+			expectIP:          "127.0.0.1",
+			expectPort:        50001,
+			requestHdrsAction: types.ActionPause,
+		},
+		{
+			name:              "IPv4 parse, port retrieved from address",
+			addressProperty:   "127.0.0.1:5002",
+			portProperty:      unsetPort,
+			expectIP:          "127.0.0.1",
+			expectPort:        50002,
+			requestHdrsAction: types.ActionPause,
+		},
+		{
+			name:              "IPv6 parse, usual circumstances",
+			addressProperty:   "[2001:db8::1]:8001",
+			portProperty:      8001,
+			expectIP:          "[2001:db8::1]",
+			expectPort:        8001,
+			requestHdrsAction: types.ActionPause,
+		},
+		{
+			name:              "IPv6 parse, port retrieved from address",
+			addressProperty:   "[2001:db8::1]:8002",
+			portProperty:      unsetPort,
+			expectIP:          "[2001:db8::1]",
+			expectPort:        8002,
+			requestHdrsAction: types.ActionPause,
+		},
+		{
+			name:              "No properties retrieved, OnRequestHeaders does not fail",
+			addressProperty:   "",
+			portProperty:      unsetPort,
+			expectIP:          "127.0.0.1",
+			expectPort:        80,
+			requestHdrsAction: types.ActionContinue,
+		},
+	}
+
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+
+		m := map[string]string{
+			"source":      "REMOTE",
+			"destination": "SERVER",
+		}
+		for target, targetSecRuleVariable := range m {
+
+			for _, tc := range testCases {
+				tt := tc
+				inlineRules := fmt.Sprintf(`
+			SecRuleEngine On\nSecRule %s_ADDR \"@ipMatch %s\" \"id:101,phase:1,deny\"\nSecRule %s_PORT \"@eq %d\" \"id:102,phase:1,deny\"
+			`, targetSecRuleVariable, tt.expectIP, targetSecRuleVariable, tt.expectPort)
+
+				conf := `{}`
+				if inlineRules := strings.TrimSpace(inlineRules); inlineRules != "" {
+					conf = fmt.Sprintf(`{"rules": ["%s"]}`, inlineRules)
+				}
+				t.Run(tt.name, func(t *testing.T) {
+					opt := proxytest.
+						NewEmulatorOption().
+						WithVMContext(vm).
+						WithPluginConfiguration([]byte(conf))
+
+					host, reset := proxytest.NewHostEmulator(opt)
+					defer reset()
+
+					require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+					id := host.InitializeHttpContext()
+
+					if tt.addressProperty != "" {
+						require.NoError(t, host.SetProperty([]string{target, "address"}, []byte(tt.addressProperty)))
+					}
+					if tt.portProperty != unsetPort {
+						buf := new(bytes.Buffer)
+						require.NoError(t, binary.Write(buf, binary.LittleEndian, uint64(tt.portProperty)))
+						require.NoError(t, host.SetProperty([]string{target, "port"}, buf.Bytes()))
+					}
+					action := host.CallOnRequestHeaders(id, reqHdrs, false)
+					require.Equal(t, tt.requestHdrsAction, action)
+				})
+			}
 		}
 	})
 }

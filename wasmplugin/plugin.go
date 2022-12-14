@@ -412,6 +412,8 @@ func retrieveAddressInfo(target string) (string, int) {
 	}
 	srcPortRaw, err := proxywasm.GetProperty([]string{target, "port"})
 	if err != nil {
+		// If GetProperty fails we rely on the port inside the Address property
+		// Mostly useful for proxies other than Envoy
 		targetPort, err = strconv.Atoi(targetPortStr)
 		if err != nil {
 			proxywasm.LogInfof("failed to get %s port: %v", target, err)
