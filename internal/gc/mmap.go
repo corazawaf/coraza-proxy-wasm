@@ -19,12 +19,6 @@ import "C"
 // Must match bdwgc value of HBLKSIZE
 const hBlkSize = 4096
 
-//export mi_zalloc_aligned
-func mi_zalloc_aligned(size uintptr, alignment uintptr) unsafe.Pointer
-
-//export mi_free
-func mi_free(ptr unsafe.Pointer)
-
 //export mmap
 func mmap(_ unsafe.Pointer, length uintptr, _ int32, _ int32, _ int32, _ uint64) unsafe.Pointer {
 	buf := mi_zalloc_aligned(length, hBlkSize)
