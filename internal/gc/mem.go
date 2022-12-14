@@ -27,11 +27,6 @@ func mi_free(ptr unsafe.Pointer)
 
 // Not exported by mimalloc on __wasi__ by default so we implement here.
 
-//export aligned_alloc
-func aligned_alloc(alignment uintptr, size uintptr) unsafe.Pointer {
-	return mi_aligned_alloc(alignment, size)
-}
-
 //export __libc_malloc
 func __libc_malloc(size uintptr) unsafe.Pointer {
 	return mi_malloc(size)
