@@ -5,6 +5,10 @@ package wasmplugin
 
 import (
 	"bytes"
+	"encoding/binary"
+	"errors"
+	"math"
+	"net"
 	"strconv"
 	"strings"
 
@@ -110,6 +114,15 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	// and its request properties, but they may not be true of other proxies implementing
 	// proxy-wasm.
 
+	if tx.IsRuleEngineOff() {
+		return types.ActionContinue
+	}
+	// OnHttpRequestHeaders does not terminate if IP/Port retrieve goes wrong
+	srcIP, srcPort := retrieveAddressInfo("source")
+	dstIP, dstPort := retrieveAddressInfo("destination")
+
+	tx.ProcessConnection(srcIP, srcPort, dstIP, dstPort)
+
 	// Note the pseudo-header :path includes the query.
 	// See https://httpwg.org/specs/rfc9113.html#rfc.section.8.3.1
 	uri, err := proxywasm.GetHttpRequestHeader(":path")
@@ -163,6 +176,10 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	defer logTime("OnHttpRequestBody", currentTime())
 	tx := ctx.tx
 
+	if tx.IsRuleEngineOff() {
+		return types.ActionContinue
+	}
+
 	// Do not perform any action related to request body if SecRequestBodyAccess is set to false
 	if !tx.IsRequestBodyAccessible() {
 		proxywasm.LogDebug("skipping request body inspection, SecRequestBodyAccess is off.")
@@ -206,6 +223,10 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
 	defer logTime("OnHttpResponseHeaders", currentTime())
 	tx := ctx.tx
+
+	if tx.IsRuleEngineOff() {
+		return types.ActionContinue
+	}
 
 	// Requests without body won't call OnHttpRequestBody, but there are rules in the request body
 	// phase that still need to be executed. If they haven't been executed yet, now is the time.
@@ -252,6 +273,10 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types.Action {
 	defer logTime("OnHttpResponseBody", currentTime())
 	tx := ctx.tx
+
+	if tx.IsRuleEngineOff() {
+		return types.ActionContinue
+	}
 
 	// Do not perform any action related to response body if SecResponseBodyAccess is set to false
 	if !tx.IsResponseBodyAccessible() {
@@ -312,17 +337,21 @@ func (ctx *httpContext) OnHttpStreamDone() {
 	defer logTime("OnHttpStreamDone", currentTime())
 	tx := ctx.tx
 
-	// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
-	// phase that still need to be executed. If they haven't been executed yet, now is the time.
-	if !ctx.processedResponseBody {
-		ctx.processedResponseBody = true
-		_, err := tx.ProcessResponseBody()
-		if err != nil {
-			proxywasm.LogCriticalf("failed to process response body: %v", err)
+	if !tx.IsRuleEngineOff() {
+		// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
+		// phase that still need to be executed. If they haven't been executed yet, now is the time.
+		if !ctx.processedResponseBody {
+			ctx.processedResponseBody = true
+			_, err := tx.ProcessResponseBody()
+			if err != nil {
+				proxywasm.LogCriticalf("failed to process response body: %v", err)
+			}
 		}
 	}
-
+	// ProcessLogging is still called even if RuleEngine is off for potential logs generated before the engine is turned off.
+	// Internally, if the engine is off, no log phase rules are evaluated
 	ctx.tx.ProcessLogging()
+
 	_ = ctx.tx.Close()
 	proxywasm.LogInfof("%d finished", ctx.contextID)
 	logMemStats()
@@ -364,4 +393,52 @@ func logError(error ctypes.MatchedRule) {
 	case ctypes.RuleSeverityDebug:
 		proxywasm.LogDebug(msg)
 	}
+}
+
+// Retrieves adddress properties from the proxy
+// Expected targets are "source" or "destination"
+// Envoy ref: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/attributes#connection-attributes
+func retrieveAddressInfo(target string) (string, int) {
+	var targetIP, targetPortStr string
+	var targetPort int
+	srcAddressRaw, err := proxywasm.GetProperty([]string{target, "address"})
+	if err != nil {
+		proxywasm.LogWarnf("failed to get %s address: %v", target, err)
+	} else {
+		targetIP, targetPortStr, err = net.SplitHostPort(string(srcAddressRaw))
+		if err != nil {
+			proxywasm.LogWarnf("failed to parse %s address: %v", target, err)
+		}
+	}
+	srcPortRaw, err := proxywasm.GetProperty([]string{target, "port"})
+	if err != nil {
+		// If GetProperty fails we rely on the port inside the Address property
+		// Mostly useful for proxies other than Envoy
+		targetPort, err = strconv.Atoi(targetPortStr)
+		if err != nil {
+			proxywasm.LogInfof("failed to get %s port: %v", target, err)
+		}
+	} else {
+		targetPort, err = parsePort(srcPortRaw)
+		if err != nil {
+			proxywasm.LogWarnf("failed to parse %s port: %v", target, err)
+		}
+	}
+	return targetIP, targetPort
+}
+
+// Converts port, retrieved as little-endian bytes, into int
+func parsePort(b []byte) (int, error) {
+	// Port attribute ({"source", "port"}) is populated as uint64 (8 byte)
+	// Ref: https://github.com/envoyproxy/envoy/blob/1b3da361279a54956f01abba830fc5d3a5421828/source/common/network/utility.cc#L201
+	if len(b) < 8 {
+		return 0, errors.New("port bytes not found")
+	}
+	// 0 < Port number <= 65535, therefore the retrieved value should never exceed 16 bits
+	// and correctly fit int (at least 32 bits in size)
+	unsignedInt := binary.LittleEndian.Uint64(b)
+	if unsignedInt > math.MaxInt32 {
+		return 0, errors.New("port convertion error")
+	}
+	return int(unsignedInt), nil
 }
