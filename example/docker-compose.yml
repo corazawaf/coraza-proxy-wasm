@@ -1,6 +1,8 @@
 services:
   httpbin:
     image: mccutchen/go-httpbin:v2.5.0
+    environment:
+      - MAX_BODY_SIZE=15728640 # 15 MiB
   chown:
     image: alpine:3.16
     command:
