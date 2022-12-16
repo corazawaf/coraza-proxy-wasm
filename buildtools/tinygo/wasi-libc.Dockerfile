@@ -8,6 +8,6 @@ RUN apt-get install -y git
 RUN git clone https://github.com/anuraaga/tinygo --branch custom-gc
 WORKDIR /tinygo
 # https://github.com/tinygo-org/tinygo/pull/3302
-RUN git fetch origin custom-gc && git reset --hard e27e61ed063c4febd053f3e1637e9f89b012ad1f
+RUN git fetch origin custom-gc && git reset --hard 36a73df8a1e4748c409370a78c795475cd207bab
 RUN git submodule update --init lib/wasi-libc
 RUN make wasi-libc
