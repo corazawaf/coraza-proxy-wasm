@@ -7,7 +7,6 @@ package operators
 
 import (
 	"github.com/corazawaf/coraza/v3/rules"
-
 	re2 "github.com/wasilibs/go-re2"
 )
 
