@@ -1,3 +1,6 @@
+// Copyright The OWASP Coraza contributors
+// SPDX-License-Identifier: Apache-2.0
+
 extern crate aho_corasick;
 
 use std::mem::MaybeUninit;
