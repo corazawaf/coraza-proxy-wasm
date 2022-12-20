@@ -13,13 +13,31 @@ import (
 void* GC_malloc(unsigned int size);
 void GC_free(void* ptr);
 void GC_gcollect();
+
+void onCollectionEvent();
 */
 import "C"
 
-// Initialize the memory allocator. We currently do not have anything needing initialization.
+//export GC_set_on_collection_event
+func GC_set_on_collection_event(f unsafe.Pointer)
+
+const (
+	gcEventStart = 0
+)
+
+//export onCollectionEvent
+func onCollectionEvent(eventType uint32) {
+	switch eventType {
+	case gcEventStart:
+		markStack()
+	}
+}
+
+// Initialize the memory allocator.
 //
 //go:linkname initHeap runtime.initHeap
 func initHeap() {
+	GC_set_on_collection_event(C.onCollectionEvent)
 }
 
 // alloc tries to find some free space on the heap, possibly doing a garbage
@@ -40,22 +58,17 @@ func free(ptr unsafe.Pointer) {
 	C.GC_free(ptr)
 }
 
+//go:linkname markRoots runtime.markRoots
+func markRoots(start, end uintptr) {
+	// Roots are already registered in bdwgc so we have nothing to do here.
+}
+
+//go:linkname markStack runtime.markStack
+func markStack()
+
 // GC performs a garbage collection cycle.
 //
 //go:linkname GC runtime.GC
 func GC() {
 	C.GC_gcollect()
-}
-
-//go:linkname KeepAlive runtime.KeepAlive
-func KeepAlive(x interface{}) {
-	// no-op should be fine, pointers are tracked in a shadow stack which will keep references
-	// to pointers throughout a function call regardless of calling this.
-	// TODO(anuraaga): Verify this
-}
-
-//go:linkname SetFinalizer runtime.SetFinalizer
-func SetFinalizer(obj interface{}, finalizer interface{}) {
-	// Unimplemented for now.
-	// TODO(anuraaga): Try using GC_register_finalizer to implement
 }
