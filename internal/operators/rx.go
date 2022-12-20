@@ -34,6 +34,9 @@ func (o *rx) Evaluate(tx rules.TransactionState, value string) bool {
 			return false
 		}
 		for i, c := range match {
+			if i == 9 {
+				return true
+			}
 			tx.CaptureField(i, c)
 		}
 		return true
