@@ -6,44 +6,41 @@
 package operators
 
 import (
-	"fmt"
-
 	"github.com/corazawaf/coraza/v3/rules"
-
-	"github.com/corazawaf/coraza-proxy-wasm/internal/re2"
+	re2 "github.com/wasilibs/go-re2"
 )
 
 type rx struct {
-	re    re2.RegExp
-	debug bool
+	re *re2.Regexp
 }
 
 var _ rules.Operator = (*rx)(nil)
 
 func newRX(options rules.OperatorOptions) (rules.Operator, error) {
-	o := &rx{}
 	data := options.Arguments
-
-	if data == `(?:\$(?:\((?:\(.*\)|.*)\)|\{.*})|\/\w*\[!?.+\]|[<>]\(.*\))` {
-		o.debug = true
-		fmt.Println("enabling rx debug!")
-	}
 
 	re, err := re2.Compile(data)
 	if err != nil {
 		return nil, err
 	}
-
-	o.re = re
-	return o, err
+	return &rx{re: re}, nil
 }
 
 func (o *rx) Evaluate(tx rules.TransactionState, value string) bool {
-	res := o.re.FindStringSubmatch8(value, func(i int, match string) {
-		tx.CaptureField(i, match)
-	})
-	if o.debug {
-		fmt.Println(res)
+
+	if tx.Capturing() {
+		match := o.re.FindStringSubmatch(value)
+		if len(match) == 0 {
+			return false
+		}
+		for i, c := range match {
+			if i == 9 {
+				return true
+			}
+			tx.CaptureField(i, c)
+		}
+		return true
+	} else {
+		return o.re.MatchString(value)
 	}
-	return res
 }
