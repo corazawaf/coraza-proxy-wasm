@@ -1,0 +1,13 @@
+[workspace]
+
+[package]
+name = "aho-corasick-c"
+version = "0.1.0"
+description = "C wrapper for aho-corasick for loading from Wasm"
+
+[lib]
+crate-type = ["staticlib"]
+name = "aho_corasick"
+
+[dependencies]
+aho-corasick = "0.7.20"

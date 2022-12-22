@@ -1,5 +1,6 @@
 .vscode
 build
+target
 .idea
 .DS_Store
 .vimrc
