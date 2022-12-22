@@ -3,12 +3,10 @@
 
 FROM ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-wasi-sdk:main
 
-RUN apt-get install -y autogen autoconf automake libtool patch
+RUN apt-get install -y autogen autoconf automake libtool
 
-RUN mkdir -p /bdwgc && curl -L https://github.com/ivmai/bdwgc/archive/128c0ec33dc7b41c1ea40ca27d57821135744182.tar.gz | tar -xz --strip-components 1 -C /bdwgc
+RUN mkdir -p /bdwgc && curl -L https://github.com/ivmai/bdwgc/archive/0a1667bee7f2c004abda6ecd173cd80bfef8412c.tar.gz | tar -xz --strip-components 1 -C /bdwgc
 WORKDIR /bdwgc
-ADD bdwgc.patch bdwgc.patch
-RUN patch -p1 < bdwgc.patch
 RUN ./autogen.sh
 
 # While signals aren't actually used the header file is included unconditionally. We can enable the header file
