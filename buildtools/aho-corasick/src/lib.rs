@@ -8,10 +8,8 @@ use std::slice;
 use std::str;
 use aho_corasick::{AhoCorasick, AhoCorasickBuilder, MatchKind};
 
-static mut MATCHERS: Vec<AhoCorasick> = Vec::new();
-
 #[no_mangle]
-pub extern "C" fn new_matcher(patterns_ptr: *mut u8, patterns_len: usize) -> usize {
+pub unsafe extern "C" fn new_matcher(patterns_ptr: *mut u8, patterns_len: usize) -> Box<AhoCorasick> {
     let all_patterns = unsafe {
         slice::from_raw_parts(patterns_ptr, patterns_len)
     };
@@ -35,25 +33,15 @@ pub extern "C" fn new_matcher(patterns_ptr: *mut u8, patterns_len: usize) -> usi
         .match_kind(MatchKind::LeftmostLongest)
         .build(patterns);
 
-    unsafe {
-        MATCHERS.push(ac);
-        MATCHERS.len() - 1
-    }
-
+    return Box::new(ac)
 }
 
 #[no_mangle]
-pub extern "C" fn matches(matcher_ptr: usize, value_ptr: usize, value_len: usize, n: usize, matches: *mut usize) -> usize {
-    let ac = unsafe {
-        let matcher = MATCHERS.get_unchecked(matcher_ptr);
-        matcher
-    };
-
+pub extern "C" fn matches(ac: &mut AhoCorasick, value_ptr: usize, value_len: usize, n: usize, matches: *mut usize) -> usize {
     let value = ptr_to_string(value_ptr, value_len);
-    std::mem::forget(&value);
 
     let mut num = 0;
-    for value in ac.find_iter(value.as_bytes()) {
+    for value in ac.find_iter(value) {
         if num == n {
             break;
         }
@@ -103,10 +91,9 @@ unsafe fn deallocate(ptr: *mut u8, size: usize) {
 
 /// Returns a string from WebAssembly compatible numeric types representing
 /// its pointer and length.
-fn ptr_to_string(ptr: usize, len: usize) -> String {
+fn ptr_to_string(ptr: usize, len: usize) -> &'static str {
     unsafe {
         let slice = slice::from_raw_parts_mut(ptr as *mut u8, len as usize);
-        let utf8 = std::str::from_utf8_unchecked_mut(slice);
-        return String::from(utf8);
+        return str::from_utf8_unchecked_mut(slice);
     }
 }
