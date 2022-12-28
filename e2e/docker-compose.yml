@@ -4,7 +4,7 @@ services:
   envoy:
     depends_on:
       - httpbin
-    image: envoyproxy/envoy:v1.23-latest
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.23-latest}
     command:
       - -c
       - /conf/envoy-config.yaml
