@@ -3,6 +3,9 @@ services:
     image: mccutchen/go-httpbin:v2.5.0
     environment:
       - MAX_BODY_SIZE=15728640 # 15 MiB
+    ports:
+      - 8081:8080
+
   chown:
     image: alpine:3.16
     command:
@@ -11,11 +14,12 @@ services:
       - chown -R 101:101 /home/envoy/logs
     volumes:
       - logs:/home/envoy/logs:rw
+
   envoy:
     depends_on:
       - chown
       - httpbin
-    image: envoyproxy/envoy:v1.23-latest
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.23-latest}
     command:
       - -c
       - /conf/envoy-config.yaml

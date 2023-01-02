@@ -250,7 +250,7 @@ func Ftw() error {
 
 // RunExample spins up the test environment, access at http://localhost:8080. Requires docker-compose.
 func RunExample() error {
-	return sh.RunV("docker-compose", "--file", "example/docker-compose.yml", "up", "-d", "envoy-logs")
+	return sh.RunWithV(map[string]string{"ENVOY_IMAGE": os.Getenv("ENVOY_IMAGE")}, "docker-compose", "--file", "example/docker-compose.yml", "up", "-d", "envoy-logs")
 }
 
 // TeardownExample tears down the test environment. Requires docker-compose.
