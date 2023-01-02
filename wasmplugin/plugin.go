@@ -102,6 +102,7 @@ type httpContext struct {
 	requestBodySize       int
 	responseBodySize      int
 	metrics               *wafMetrics
+	interruptionTriggered bool
 }
 
 // Override types.DefaultHttpContext.
@@ -357,20 +358,27 @@ func (ctx *httpContext) OnHttpStreamDone() {
 	logMemStats()
 }
 
+const noGRPCStream int32 = -1
+
 func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.Interruption) types.Action {
-	ctx.metrics.CountTXInterruption(phase, interruption.RuleID)
+	if !ctx.interruptionTriggered {
+		ctx.interruptionTriggered = true
+		ctx.metrics.CountTXInterruption(phase, interruption.RuleID)
 
-	proxywasm.LogInfof("%d interrupted, action %q", ctx.contextID, interruption.Action)
-	statusCode := interruption.Status
-	if statusCode == 0 {
-		statusCode = 403
+		proxywasm.LogInfof("%d interrupted, action %q, during phase %s", ctx.contextID, interruption.Action, phase)
+		statusCode := interruption.Status
+		if statusCode == 0 {
+			statusCode = 403
+		}
+		if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, noGRPCStream); err != nil {
+			panic(err)
+		}
+
+		return types.ActionPause
+	} else {
+		proxywasm.LogInfof("Interruption already triggered")
+		return types.ActionContinue
 	}
-
-	if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, -1); err != nil {
-		panic(err)
-	}
-
-	return types.ActionPause
 }
 
 func logError(error ctypes.MatchedRule) {
