@@ -102,7 +102,7 @@ type httpContext struct {
 	requestBodySize       int
 	responseBodySize      int
 	metrics               *wafMetrics
-	interruptionTriggered bool
+	triggeredInterruption bool
 }
 
 // Override types.DefaultHttpContext.
@@ -361,8 +361,8 @@ func (ctx *httpContext) OnHttpStreamDone() {
 const noGRPCStream int32 = -1
 
 func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.Interruption) types.Action {
-	if !ctx.interruptionTriggered {
-		ctx.interruptionTriggered = true
+	if !ctx.triggeredInterruption {
+		ctx.triggeredInterruption = true
 		ctx.metrics.CountTXInterruption(phase, interruption.RuleID)
 
 		proxywasm.LogInfof("%d interrupted, action %q, during phase %s", ctx.contextID, interruption.Action, phase)
@@ -376,7 +376,7 @@ func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.In
 
 		return types.ActionPause
 	} else {
-		proxywasm.LogInfof("Interruption already triggered")
+		proxywasm.LogDebug("interruption already triggered")
 		return types.ActionContinue
 	}
 }
