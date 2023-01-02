@@ -29,7 +29,7 @@ func checkTXMetric(t *testing.T, host proxytest.HostEmulator, expectedCounter in
 func TestLifecycle(t *testing.T) {
 	reqProtocol := "HTTP/1.1"
 	reqHdrs := [][2]string{
-		{":path", "/hello?name=panda"},
+		{":path", "/hello?name=panda&arg=<script>alert(0)</script>"},
 		{":method", "GET"},
 		{":authority", "localhost"},
 		{"User-Agent", "gotest"},
@@ -77,7 +77,18 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "url denied",
 			inlineRules: `
-			SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello?name=panda\" \"id:101,phase:1,t:lowercase,deny\"
+			SecRuleEngine On\nSecRule REQUEST_URI \"@beginsWith /hello?name=panda\" \"id:101,phase:1,t:lowercase,deny\"
+			`,
+			requestHdrsAction:  types.ActionPause,
+			requestBodyAction:  types.ActionContinue,
+			responseHdrsAction: types.ActionContinue,
+			responded403:       true,
+			respondedNullBody:  false,
+		},
+		{
+			name: "XSS query argument denied",
+			inlineRules: `
+			SecRuleEngine On\nInclude @owasp_crs\/REQUEST-941-APPLICATION-ATTACK-XSS.conf
 			`,
 			requestHdrsAction:  types.ActionPause,
 			requestBodyAction:  types.ActionContinue,
@@ -376,7 +387,7 @@ func TestLifecycle(t *testing.T) {
 				responseHdrsAction := types.ActionPause
 
 				requestHdrsAction := host.CallOnRequestHeaders(id, reqHdrs, false)
-				require.Equal(t, tt.requestHdrsAction, requestHdrsAction)
+				require.Equal(t, tt.requestHdrsAction, requestHdrsAction, "unexpected request headers action")
 
 				checkTXMetric(t, host, 1)
 
@@ -393,7 +404,7 @@ func TestLifecycle(t *testing.T) {
 						}
 						requestBodyAction = host.CallOnRequestBody(id, body, eos)
 						if eos {
-							require.Equal(t, tt.requestBodyAction, requestBodyAction)
+							require.Equal(t, tt.requestBodyAction, requestBodyAction, "unexpected request body action")
 						} else {
 							require.Equal(t, types.ActionPause, requestBodyAction)
 						}
@@ -402,7 +413,7 @@ func TestLifecycle(t *testing.T) {
 
 				if requestBodyAction == types.ActionContinue {
 					responseHdrsAction = host.CallOnResponseHeaders(id, respHdrs, false)
-					require.Equal(t, tt.responseHdrsAction, responseHdrsAction)
+					require.Equal(t, tt.responseHdrsAction, responseHdrsAction, "unexpected response headers action")
 				}
 
 				if responseHdrsAction == types.ActionContinue {
@@ -418,7 +429,7 @@ func TestLifecycle(t *testing.T) {
 						responseBodyAction := host.CallOnResponseBody(id, body, eos)
 						switch {
 						case eos:
-							require.Equal(t, types.ActionContinue, responseBodyAction)
+							require.Equal(t, types.ActionContinue, responseBodyAction, "unexpected response body action")
 						case responseBodyAccess:
 							require.Equal(t, types.ActionPause, responseBodyAction)
 						default:
