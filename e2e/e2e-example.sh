@@ -65,7 +65,7 @@ function check_body() {
     local url=${1}
     local empty=${2}
     local args=("${@:3}" --silent)
-    response_body=$(curl --max-time $TIMEOUT_SECS "${args[@]}" "${url}")
+    response_body=$(curl --max-time ${TIMEOUT_SECS} "${args[@]}" "${url}")
     if [[ "${empty}" == "true" ]] && [[ -n "${response_body}" ]]; then
       echo -e "[Fail] Unexpected response with a body. Body dump:\n${response_body}"
       exit 1
