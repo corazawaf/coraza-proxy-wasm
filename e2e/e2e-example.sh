@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 ENVOY_HOST=${ENVOY_HOST:-"localhost:8080"}
 HTTPBIN_HOST=${HTTPBIN_HOST:-"localhost:8081"}
+TIMEOUT_SECS=${TIMEOUT_SECS:-5}
 
 [[ "${DEBUG}" == "true" ]] && set -x
 
@@ -47,7 +48,7 @@ function check_status() {
     local url=${1}
     local status=${2}
     local args=("${@:3}" --write-out '%{http_code}' --silent --output /dev/null)
-    status_code=$(curl "${args[@]}" "${url}")
+    status_code=$(curl --max-time ${TIMEOUT_SECS} "${args[@]}" "${url}")
     if [[ "${status_code}" -ne ${status} ]] ; then
       echo "[Fail] Unexpected response with code ${status_code} from ${url}"
       exit 1
@@ -64,7 +65,7 @@ function check_body() {
     local url=${1}
     local empty=${2}
     local args=("${@:3}" --silent)
-    response_body=$(curl "${args[@]}" "${url}")
+    response_body=$(curl --max-time ${TIMEOUT_SECS} "${args[@]}" "${url}")
     if [[ "${empty}" == "true" ]] && [[ -n "${response_body}" ]]; then
       echo -e "[Fail] Unexpected response with a body. Body dump:\n${response_body}"
       exit 1
@@ -94,6 +95,10 @@ wait_for_service "${envoy_url_echo}?arg=arg_1" 20
 ((step+=1))
 echo "[${step}/${total_steps}] (onRequestheaders) Testing true positive custom rule"
 check_status "${envoy_url_filtered}" 403
+# This test ensures the response body is empty on interruption. Specifically this makes
+# sure no body is returned although actionContinue is passed in phase 3 & 4.
+# See https://github.com/corazawaf/coraza-proxy-wasm/pull/126
+check_body "${envoy_url_filtered}" true
 
 # Testing body true negative
 ((step+=1))

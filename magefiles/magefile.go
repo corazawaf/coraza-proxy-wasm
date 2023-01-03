@@ -237,6 +237,7 @@ func Ftw() error {
 	}()
 	env := map[string]string{
 		"FTW_CLOUDMODE": os.Getenv("FTW_CLOUDMODE"),
+		"ENVOY_IMAGE":   os.Getenv("ENVOY_IMAGE"),
 	}
 	if os.Getenv("ENVOY_NOWASM") == "true" {
 		env["ENVOY_CONFIG"] = "/conf/envoy-config-nowasm.yaml"
@@ -250,7 +251,7 @@ func Ftw() error {
 
 // RunExample spins up the test environment, access at http://localhost:8080. Requires docker-compose.
 func RunExample() error {
-	return sh.RunV("docker-compose", "--file", "example/docker-compose.yml", "up", "-d", "envoy-logs")
+	return sh.RunWithV(map[string]string{"ENVOY_IMAGE": os.Getenv("ENVOY_IMAGE")}, "docker-compose", "--file", "example/docker-compose.yml", "up", "-d", "envoy-logs")
 }
 
 // TeardownExample tears down the test environment. Requires docker-compose.
