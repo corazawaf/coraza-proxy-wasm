@@ -101,11 +101,17 @@ type httpContext struct {
 	processedResponseBody bool
 	requestBodySize       int
 	responseBodySize      int
+	interruptionHandled   bool
 	metrics               *wafMetrics
 }
 
 // Override types.DefaultHttpContext.
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
+	if ctx.interruptionHandled {
+		proxywasm.LogErrorf("interruption already handled")
+		return types.ActionPause
+	}
+
 	defer logTime("OnHttpRequestHeaders", currentTime())
 	ctx.metrics.CountTX()
 	tx := ctx.tx
@@ -173,6 +179,11 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 }
 
 func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.Action {
+	if ctx.interruptionHandled {
+		proxywasm.LogErrorf("interruption already handled")
+		return types.ActionPause
+	}
+
 	defer logTime("OnHttpRequestBody", currentTime())
 	tx := ctx.tx
 
@@ -221,6 +232,11 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 }
 
 func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
+	if ctx.interruptionHandled {
+		proxywasm.LogErrorf("interruption already handled")
+		return types.ActionPause
+	}
+
 	defer logTime("OnHttpResponseHeaders", currentTime())
 	tx := ctx.tx
 
@@ -271,6 +287,11 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 }
 
 func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types.Action {
+	if ctx.interruptionHandled {
+		proxywasm.LogErrorf("interruption already handled")
+		return types.ActionPause
+	}
+
 	defer logTime("OnHttpResponseBody", currentTime())
 	tx := ctx.tx
 
@@ -358,6 +379,11 @@ func (ctx *httpContext) OnHttpStreamDone() {
 }
 
 func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.Interruption) types.Action {
+	if ctx.interruptionHandled {
+		// This should never happen
+		panic("interruption already handled")
+	}
+
 	ctx.metrics.CountTXInterruption(phase, interruption.RuleID)
 
 	proxywasm.LogInfof("%d interrupted, action %q", ctx.contextID, interruption.Action)
@@ -369,6 +395,8 @@ func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.In
 	if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, -1); err != nil {
 		panic(err)
 	}
+
+	ctx.interruptionHandled = true
 
 	return types.ActionPause
 }
