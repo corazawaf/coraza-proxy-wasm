@@ -102,12 +102,18 @@ type httpContext struct {
 	requestBodySize       int
 	responseBodySize      int
 	metrics               *wafMetrics
-	triggeredInterruption bool
+	interruptionHandled   bool
 }
 
 // Override types.DefaultHttpContext.
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
 	defer logTime("OnHttpRequestHeaders", currentTime())
+
+	if ctx.interruptionHandled {
+		proxywasm.LogErrorf("interruption already handled")
+		return types.ActionPause
+	}
+
 	ctx.metrics.CountTX()
 	tx := ctx.tx
 
@@ -175,6 +181,12 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.Action {
 	defer logTime("OnHttpRequestBody", currentTime())
+
+	if ctx.interruptionHandled {
+		proxywasm.LogErrorf("interruption already handled")
+		return types.ActionPause
+	}
+
 	tx := ctx.tx
 
 	if tx.IsRuleEngineOff() {
@@ -223,6 +235,22 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 
 func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
 	defer logTime("OnHttpResponseHeaders", currentTime())
+
+	if ctx.interruptionHandled {
+		// Handling the interruption (see handleInterruption) generates a HttpResponse with the required status code.
+		// If handleInterruption is raised during OnHttpRequestHeaders or OnHttpRequestBody, the crafted response is sent
+		// downstream via the filter chain, therefore OnHttpResponseHeaders is called.
+		// We expect a response that is ending the stream, with exactly one header (:status) and no body.
+		// See https://github.com/corazawaf/coraza-proxy-wasm/pull/126
+		if numHeaders == 1 && endOfStream {
+			proxywasm.LogDebugf("interruption already handled, sending downstream the local response")
+			return types.ActionContinue
+		} else {
+			proxywasm.LogErrorf("interruption already handled, unexpected local response")
+			return types.ActionPause
+		}
+	}
+
 	tx := ctx.tx
 
 	if tx.IsRuleEngineOff() {
@@ -273,6 +301,13 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 
 func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types.Action {
 	defer logTime("OnHttpResponseBody", currentTime())
+
+	if ctx.interruptionHandled {
+		// Sending the crafted HttpResponse with empty body, we don't expect to trigger OnHttpResponseBody
+		proxywasm.LogErrorf("interruption already handled")
+		return types.ActionPause
+	}
+
 	tx := ctx.tx
 
 	if tx.IsRuleEngineOff() {
@@ -361,24 +396,26 @@ func (ctx *httpContext) OnHttpStreamDone() {
 const noGRPCStream int32 = -1
 
 func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.Interruption) types.Action {
-	if !ctx.triggeredInterruption {
-		ctx.triggeredInterruption = true
-		ctx.metrics.CountTXInterruption(phase, interruption.RuleID)
-
-		proxywasm.LogInfof("%d interrupted, action %q, during phase %s", ctx.contextID, interruption.Action, phase)
-		statusCode := interruption.Status
-		if statusCode == 0 {
-			statusCode = 403
-		}
-		if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, noGRPCStream); err != nil {
-			panic(err)
-		}
-
-		return types.ActionPause
-	} else {
-		proxywasm.LogDebug("interruption already triggered")
-		return types.ActionContinue
+	if ctx.interruptionHandled {
+		// handleInterruption should never be called more the once
+		panic("interruption already handled")
 	}
+
+	ctx.metrics.CountTXInterruption(phase, interruption.RuleID)
+
+	proxywasm.LogInfof("%d interrupted, action %q, phase %q", ctx.contextID, interruption.Action, phase)
+	statusCode := interruption.Status
+	if statusCode == 0 {
+		statusCode = 403
+	}
+	if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, noGRPCStream); err != nil {
+		panic(err)
+	}
+
+	ctx.interruptionHandled = true
+
+	// SendHttpResponse must be followed by ActionPause in order to stop malicious content
+	return types.ActionPause
 }
 
 func logError(error ctypes.MatchedRule) {

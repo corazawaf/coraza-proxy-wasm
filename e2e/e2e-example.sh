@@ -109,6 +109,8 @@ check_status "${envoy_url_echo}" 200 -X POST -H 'Content-Type: application/x-www
 ((step+=1))
 echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body)"
 check_status "${envoy_url_unfiltered}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayload}"
+# Every true positive request should be denied with a 403 and an empty body
+check_body "${envoy_url_filtered}" true
 
 # Testing response headers detection
 ((step+=1))
@@ -132,16 +134,22 @@ check_body "${envoy_url_echo}" true -X POST -H 'Content-Type: application/x-www-
 ((step+=1))
 echo "[${step}/${total_steps}] Testing XSS detefction at request headers"
 check_status "${envoy_url_echo}?arg=<script>alert(0)</script>" 403
+# Every true positive request should be denied with a 403 and an empty body
+check_body "${envoy_url_filtered}" true
 
 # Testing SQLI detection during phase 2
 ((step+=1))
 echo "[${step}/${total_steps}] Testing SQLi detection at request body"
 check_status "${envoy_url_echo}" 403 -X POST --data "1%27%20ORDER%20BY%203--%2B"
+# Every true positive request should be denied with a 403 and an empty body
+check_body "${envoy_url_filtered}" true
 
 # Triggers a CRS scanner detection rule (913100)
 ((step+=1))
 echo "[${step}/${total_steps}] (onRequestBody) Testing CRS rule 913100"
 check_status "${envoy_url_echo}" 403 --user-agent "Grabber/0.1 (X11; U; Linux i686; en-US; rv:1.7)" -H "Host: localhost" -H "Accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5"
+# Every true positive request should be denied with a 403 and an empty body
+check_body "${envoy_url_filtered}" true
 
 # True negative GET request with an usual user-agent
 ((step+=1))
