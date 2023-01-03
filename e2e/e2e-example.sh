@@ -95,6 +95,10 @@ wait_for_service "${envoy_url_echo}?arg=arg_1" 20
 ((step+=1))
 echo "[${step}/${total_steps}] (onRequestheaders) Testing true positive custom rule"
 check_status "${envoy_url_filtered}" 403
+# This test ensures the response body is empty on interruption. Specifically this makes
+# sure no body is returned although actionContinue is passed in phase 3 & 4.
+# See https://github.com/corazawaf/coraza-proxy-wasm/pull/126
+check_body "${envoy_url_filtered}" true
 
 # Testing body true negative
 ((step+=1))
