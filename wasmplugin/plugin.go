@@ -109,11 +109,6 @@ type httpContext struct {
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
 	defer logTime("OnHttpRequestHeaders", currentTime())
 
-	if ctx.interruptionHandled {
-		proxywasm.LogErrorf("interruption already handled")
-		return types.ActionPause
-	}
-
 	ctx.metrics.CountTX()
 	tx := ctx.tx
 
