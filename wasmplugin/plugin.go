@@ -97,7 +97,6 @@ type httpContext struct {
 	contextID             uint32
 	tx                    ctypes.Transaction
 	httpProtocol          string
-	processedRequestBody  bool
 	processedResponseBody bool
 	requestBodySize       int
 	responseBodySize      int
@@ -169,6 +168,26 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		return ctx.handleInterruption("http_request_headers", interruption)
 	}
 
+	contentLen, err := proxywasm.GetHttpRequestHeader("content-length")
+	if err != nil || contentLen == "0" {
+		// - requests with no body will not have by default the content-length header
+		//   and OnHttpRequestBody won't be called
+		// - requests with empty body will have content-length set as "0"
+		//   (see https://github.com/envoyproxy/envoy/issues/14890) and OnHttpRequestBody will
+		//   be called with bodySize=0
+		// Either way, phase 2 won't get triggered, in the other hand, requests with no or empty
+		// body but with content-length bigger than zero will reach upstream with headers but will
+		// not respond back so as of now this is a best effort.
+		interruption, err := tx.ProcessRequestBody()
+		if err != nil {
+			proxywasm.LogCriticalf("failed to process request body: %v", err)
+			return types.ActionContinue
+		}
+		if interruption != nil {
+			return ctx.handleInterruption("http_request_body", interruption)
+		}
+	}
+
 	return types.ActionContinue
 }
 
@@ -207,7 +226,6 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		}
 	}
 
-	ctx.processedRequestBody = true
 	interruption, err := tx.ProcessRequestBody()
 	if err != nil {
 		proxywasm.LogCriticalf("failed to process request body: %v", err)
@@ -226,20 +244,6 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 
 	if tx.IsRuleEngineOff() {
 		return types.ActionContinue
-	}
-
-	// Requests without body won't call OnHttpRequestBody, but there are rules in the request body
-	// phase that still need to be executed. If they haven't been executed yet, now is the time.
-	if !ctx.processedRequestBody {
-		ctx.processedRequestBody = true
-		interruption, err := tx.ProcessRequestBody()
-		if err != nil {
-			proxywasm.LogCriticalf("failed to process request body: %v", err)
-			return types.ActionContinue
-		}
-		if interruption != nil {
-			return ctx.handleInterruption("http_response_headers", interruption)
-		}
 	}
 
 	status, err := proxywasm.GetHttpResponseHeader(":status")
