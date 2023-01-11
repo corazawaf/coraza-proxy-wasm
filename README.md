@@ -104,7 +104,7 @@ configuration:
 ```
 
 #### Recommendations using CRS with proxy-wasm
-- In order to mitigate as much as possible malicious requests (or connections open) sent upstream, it is recommended to keep enabled [CRS Early Blocking](https://coreruleset.org/20220302/the-case-for-early-blocking/) feature (SecAction [`900120`](./wasmplugin/rules/crs-setup-demo.conf)).
+- In order to mitigate as much as possible malicious requests (or connections open) sent upstream, it is recommended to keep the [CRS Early Blocking](https://coreruleset.org/20220302/the-case-for-early-blocking/) feature enabled (SecAction [`900120`](./wasmplugin/rules/crs-setup.conf.example)).
 
 ### Running go-ftw (CRS Regression tests)
 
