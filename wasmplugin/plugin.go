@@ -28,7 +28,6 @@ func NewVMContext() types.VMContext {
 	return &vmContext{}
 }
 
-// Override types.DefaultVMContext.
 func (*vmContext) NewPluginContext(contextID uint32) types.PluginContext {
 	return &corazaPlugin{}
 }
@@ -43,7 +42,6 @@ type corazaPlugin struct {
 	metrics *wafMetrics
 }
 
-// Override types.DefaultPluginContext.
 func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
 	data, err := proxywasm.GetPluginConfiguration()
 	if err != nil && err != types.ErrorStatusNotFound {
@@ -58,7 +56,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 	// First we initialize our waf and our seclang parser
 	conf := coraza.NewWAFConfig().
-		WithErrorLogger(logError).
+		WithErrorCallback(logError).
 		WithDebugLogger(&debugLogger{}).
 		WithRequestBodyAccess(coraza.NewRequestBodyConfig().
 			WithLimit(1024 * 1024 * 1024).
@@ -80,7 +78,6 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	return types.OnPluginStartStatusOK
 }
 
-// Override types.DefaultPluginContext.
 func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 	return &httpContext{
 		contextID: contextID,
@@ -105,7 +102,6 @@ type httpContext struct {
 	interruptionHandled   bool
 }
 
-// Override types.DefaultHttpContext.
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
 	defer logTime("OnHttpRequestHeaders", currentTime())
 
@@ -363,7 +359,6 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	return types.ActionContinue
 }
 
-// Override types.DefaultHttpContext.
 func (ctx *httpContext) OnHttpStreamDone() {
 	defer logTime("OnHttpStreamDone", currentTime())
 	tx := ctx.tx
@@ -435,7 +430,7 @@ func logError(error ctypes.MatchedRule) {
 	}
 }
 
-// Retrieves adddress properties from the proxy
+// retrieveAddressInfo retrieves address properties from the proxy
 // Expected targets are "source" or "destination"
 // Envoy ref: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/attributes#connection-attributes
 func retrieveAddressInfo(target string) (string, int) {
