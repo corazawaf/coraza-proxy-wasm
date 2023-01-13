@@ -12,6 +12,7 @@ on:
     paths:
       - buildtools/tinygo/**
       - .github/workflows/buildtools-tinygo.yaml
+  workflow_dispatch:
 
 jobs:
   build:
