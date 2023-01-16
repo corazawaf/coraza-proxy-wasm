@@ -187,6 +187,15 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	// Do not perform any action related to request body if SecRequestBodyAccess is set to false
 	if !tx.IsRequestBodyAccessible() {
 		proxywasm.LogDebug("skipping request body inspection, SecRequestBodyAccess is off.")
+		interruption, err := tx.ProcessRequestBody()
+		if err != nil {
+			proxywasm.LogCriticalf("failed to process request body: %v", err)
+			return types.ActionContinue
+		}
+		if interruption != nil {
+			return ctx.handleInterruption("http_request_body", interruption)
+		}
+
 		return types.ActionContinue
 	}
 
@@ -198,16 +207,14 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	}
 
 	if ctx.requestBodySize > 0 {
-		body, err := proxywasm.GetHttpRequestBody(0, ctx.requestBodySize)
-		if err != nil {
-			proxywasm.LogCriticalf("failed to get request body: %v", err)
-			return types.ActionContinue
-		}
-
-		_, err = tx.RequestBodyWriter().Write(body)
+		interruption, _, err := tx.ReadRequestBodyFrom(bodyWrapper{totalSize: ctx.requestBodySize})
 		if err != nil {
 			proxywasm.LogCriticalf("failed to read request body: %v", err)
 			return types.ActionContinue
+		}
+
+		if interruption != nil {
+			return ctx.handleInterruption("http_request_body", interruption)
 		}
 	}
 
