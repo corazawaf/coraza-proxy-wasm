@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/corazawaf/coraza/v3/rules"
-
 	ahocorasick "github.com/wasilibs/go-aho-corasick"
 )
 
