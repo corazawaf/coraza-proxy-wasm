@@ -96,7 +96,7 @@ type httpContext struct {
 	httpProtocol          string
 	processedRequestBody  bool
 	processedResponseBody bool
-	requestBodySize       int
+	bodyReadIndex         int
 	responseBodySize      int
 	metrics               *wafMetrics
 	interruptionHandled   bool
@@ -178,6 +178,10 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		return types.ActionPause
 	}
 
+	if ctx.processedRequestBody {
+		return types.ActionContinue
+	}
+
 	tx := ctx.tx
 
 	if tx.IsRuleEngineOff() {
@@ -187,6 +191,42 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	// Do not perform any action related to request body if SecRequestBodyAccess is set to false
 	if !tx.IsRequestBodyAccessible() {
 		proxywasm.LogDebug("skipping request body inspection, SecRequestBodyAccess is off.")
+		ctx.processedRequestBody = true
+		interruption, err := tx.ProcessRequestBody()
+		if err != nil {
+			proxywasm.LogCriticalf("failed to process request body: %v", err)
+			return types.ActionContinue
+		}
+
+		if interruption != nil {
+			return ctx.handleInterruption("http_request_body", interruption)
+		}
+
+		return types.ActionContinue
+	}
+
+	if bodySize > 0 {
+		b, err := proxywasm.GetHttpRequestBody(ctx.bodyReadIndex, bodySize)
+		if err != nil {
+			proxywasm.LogCriticalf("failed to read request body: %v", err)
+			return types.ActionContinue
+		}
+
+		interruption, _, err := tx.WriteRequestBody(b)
+		if err != nil {
+			proxywasm.LogCriticalf("failed to read request body: %v", err)
+			return types.ActionContinue
+		}
+
+		if interruption != nil {
+			return ctx.handleInterruption("http_request_body", interruption)
+		}
+
+		ctx.bodyReadIndex += bodySize
+	}
+
+	if endOfStream {
+		ctx.processedRequestBody = true
 		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
 			proxywasm.LogCriticalf("failed to process request body: %v", err)
@@ -199,36 +239,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		return types.ActionContinue
 	}
 
-	ctx.requestBodySize += bodySize
-	// Wait until we see the entire body. It has to be buffered in order to check that it is fully legit
-	// before sending it upstream
-	if !endOfStream {
-		return types.ActionPause
-	}
-
-	if ctx.requestBodySize > 0 {
-		interruption, _, err := tx.ReadRequestBodyFrom(bodyWrapper{totalSize: ctx.requestBodySize})
-		if err != nil {
-			proxywasm.LogCriticalf("failed to read request body: %v", err)
-			return types.ActionContinue
-		}
-
-		if interruption != nil {
-			return ctx.handleInterruption("http_request_body", interruption)
-		}
-	}
-
-	ctx.processedRequestBody = true
-	interruption, err := tx.ProcessRequestBody()
-	if err != nil {
-		proxywasm.LogCriticalf("failed to process request body: %v", err)
-		return types.ActionContinue
-	}
-	if interruption != nil {
-		return ctx.handleInterruption("http_request_body", interruption)
-	}
-
-	return types.ActionContinue
+	return types.ActionPause
 }
 
 func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
