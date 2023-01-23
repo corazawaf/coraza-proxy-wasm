@@ -237,6 +237,7 @@ func Ftw() error {
 	}()
 	env := map[string]string{
 		"FTW_CLOUDMODE": os.Getenv("FTW_CLOUDMODE"),
+		"FTW_INCLUDE":   os.Getenv("FTW_INCLUDE"),
 		"ENVOY_IMAGE":   os.Getenv("ENVOY_IMAGE"),
 	}
 	if os.Getenv("ENVOY_NOWASM") == "true" {

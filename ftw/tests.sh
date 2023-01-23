@@ -32,4 +32,6 @@ echo -e "\n[Ok] Got status code $status_code, expected 200. Ready to start."
 
 FTW_CLOUDMODE=${FTW_CLOUDMODE:-false}
 
-/ftw run -d coreruleset/tests/regression/tests --config ftw.yml --read-timeout=10s --cloud=$FTW_CLOUDMODE || exit 1
+FTW_INCLUDE=$([ "${FTW_INCLUDE}" == "" ] && echo "" || echo "-i ${FTW_INCLUDE}")
+
+/ftw run -d coreruleset/tests/regression/tests --config ftw.yml --read-timeout=10s --cloud=$FTW_CLOUDMODE $FTW_INCLUDE || exit 1
