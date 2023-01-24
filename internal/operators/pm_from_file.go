@@ -11,8 +11,7 @@ import (
 	"strings"
 
 	"github.com/corazawaf/coraza/v3/rules"
-
-	"github.com/corazawaf/coraza-proxy-wasm/internal/ahocorasick"
+	ahocorasick "github.com/wasilibs/go-aho-corasick"
 )
 
 func newPMFromFile(options rules.OperatorOptions) (rules.Operator, error) {
@@ -37,5 +36,12 @@ func newPMFromFile(options rules.OperatorOptions) (rules.Operator, error) {
 		lines = append(lines, strings.ToLower(l))
 	}
 
-	return &pm{m: ahocorasick.NewMatcher(lines)}, nil
+	builder := ahocorasick.NewAhoCorasickBuilder(ahocorasick.Opts{
+		AsciiCaseInsensitive: true,
+		MatchOnlyWholeWords:  false,
+		MatchKind:            ahocorasick.LeftMostLongestMatch,
+		DFA:                  false,
+	})
+
+	return &pm{matcher: builder.Build(lines)}, nil
 }
