@@ -7,8 +7,7 @@ package operators
 
 import (
 	"github.com/corazawaf/coraza/v3/rules"
-
-	"github.com/corazawaf/coraza-proxy-wasm/internal/injection"
+	"github.com/wasilibs/go-libinjection"
 )
 
 type detectSQLi struct{}
@@ -20,7 +19,7 @@ func newDetectSQLi(rules.OperatorOptions) (rules.Operator, error) {
 }
 
 func (o *detectSQLi) Evaluate(tx rules.TransactionState, value string) bool {
-	res, fp := injection.IsSQLi(value)
+	res, fp := libinjection.IsSQLi(value)
 	if !res {
 		return false
 	}
