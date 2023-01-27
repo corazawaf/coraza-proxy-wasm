@@ -204,17 +204,17 @@ func TestLifecycle(t *testing.T) {
 			responded403:       true,
 			respondedNullBody:  false,
 		},
-		// {
-		// 	name: "request body accepted, no access",
-		// 	inlineRules: `
-		// SecRuleEngine On\nSecRequestBodyAccess Off\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
-		// `,
-		// 	requestHdrsAction:  types.ActionContinue,
-		// 	requestBodyAction:  types.ActionContinue,
-		// 	responseHdrsAction: types.ActionContinue,
-		// 	responded403:       false,
-		// 	respondedNullBody:  false,
-		// },
+		{
+			name: "request body accepted, no access",
+			inlineRules: `
+		SecRuleEngine On\nSecRequestBodyAccess Off\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
+		`,
+			requestHdrsAction:  types.ActionContinue,
+			requestBodyAction:  types.ActionContinue,
+			responseHdrsAction: types.ActionContinue,
+			responded403:       false,
+			respondedNullBody:  false,
+		},
 		{
 			name: "status accepted",
 			inlineRules: `
