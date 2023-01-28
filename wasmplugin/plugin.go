@@ -57,8 +57,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	// First we initialize our waf and our seclang parser
 	conf := coraza.NewWAFConfig().
 		WithErrorCallback(logError).
-		WithDebugLogger(&debugLogger{}).
-		WithRequestBodyAccess().WithRequestBodyLimit(1024 * 1024 * 1024).
+		WithDebugLogger(&debugLogger{}).WithRequestBodyLimit(1024 * 1024 * 1024).
 		// Limit equal to MemoryLimit: TinyGo compilation will prevent
 		// buffering request body to files anyways.
 		// TODO(anuraaga): Make this configurable in plugin configuration.
