@@ -96,7 +96,7 @@ type httpContext struct {
 	httpProtocol          string
 	processedRequestBody  bool
 	processedResponseBody bool
-	requestBodySize       int
+	bodyReadIndex         int
 	responseBodySize      int
 	metrics               *wafMetrics
 	interruptionHandled   bool
@@ -178,6 +178,10 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		return types.ActionPause
 	}
 
+	if ctx.processedRequestBody {
+		return types.ActionContinue
+	}
+
 	tx := ctx.tx
 
 	if tx.IsRuleEngineOff() {
@@ -187,41 +191,63 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	// Do not perform any action related to request body if SecRequestBodyAccess is set to false
 	if !tx.IsRequestBodyAccessible() {
 		proxywasm.LogDebug("skipping request body inspection, SecRequestBodyAccess is off.")
-		return types.ActionContinue
-	}
-
-	ctx.requestBodySize += bodySize
-	// Wait until we see the entire body. It has to be buffered in order to check that it is fully legit
-	// before sending it upstream
-	if !endOfStream {
-		return types.ActionPause
-	}
-
-	if ctx.requestBodySize > 0 {
-		body, err := proxywasm.GetHttpRequestBody(0, ctx.requestBodySize)
+		ctx.processedRequestBody = true
+		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
-			proxywasm.LogCriticalf("failed to get request body: %v", err)
+			proxywasm.LogCriticalf("failed to process request body: %v", err)
 			return types.ActionContinue
 		}
 
-		_, err = tx.RequestBodyWriter().Write(body)
-		if err != nil {
-			proxywasm.LogCriticalf("failed to read request body: %v", err)
+		if interruption != nil {
+			return ctx.handleInterruption("http_request_body", interruption)
+		}
+
+		return types.ActionContinue
+	}
+
+	if bodySize > 0 {
+		b, err := proxywasm.GetHttpRequestBody(ctx.bodyReadIndex, bodySize)
+		if err == nil {
+			interruption, _, err := tx.WriteRequestBody(b)
+			if err != nil {
+				proxywasm.LogCriticalf("failed to write request body: %v", err)
+				return types.ActionContinue
+			}
+
+			if interruption != nil {
+				return ctx.handleInterruption("http_request_body", interruption)
+			}
+
+			ctx.bodyReadIndex += bodySize
+		} else if err != types.ErrorStatusNotFound {
+			// When using FWT sometimes (it is inconsistent) we receive calls where ctx.bodyReadIndex == bodySize
+			// meaning that the incoming size in the body is the same as the already read body.
+			// When that happens, this code failes to retrieve the body through proxywasm.GetHttpRequestBody
+			// as the total body is from 0 up to X bytes and since the last bodySize = X it attempts to read
+			// from X up to X bytes and it returns a types.ErrorStatusNotFound. This could happen despite
+			// endOfStream being true or false.
+			// The tests in 920410 show this problem.
+			// TODO(jcchavezs): Verify if this is a FTW problem.
+			proxywasm.LogCriticalf("failed to read request body from %d up to %d bytes: %v", ctx.bodyReadIndex, bodySize, err)
 			return types.ActionContinue
 		}
 	}
 
-	ctx.processedRequestBody = true
-	interruption, err := tx.ProcessRequestBody()
-	if err != nil {
-		proxywasm.LogCriticalf("failed to process request body: %v", err)
+	if endOfStream {
+		ctx.processedRequestBody = true
+		interruption, err := tx.ProcessRequestBody()
+		if err != nil {
+			proxywasm.LogCriticalf("failed to process request body: %v", err)
+			return types.ActionContinue
+		}
+		if interruption != nil {
+			return ctx.handleInterruption("http_request_body", interruption)
+		}
+
 		return types.ActionContinue
 	}
-	if interruption != nil {
-		return ctx.handleInterruption("http_request_body", interruption)
-	}
 
-	return types.ActionContinue
+	return types.ActionPause
 }
 
 func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {

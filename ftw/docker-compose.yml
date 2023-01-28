@@ -58,6 +58,7 @@ services:
     build: .
     environment:
       - FTW_CLOUDMODE
+      - FTW_INCLUDE
     volumes:
       - logs:/home/envoy/logs:ro
       - ../build:/build
