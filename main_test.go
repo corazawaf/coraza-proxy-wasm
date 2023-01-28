@@ -26,6 +26,15 @@ func checkTXMetric(t *testing.T, host proxytest.HostEmulator, expectedCounter in
 	require.Equal(t, uint64(expectedCounter), value)
 }
 
+var actionName = map[types.Action]string{
+	types.ActionPause:    "pause",
+	types.ActionContinue: "continue",
+}
+
+func requireEqualAction(t *testing.T, expected types.Action, actual types.Action, msg string) {
+	require.Equal(t, expected, actual, msg, actionName[expected], actionName[actual])
+}
+
 func TestLifecycle(t *testing.T) {
 	reqProtocol := "HTTP/1.1"
 	reqHdrs := [][2]string{
@@ -393,9 +402,9 @@ func TestLifecycle(t *testing.T) {
 						}
 						requestBodyAction = host.CallOnRequestBody(id, body, eos)
 						if eos {
-							require.Equal(t, tt.requestBodyAction, requestBodyAction)
+							requireEqualAction(t, tt.requestBodyAction, requestBodyAction, "unexpected body action, want %q, have %q on end of stream")
 						} else {
-							require.Equal(t, types.ActionPause, requestBodyAction)
+							requireEqualAction(t, types.ActionPause, requestBodyAction, "unexpected body action, want %q, have %q")
 						}
 					}
 				}
@@ -418,11 +427,11 @@ func TestLifecycle(t *testing.T) {
 						responseBodyAction := host.CallOnResponseBody(id, body, eos)
 						switch {
 						case eos:
-							require.Equal(t, types.ActionContinue, responseBodyAction)
+							requireEqualAction(t, types.ActionContinue, responseBodyAction, "unexpected response body action, want %q, have %q on end of stream")
 						case responseBodyAccess:
-							require.Equal(t, types.ActionPause, responseBodyAction)
+							requireEqualAction(t, types.ActionPause, responseBodyAction, "unexpected response body action, want %q, have %q on end of stream")
 						default:
-							require.Equal(t, types.ActionContinue, responseBodyAction)
+							requireEqualAction(t, types.ActionContinue, responseBodyAction, "unexpected response body action, want %q, have %q on end of stream")
 						}
 					}
 				}
