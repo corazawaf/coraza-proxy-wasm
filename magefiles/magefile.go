@@ -203,7 +203,7 @@ tinygo build -gc=custom -opt=2 -o %s -scheduler=none -target=wasi %s`, filepath.
 
 // UpdateLibs updates the C++ filter dependencies.
 func UpdateLibs() error {
-	libs := []string{"bdwgc", "libinjection", "mimalloc"}
+	libs := []string{"bdwgc", "mimalloc"}
 	for _, lib := range libs {
 		if err := sh.RunV("docker", "build", "-t", "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-"+lib, filepath.Join("buildtools", lib)); err != nil {
 			return err

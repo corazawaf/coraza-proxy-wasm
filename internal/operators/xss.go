@@ -7,8 +7,7 @@ package operators
 
 import (
 	"github.com/corazawaf/coraza/v3/rules"
-
-	"github.com/corazawaf/coraza-proxy-wasm/internal/injection"
+	"github.com/wasilibs/go-libinjection"
 )
 
 type detectXSS struct{}
@@ -20,5 +19,5 @@ func newDetectXSS(rules.OperatorOptions) (rules.Operator, error) {
 }
 
 func (o *detectXSS) Evaluate(tx rules.TransactionState, value string) bool {
-	return injection.IsXSS(value)
+	return libinjection.IsXSS(value)
 }

@@ -8,6 +8,7 @@ require (
 	github.com/tetratelabs/proxy-wasm-go-sdk v0.20.1-0.20230115020858-593cf0f7417a
 	github.com/tidwall/gjson v1.14.4
 	github.com/wasilibs/go-aho-corasick v0.2.0
+	github.com/wasilibs/go-libinjection v0.1.0
 	github.com/wasilibs/go-re2 v0.0.0-20221219074959-3ec67f9038f0
 )
 
