@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -61,6 +63,7 @@ func TestLifecycle(t *testing.T) {
 		requestBodyAction  types.Action
 		responseHdrsAction types.Action
 		responded403       bool
+		responded413       bool
 		respondedNullBody  bool
 	}{
 		{
@@ -225,6 +228,28 @@ func TestLifecycle(t *testing.T) {
 			respondedNullBody:  false,
 		},
 		{
+			name: "request body accepted, payload above process partial",
+			inlineRules: `
+		SecRuleEngine On\nSecRequestBodyAccess On\nSecRequestBodyLimit 2\nSecRequestBodyLimitAction ProcessPartial\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
+		`,
+			requestHdrsAction:  types.ActionContinue,
+			requestBodyAction:  types.ActionContinue,
+			responseHdrsAction: types.ActionContinue,
+			responded403:       false,
+			respondedNullBody:  false,
+		},
+		{
+			name: "request body denied, above limits",
+			inlineRules: `
+			SecRuleEngine On\nSecRequestBodyAccess On\nSecRequestBodyLimit 2\nSecRule REQUEST_BODY \"name=yogi\" \"id:101,phase:2,t:lowercase,deny\"
+			`,
+			requestHdrsAction:  types.ActionContinue,
+			requestBodyAction:  types.ActionPause,
+			responseHdrsAction: types.ActionContinue,
+			responded413:       true,
+			respondedNullBody:  false,
+		},
+		{
 			name: "status accepted",
 			inlineRules: `
 			SecRuleEngine On\nSecRule RESPONSE_STATUS \"500\" \"id:101,phase:3,t:lowercase,deny\"
@@ -356,6 +381,28 @@ func TestLifecycle(t *testing.T) {
 			responded403:       false,
 			respondedNullBody:  false,
 		},
+		{
+			name: "response body accepted, payload above process partial",
+			inlineRules: `
+			SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyLimit 2\nSecResponseBodyLimitAction ProcessPartial\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
+			`,
+			requestHdrsAction:  types.ActionContinue,
+			requestBodyAction:  types.ActionContinue,
+			responseHdrsAction: types.ActionContinue,
+			responded403:       false,
+			respondedNullBody:  false,
+		},
+		{
+			name: "response body denied, above limits",
+			inlineRules: `
+			SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyLimit 2\nSecResponseBodyLimitAction Reject\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
+			`,
+			requestHdrsAction:  types.ActionContinue,
+			requestBodyAction:  types.ActionContinue,
+			responseHdrsAction: types.ActionContinue,
+			responded403:       false, // proxy-wasm does not support it at phase 4
+			respondedNullBody:  true,
+		},
 	}
 
 	vmTest(t, func(t *testing.T, vm types.VMContext) {
@@ -420,6 +467,15 @@ func TestLifecycle(t *testing.T) {
 
 				if responseHdrsAction == types.ActionContinue {
 					responseBodyAccess := strings.Contains(tt.inlineRules, "SecResponseBodyAccess On")
+					responseBodyLimitSlice := regexp.MustCompile(`SecResponseBodyLimit\s(\w+)`).FindStringSubmatch(tt.inlineRules)
+					var responseBodyLimit int
+					var err error
+					if responseBodyLimitSlice != nil {
+						responseBodyLimit, err = strconv.Atoi(responseBodyLimitSlice[1])
+						if err != nil {
+							t.Errorf("Error converting SecResponseBodyLimit into int")
+						}
+					}
 					for i := 0; i < len(respBody); i += 5 {
 						eos := i+5 >= len(respBody)
 						var body []byte
@@ -428,9 +484,10 @@ func TestLifecycle(t *testing.T) {
 						} else {
 							body = respBody[i : i+5]
 						}
+						expectRejct := (i+5 >= responseBodyLimit) && responseBodyLimitSlice != nil && strings.Contains(tt.inlineRules, "SecResponseBodyLimitAction Reject")
 						responseBodyAction := host.CallOnResponseBody(id, body, eos)
 						switch {
-						case eos:
+						case eos, expectRejct:
 							requireEqualAction(t, types.ActionContinue, responseBodyAction, "unexpected response body action, want %q, have %q on end of stream")
 						case responseBodyAccess:
 							requireEqualAction(t, types.ActionPause, responseBodyAction, "unexpected response body action, want %q, have %q")
@@ -444,16 +501,20 @@ func TestLifecycle(t *testing.T) {
 				host.CompleteHttpContext(id)
 
 				pluginResp := host.GetSentLocalResponse(id)
-				if tt.responded403 {
+				switch {
+				case tt.responded403:
 					require.NotNil(t, pluginResp)
 					require.EqualValues(t, 403, pluginResp.StatusCode)
-				} else {
+				case tt.responded413:
+					require.NotNil(t, pluginResp)
+					require.EqualValues(t, 413, pluginResp.StatusCode)
+				default:
 					require.Nil(t, pluginResp)
 				}
 				if tt.respondedNullBody {
 					pluginBodyResp := host.GetCurrentResponseBody(id)
 					require.NotNil(t, pluginBodyResp)
-					require.EqualValues(t, byte('\x00'), pluginBodyResp[0])
+					require.EqualValues(t, bytes.Repeat([]byte("\x00"), len(pluginBodyResp)), pluginBodyResp)
 				}
 			})
 		}
