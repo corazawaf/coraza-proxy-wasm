@@ -213,17 +213,17 @@ func TestLifecycle(t *testing.T) {
 			responded403:       true,
 			respondedNullBody:  false,
 		},
-		// {
-		// 	name: "request body accepted, no access",
-		// 	inlineRules: `
-		// SecRuleEngine On\nSecRequestBodyAccess Off\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
-		// `,
-		// 	requestHdrsAction:  types.ActionContinue,
-		// 	requestBodyAction:  types.ActionContinue,
-		// 	responseHdrsAction: types.ActionContinue,
-		// 	responded403:       false,
-		// 	respondedNullBody:  false,
-		// },
+		{
+			name: "request body accepted, no request body access",
+			inlineRules: `
+		SecRuleEngine On\nSecRequestBodyAccess Off\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
+		`,
+			requestHdrsAction:  types.ActionContinue,
+			requestBodyAction:  types.ActionContinue,
+			responseHdrsAction: types.ActionContinue,
+			responded403:       false,
+			respondedNullBody:  false,
+		},
 		{
 			name: "status accepted",
 			inlineRules: `
@@ -401,10 +401,14 @@ func TestLifecycle(t *testing.T) {
 							body = reqBody[i : i+5]
 						}
 						requestBodyAction = host.CallOnRequestBody(id, body, eos)
-						if eos {
+						requestBodyAccess := strings.Contains(tt.inlineRules, "SecRequestBodyAccess On")
+						switch {
+						case eos:
 							requireEqualAction(t, tt.requestBodyAction, requestBodyAction, "unexpected body action, want %q, have %q on end of stream")
-						} else {
-							requireEqualAction(t, types.ActionPause, requestBodyAction, "unexpected body action, want %q, have %q")
+						case requestBodyAccess:
+							requireEqualAction(t, types.ActionPause, requestBodyAction, "unexpected request body action, want %q, have %q")
+						default:
+							requireEqualAction(t, types.ActionContinue, requestBodyAction, "unexpected request body action, want %q, have %q")
 						}
 					}
 				}
@@ -429,9 +433,9 @@ func TestLifecycle(t *testing.T) {
 						case eos:
 							requireEqualAction(t, types.ActionContinue, responseBodyAction, "unexpected response body action, want %q, have %q on end of stream")
 						case responseBodyAccess:
-							requireEqualAction(t, types.ActionPause, responseBodyAction, "unexpected response body action, want %q, have %q on end of stream")
+							requireEqualAction(t, types.ActionPause, responseBodyAction, "unexpected response body action, want %q, have %q")
 						default:
-							requireEqualAction(t, types.ActionContinue, responseBodyAction, "unexpected response body action, want %q, have %q on end of stream")
+							requireEqualAction(t, types.ActionContinue, responseBodyAction, "unexpected response body action, want %q, have %q")
 						}
 					}
 				}
