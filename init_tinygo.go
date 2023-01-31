@@ -7,5 +7,5 @@ package main
 
 import _ "github.com/corazawaf/coraza-proxy-wasm/internal/gc"
 
-// #cgo LDFLAGS: lib/libinjection.a lib/libmimalloc.a lib/libgc.a
+// #cgo LDFLAGS: lib/libmimalloc.a lib/libgc.a
 import "C"
