@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -57,14 +55,15 @@ func TestLifecycle(t *testing.T) {
 	respBody := []byte(`Hello, yogi!`)
 
 	tests := []struct {
-		name               string
-		inlineRules        string
-		requestHdrsAction  types.Action
-		requestBodyAction  types.Action
-		responseHdrsAction types.Action
-		responded403       bool
-		responded413       bool
-		respondedNullBody  bool
+		name                                string
+		inlineRules                         string
+		requestHdrsAction                   types.Action
+		requestBodyAction                   types.Action
+		responseHdrsAction                  types.Action
+		responded403                        bool
+		responded413                        bool
+		respondedNullBody                   bool
+		expectResponseRejectSinceFirstChunk bool
 	}{
 		{
 			name:               "no rules",
@@ -397,11 +396,12 @@ func TestLifecycle(t *testing.T) {
 			inlineRules: `
 			SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyLimit 2\nSecResponseBodyLimitAction Reject\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
 			`,
-			requestHdrsAction:  types.ActionContinue,
-			requestBodyAction:  types.ActionContinue,
-			responseHdrsAction: types.ActionContinue,
-			responded403:       false, // proxy-wasm does not support it at phase 4
-			respondedNullBody:  true,
+			requestHdrsAction:                   types.ActionContinue,
+			requestBodyAction:                   types.ActionContinue,
+			responseHdrsAction:                  types.ActionContinue,
+			responded403:                        false, // proxy-wasm does not support it at phase 4
+			respondedNullBody:                   true,
+			expectResponseRejectSinceFirstChunk: true,
 		},
 	}
 
@@ -467,15 +467,6 @@ func TestLifecycle(t *testing.T) {
 
 				if responseHdrsAction == types.ActionContinue {
 					responseBodyAccess := strings.Contains(tt.inlineRules, "SecResponseBodyAccess On")
-					responseBodyLimitSlice := regexp.MustCompile(`SecResponseBodyLimit\s(\w+)`).FindStringSubmatch(tt.inlineRules)
-					var responseBodyLimit int
-					var err error
-					if responseBodyLimitSlice != nil {
-						responseBodyLimit, err = strconv.Atoi(responseBodyLimitSlice[1])
-						if err != nil {
-							t.Errorf("Error converting SecResponseBodyLimit into int")
-						}
-					}
 					for i := 0; i < len(respBody); i += 5 {
 						eos := i+5 >= len(respBody)
 						var body []byte
@@ -484,10 +475,12 @@ func TestLifecycle(t *testing.T) {
 						} else {
 							body = respBody[i : i+5]
 						}
-						expectRejct := (i+5 >= responseBodyLimit) && responseBodyLimitSlice != nil && strings.Contains(tt.inlineRules, "SecResponseBodyLimitAction Reject")
 						responseBodyAction := host.CallOnResponseBody(id, body, eos)
 						switch {
-						case eos, expectRejct:
+						// expectResponseRejectLimitActionSinceFirstChunk: writing the first chunk (len(respBody) bytes), it is expected to reach
+						// the ResponseBodyLimit with the Action set to Reject. When these conditions happen, ActionContinue will be returned,
+						// with the interruption enforced replacing the body with null bytes (checked with tt.respondedNullBody)
+						case eos, tt.expectResponseRejectSinceFirstChunk:
 							requireEqualAction(t, types.ActionContinue, responseBodyAction, "unexpected response body action, want %q, have %q on end of stream")
 						case responseBodyAccess:
 							requireEqualAction(t, types.ActionPause, responseBodyAction, "unexpected response body action, want %q, have %q")
