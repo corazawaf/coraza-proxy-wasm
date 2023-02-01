@@ -17,4 +17,5 @@ RUN apt-get update && apt-get install -y libclang-15-dev wabt
 
 COPY --from=wasi-libc /tinygo /tinygo
 WORKDIR /tinygo
+RUN make binaryen
 RUN go install

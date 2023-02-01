@@ -10,4 +10,4 @@ WORKDIR /tinygo
 # https://github.com/tinygo-org/tinygo/commit/47ca1c037baaa137aeb7387454a9c244d4168896
 RUN git fetch origin dev && git reset --hard 47ca1c037baaa137aeb7387454a9c244d4168896
 RUN git submodule update --init lib/wasi-libc
-RUN make wasi-libc binaryen
+RUN make wasi-libc
