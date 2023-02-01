@@ -5,7 +5,13 @@
 
 package main
 
-import _ "github.com/corazawaf/coraza-proxy-wasm/internal/gc"
+import _ "github.com/wasilibs/nottinygc"
 
-// #cgo LDFLAGS: lib/libmimalloc.a lib/libgc.a
-import "C"
+// Compiled by nottinygc for delayed free but Envoy doesn't stub it yet,
+// luckily nottinygc doesn't actually call the function, so it's fine to
+// stub it out.
+
+//export sched_yield
+func sched_yield() int32 {
+	return 0
+}
