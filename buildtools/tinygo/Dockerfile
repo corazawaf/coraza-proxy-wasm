@@ -13,7 +13,7 @@ RUN curl -L https://go.dev/dl/go1.19.2.linux-${TARGETARCH:-amd64}.tar.gz | tar -
 ENV PATH /go/bin:/root/go/bin:$PATH
 ENV GOROOT /go
 
-RUN apt-get update && apt-get install -y libclang-15-dev wabt binaryen
+RUN apt-get update && apt-get install -y libclang-15-dev wabt
 
 COPY --from=wasi-libc /tinygo /tinygo
 WORKDIR /tinygo
