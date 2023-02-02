@@ -161,6 +161,17 @@ func TestLifecycle(t *testing.T) {
 			respondedNullBody:  false,
 		},
 		{
+			name: "server name denied",
+			inlineRules: `
+			SecRuleEngine On\nSecRule SERVER_NAME \"@streq localhost\" \"id:101,phase:1,t:lowercase,deny\"
+			`,
+			requestHdrsAction:  types.ActionPause,
+			requestBodyAction:  types.ActionContinue,
+			responseHdrsAction: types.ActionContinue,
+			responded403:       true,
+			respondedNullBody:  false,
+		},
+		{
 			name: "request header value accepted",
 			inlineRules: `
 			SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq rusttest\" \"id:101,phase:1,t:lowercase,deny\"
