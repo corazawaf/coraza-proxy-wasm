@@ -57,11 +57,12 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	// First we initialize our waf and our seclang parser
 	conf := coraza.NewWAFConfig().
 		WithErrorCallback(logError).
-		WithDebugLogger(&debugLogger{}).WithRequestBodyLimit(1024 * 1024 * 1024).
+		WithDebugLogger(&debugLogger{}).
+		// TODO(anuraaga): Make this configurable in plugin configuration.
+		// WithRequestBodyLimit(1024 * 1024 * 1024).
+		// WithRequestBodyInMemoryLimit(1024 * 1024 * 1024).
 		// Limit equal to MemoryLimit: TinyGo compilation will prevent
 		// buffering request body to files anyways.
-		// TODO(anuraaga): Make this configurable in plugin configuration.
-		WithRequestBodyInMemoryLimit(1024 * 1024 * 1024).
 		WithRootFS(root)
 
 	waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(config.rules, "\n")))
@@ -96,7 +97,6 @@ type httpContext struct {
 	processedRequestBody  bool
 	processedResponseBody bool
 	bodyReadIndex         int
-	responseBodySize      int
 	metrics               *wafMetrics
 	interruptionHandled   bool
 }
@@ -187,9 +187,10 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		return types.ActionContinue
 	}
 
-	// Do not perform any action related to request body if SecRequestBodyAccess is set to false
+	// Do not perform any action related to request body data if SecRequestBodyAccess is set to false
 	if !tx.IsRequestBodyAccessible() {
 		proxywasm.LogDebug("skipping request body inspection, SecRequestBodyAccess is off.")
+		// ProcessRequestBody is still performed for phase 2 rules, checking already populated variables
 		ctx.processedRequestBody = true
 		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
@@ -234,6 +235,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 
 	if endOfStream {
 		ctx.processedRequestBody = true
+		ctx.bodyReadIndex = 0 // cleaning for further usage
 		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
 			proxywasm.LogCriticalf("failed to process request body: %v", err)
@@ -319,9 +321,14 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	defer logTime("OnHttpResponseBody", currentTime())
 
 	if ctx.interruptionHandled {
+		// At response body phase, proxy-wasm currently relies on emptying the response body as a way of
+		// interruption the response. See https://github.com/corazawaf/coraza-proxy-wasm/issues/26.
+		// If OnHttpResponseBody is called again and an interruption has already been raised, it means that
+		// we have to keep going with the sanitization of the response, emptying it.
 		// Sending the crafted HttpResponse with empty body, we don't expect to trigger OnHttpResponseBody
-		proxywasm.LogErrorf("interruption already handled")
-		return types.ActionPause
+		proxywasm.LogWarn("response body interruption already handled, keeping replacing the body")
+		// Interruption happened, we don't want to send response body data
+		return replaceResponseBodyWhenInterrupted(bodySize)
 	}
 
 	tx := ctx.tx
@@ -330,58 +337,64 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		return types.ActionContinue
 	}
 
-	// Do not perform any action related to response body if SecResponseBodyAccess is set to false
+	// Do not perform any action related to response body data if SecResponseBodyAccess is set to false
 	if !tx.IsResponseBodyAccessible() {
 		proxywasm.LogDebug("skipping response body inspection, SecResponseBodyAccess is off.")
+		// ProcessResponseBody is performed for phase 4 rules, checking already populated variables
+		ctx.processedResponseBody = true
+		interruption, err := tx.ProcessResponseBody()
+		if err != nil {
+			proxywasm.LogCriticalf("failed to process response body: %v", err)
+			return types.ActionContinue
+		}
+
+		if interruption != nil {
+			// Proxy-wasm can not anymore deny the response. The best interruption is emptying the body
+			// Coraza Multiphase evaluation will help here avoiding late interruptions
+			ctx.bodyReadIndex = bodySize // hacky: bodyReadIndex stores the body size that has to be replaced
+			return ctx.handleInterruption("http_response_body", interruption)
+		}
 		return types.ActionContinue
 	}
 
-	ctx.responseBodySize += bodySize
+	if bodySize > 0 {
+		body, err := proxywasm.GetHttpResponseBody(ctx.bodyReadIndex, bodySize)
+		if err == nil {
+			interruption, _, err := tx.WriteResponseBody(body)
+			if err != nil {
+				proxywasm.LogCriticalf("failed to write response body: %v", err)
+				return types.ActionContinue
+			}
+			// bodyReadIndex has to be updated before evaluating the interruption
+			// it is internally needed to replace the full body if the tx is interrupted
+			ctx.bodyReadIndex += bodySize
+			if interruption != nil {
+				return ctx.handleInterruption("http_response_body", interruption)
+			}
+		} else if err != types.ErrorStatusNotFound {
+			proxywasm.LogCriticalf("failed to read response body from %d up to %d bytes: %v", ctx.bodyReadIndex, bodySize, err)
+			return types.ActionContinue
+		}
+	}
+
+	if endOfStream {
+		// We have already sent response headers, an unauthorized response can not be sent anymore,
+		// but we can still drop the response to prevent leaking sensitive content.
+		// The error will also be logged by Coraza.
+		ctx.processedResponseBody = true
+		interruption, err := tx.ProcessResponseBody()
+		if err != nil {
+			proxywasm.LogCriticalf("failed to process response body: %v", err)
+			return types.ActionContinue
+		}
+		if interruption != nil {
+			return ctx.handleInterruption("http_response_body", interruption)
+		}
+		return types.ActionContinue
+	}
 	// Wait until we see the entire body. It has to be buffered in order to check that it is fully legit
 	// before sending it downstream
-	if !endOfStream {
-		// TODO(M4tteoP): Update response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
-		return types.ActionPause
-	}
-
-	if ctx.responseBodySize > 0 {
-		body, err := proxywasm.GetHttpResponseBody(0, ctx.responseBodySize)
-		if len(body) != ctx.responseBodySize {
-			proxywasm.LogDebugf("warning: retrieved response body size different from the sum of all bodySizes. %d != %d", len(body), ctx.responseBodySize)
-		}
-		if err != nil {
-			proxywasm.LogCriticalf("failed to get response body: %v", err)
-			return types.ActionContinue
-		}
-		_, err = tx.ResponseBodyWriter().Write(body)
-		if err != nil {
-			proxywasm.LogCriticalf("failed to write response body: %v", err)
-			return types.ActionContinue
-		}
-	}
-
-	// We have already sent response headers, an unauthorized response can not be sent anymore,
-	// but we can still drop the response to prevent leaking sensitive content.
-	// The error will also be logged by Coraza.
-	ctx.processedResponseBody = true
-	interruption, err := tx.ProcessResponseBody()
-	if err != nil {
-		proxywasm.LogCriticalf("failed to process response body: %v", err)
-		return types.ActionContinue
-	}
-	if interruption != nil {
-		// TODO(M4tteoP): Update response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
-		// Currently returns a body filled with null bytes that replaces the sensitive data potentially leaked
-		err = proxywasm.ReplaceHttpResponseBody(bytes.Repeat([]byte("\x00"), ctx.responseBodySize))
-		if err != nil {
-			proxywasm.LogErrorf("failed to replace response body: %v", err)
-			return types.ActionContinue
-		}
-		proxywasm.LogWarn("response body intervention occurred: body replaced")
-		return types.ActionContinue
-	}
-
-	return types.ActionContinue
+	return types.ActionPause
 }
 
 func (ctx *httpContext) OnHttpStreamDone() {
@@ -412,13 +425,18 @@ const noGRPCStream int32 = -1
 
 func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.Interruption) types.Action {
 	if ctx.interruptionHandled {
-		// handleInterruption should never be called more the once
+		// handleInterruption should never be called more than once
 		panic("interruption already handled")
 	}
 
 	ctx.metrics.CountTXInterruption(phase, interruption.RuleID)
 
 	proxywasm.LogInfof("%d interrupted, action %q, phase %q", ctx.contextID, interruption.Action, phase)
+	ctx.interruptionHandled = true
+	if phase == "http_response_body" {
+		return replaceResponseBodyWhenInterrupted(ctx.bodyReadIndex)
+	}
+
 	statusCode := interruption.Status
 	if statusCode == 0 {
 		statusCode = 403
@@ -426,8 +444,6 @@ func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.In
 	if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, noGRPCStream); err != nil {
 		panic(err)
 	}
-
-	ctx.interruptionHandled = true
 
 	// SendHttpResponse must be followed by ActionPause in order to stop malicious content
 	return types.ActionPause
@@ -487,7 +503,7 @@ func retrieveAddressInfo(target string) (string, int) {
 	return targetIP, targetPort
 }
 
-// Converts port, retrieved as little-endian bytes, into int
+// parsePort converts port, retrieved as little-endian bytes, into int
 func parsePort(b []byte) (int, error) {
 	// Port attribute ({"source", "port"}) is populated as uint64 (8 byte)
 	// Ref: https://github.com/envoyproxy/envoy/blob/1b3da361279a54956f01abba830fc5d3a5421828/source/common/network/utility.cc#L201
@@ -501,4 +517,19 @@ func parsePort(b []byte) (int, error) {
 		return 0, errors.New("port convertion error")
 	}
 	return int(unsignedInt), nil
+}
+
+// replaceResponseBodyWhenInterrupted address an interruption raised during phase 4.
+// At this phase, response headers are already sent downstream, therefore an interruption
+// can not change anymore the status code, but only tweak the response body
+func replaceResponseBodyWhenInterrupted(bodySize int) types.Action {
+	// TODO(M4tteoP): Update response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
+	// Currently returns a body filled with null bytes that replaces the sensitive data potentially leaked
+	err := proxywasm.ReplaceHttpResponseBody(bytes.Repeat([]byte("\x00"), bodySize))
+	if err != nil {
+		proxywasm.LogErrorf("failed to replace response body: %v", err)
+		return types.ActionContinue
+	}
+	proxywasm.LogWarn("response body intervention occurred: body replaced")
+	return types.ActionContinue
 }

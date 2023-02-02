@@ -1,5 +1,5 @@
-github.com/corazawaf/coraza/v3 v3.0.0-20230127084452-d6bafe9f0f92 h1:hBLOjJNVq6vJvS4RrNbRkrUVhcq1zQx/fdMw199WrGc=
-github.com/corazawaf/coraza/v3 v3.0.0-20230127084452-d6bafe9f0f92/go.mod h1:dXFswKzaDVm4SsHAyvi12A4yLfg2bVx/myCBkyGALGU=
+github.com/corazawaf/coraza/v3 v3.0.0-20230130131057-1baba981375c h1:MwHjmmoQL9K9R9AmkppCP2PNVTfnHH5wFQaJFYllAOw=
+github.com/corazawaf/coraza/v3 v3.0.0-20230130131057-1baba981375c/go.mod h1:dXFswKzaDVm4SsHAyvi12A4yLfg2bVx/myCBkyGALGU=
 github.com/corazawaf/libinjection-go v0.1.2 h1:oeiV9pc5rvJ+2oqOqXEAMJousPpGiup6f7Y3nZj5GoM=
 github.com/corazawaf/libinjection-go v0.1.2/go.mod h1:OP4TM7xdJ2skyXqNX1AN1wN5nNZEmJNuWbNPOItn7aw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -23,10 +23,10 @@ github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSS
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PKk=
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
-github.com/tetratelabs/proxy-wasm-go-sdk v0.20.1-0.20230115020858-593cf0f7417a h1:uxfM0O1fvBKs3UyCZgz69LRzjyg2eBiPIvSD7xmgap8=
-github.com/tetratelabs/proxy-wasm-go-sdk v0.20.1-0.20230115020858-593cf0f7417a/go.mod h1:62ObOye8ebDcihh92dIsVV+TgzjOehFeg8fruL6F12g=
-github.com/tetratelabs/wazero v1.0.0-pre.7 h1:WI5N14XxoXw+ZWhcjSazJ6rEowhJbH/x8hglxC5gN7k=
-github.com/tetratelabs/wazero v1.0.0-pre.7/go.mod h1:u8wrFmpdrykiFK0DFPiFm5a4+0RzsdmXYVtijBKqUVo=
+github.com/tetratelabs/proxy-wasm-go-sdk v0.21.0 h1:sxuh1wxy/zz4vXwMEC+ESVpwJmej1f22eYsrJlgVn7c=
+github.com/tetratelabs/proxy-wasm-go-sdk v0.21.0/go.mod h1:jqQTUvJBI6WJ+sVCZON3A4GwmUfBDuiNnZ4kuxsvLCo=
+github.com/tetratelabs/wazero v1.0.0-pre.8 h1:Ir82PWj79WCppH+9ny73eGY2qv+oCnE3VwMY92cBSyI=
+github.com/tetratelabs/wazero v1.0.0-pre.8/go.mod h1:u8wrFmpdrykiFK0DFPiFm5a4+0RzsdmXYVtijBKqUVo=
 github.com/tidwall/gjson v1.14.4 h1:uo0p8EbA09J7RQaflQ1aBRffTR7xedD2bcIVSYxLnkM=
 github.com/tidwall/gjson v1.14.4/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/match v1.1.1 h1:+Ho715JplO36QYgwN9PGYNhgZvoUSc9X2c80KVTi+GA=
@@ -38,8 +38,8 @@ github.com/wasilibs/go-aho-corasick v0.2.0 h1:32cgC99Id42dzoUupwn0nMPMxz3QD6Dlxd
 github.com/wasilibs/go-aho-corasick v0.2.0/go.mod h1:70K0dlZi6vyp5xyczyd73SCZMYcxswRXLVnUwQSKpM4=
 github.com/wasilibs/go-libinjection v0.1.0 h1:WivsHc8c0cNWETEVhG0NpCezxvCn9zlVli/YkekFgXk=
 github.com/wasilibs/go-libinjection v0.1.0/go.mod h1:yRoVK5Ks0kH65fJB1uzppuEn77pJmP8hagoAdPcgbtI=
-github.com/wasilibs/go-re2 v0.0.0-20221219074959-3ec67f9038f0 h1:+dy0jRJ7Y0sMNJPUkTeZ8qC9qc9tNWJ/Noha+L6w2ZE=
-github.com/wasilibs/go-re2 v0.0.0-20221219074959-3ec67f9038f0/go.mod h1:9YbcVrlaRryN9yCvk1fAjJTn5MLKPEd9/LnCJPkGWxY=
+github.com/wasilibs/go-re2 v0.1.0 h1:+pcjlvge6E9WWU4eaMlULRikEUkhPDXSFfCF5p7htMI=
+github.com/wasilibs/go-re2 v0.1.0/go.mod h1:F91Yac+zPNDFrrd8fl4mSd7+TTu2tYiX56BEIEPQl2M=
 github.com/wasilibs/nottinygc v0.0.0-20230202022930-bb230a97db8e h1:xzrL/Fd514ijzrySqTQgCLyGVOWbQBs7qhwLqSrR/2s=
 github.com/wasilibs/nottinygc v0.0.0-20230202022930-bb230a97db8e/go.mod h1:oDcIotskuYNMpqMF23l7Z8uzD4TC0WXHK8jetlB3HIo=
 golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 h1:6zppjxzCulZykYSLyVDYbneBfbaBIQPYMevg0bEwv2s=
