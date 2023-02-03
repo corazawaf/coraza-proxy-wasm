@@ -537,12 +537,12 @@ func replaceResponseBodyWhenInterrupted(bodySize int) types.Action {
 
 // parseServerName parses :authority pseudo-header in order to retrieve the
 // virtual host.
-func parseServerName(headerValue string) string {
-	host, _, err := net.SplitHostPort(headerValue)
+func parseServerName(authority string) string {
+	host, _, err := net.SplitHostPort(authority)
 	if err != nil {
 		// missing port or bad format
-		proxywasm.LogDebugf("failed to parse server Name. Header: %s, %v", headerValue, err)
-		host = headerValue
+		proxywasm.LogDebugf("failed to parse server name from authority %q, %v", authority, err)
+		host = authority
 	}
 	// anyways serverName is returned
 	return host
