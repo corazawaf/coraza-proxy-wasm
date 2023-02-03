@@ -165,7 +165,7 @@ func Build() error {
 		return err
 	}
 
-	var buildTags []string
+	buildTags := []string{"custommalloc"}
 	if os.Getenv("TIMING") == "true" {
 		buildTags = append(buildTags, "timing", "proxywasm_timing")
 	}
@@ -193,30 +193,12 @@ func Build() error {
 	script := fmt.Sprintf(`
 cd /src && \
 tinygo build -gc=custom -opt=2 -o %s -scheduler=none -target=wasi %s`, filepath.Join("build", "mainraw.wasm"), buildTagArg)
-	if err := sh.RunV("docker", "run", "--pull=always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo:sha-63723e9",
+	if err := sh.RunV("docker", "run", "--pull=always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo:sha-96443bb",
 		"bash", "-c", script); err != nil {
 		return err
 	}
 
 	return patchWasm(filepath.Join("build", "mainraw.wasm"), filepath.Join("build", "main.wasm"), initialPages)
-}
-
-// UpdateLibs updates the C++ filter dependencies.
-func UpdateLibs() error {
-	libs := []string{"bdwgc", "mimalloc"}
-	for _, lib := range libs {
-		if err := sh.RunV("docker", "build", "-t", "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-"+lib, filepath.Join("buildtools", lib)); err != nil {
-			return err
-		}
-		wd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		if err := sh.RunV("docker", "run", "-it", "--rm", "-v", fmt.Sprintf("%s:/out", filepath.Join(wd, "lib")), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-"+lib); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // E2e runs e2e tests with a built plugin against the example deployment. Requires docker-compose.

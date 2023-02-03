@@ -6,22 +6,19 @@
 package wasmplugin
 
 import (
-	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
+	"runtime"
 
-	"github.com/corazawaf/coraza-proxy-wasm/internal/gc"
+	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 )
 
 func logMemStats() {
-	ms := gc.MemStats{}
-	gc.ReadMemStats(&ms)
+	ms := runtime.MemStats{}
+	runtime.ReadMemStats(&ms)
 	proxywasm.LogDebugf(
-		"Sys: %d, HeapSys: %d, HeapAlloc: %d, HeapIdle: %d, HeapReleased: %d, TotalAlloc: %d, NumGC: %d, BytesSinceGC: %d",
+		"Sys: %d, HeapSys: %d, HeapIdle: %d, HeapReleased: %d, TotalAlloc: %d",
 		ms.Sys,
 		ms.HeapSys,
-		ms.HeapAlloc,
 		ms.HeapIdle,
 		ms.HeapReleased,
-		ms.TotalAlloc,
-		ms.NumGC,
-		ms.BytesSinceGC)
+		ms.TotalAlloc)
 }
