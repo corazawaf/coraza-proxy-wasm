@@ -64,7 +64,7 @@ In order to run the coraza-proxy-wasm we need to spin up an envoy configuration 
                         value: |
                         {
                             "rules": [
-                                "SecDebugLogLevel 5",
+                                "SecDebugLogLevel 9",
                                 "SecRuleEngine On",
                                 "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
                             ]
@@ -88,7 +88,7 @@ configuration:
     "@type": "type.googleapis.com/google.protobuf.StringValue"
     value: |
     {
-        "rules": [ "SecDebugLogLevel 5", "SecRuleEngine On", "Include @owasp_crs/*.conf" ]
+        "rules": [ "SecDebugLogLevel 9", "SecRuleEngine On", "Include @owasp_crs/*.conf" ]
     }
 ```
 
@@ -99,7 +99,7 @@ configuration:
     "@type": "type.googleapis.com/google.protobuf.StringValue"
     value: |
     {
-        "rules": [ "SecDebugLogLevel 5", "SecRuleEngine On", "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf" ]
+        "rules": [ "SecDebugLogLevel 9", "SecRuleEngine On", "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf" ]
     }
 ```
 
