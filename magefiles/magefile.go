@@ -172,6 +172,9 @@ func Build() error {
 	if os.Getenv("MEMSTATS") == "true" {
 		buildTags = append(buildTags, "memstats")
 	}
+	if os.Getenv("METRICS") == "false" {
+		buildTags = append(buildTags, "disable_metrics")
+	}
 
 	buildTagArg := fmt.Sprintf("-tags='%s'", strings.Join(buildTags, " "))
 

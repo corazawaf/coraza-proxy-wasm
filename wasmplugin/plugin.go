@@ -67,6 +67,10 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		// buffering request body to files anyways.
 		WithRootFS(root)
 
+	for _, r := range config.rules {
+		proxywasm.LogInfof("- %s", r)
+	}
+
 	waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(config.rules, "\n")))
 	if err != nil {
 		proxywasm.LogCriticalf("Failed to parse rules: %v", err)
@@ -153,6 +157,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	ctx.httpProtocol = string(protocol)
 
+	proxywasm.LogCriticalf(uri, method, ctx.httpProtocol)
 	tx.ProcessURI(uri, method, ctx.httpProtocol)
 
 	hs, err := proxywasm.GetHttpRequestHeaders()
@@ -541,7 +546,6 @@ func retrieveAddressInfo(logger debuglog.Logger, target string) (string, int) {
 			logger.Debug().
 				Err(err).
 				Msg(fmt.Sprintf("Failed to get %s port", target))
-
 		}
 	}
 	return targetIP, targetPort
