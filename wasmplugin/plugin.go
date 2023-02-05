@@ -487,17 +487,17 @@ func retrieveAddressInfo(target string) (string, int) {
 		}
 	}
 	srcPortRaw, err := proxywasm.GetProperty([]string{target, "port"})
-	if err != nil {
+	if err == nil {
+		targetPort, err = parsePort(srcPortRaw)
+		if err != nil {
+			proxywasm.LogWarnf("failed to parse %s port: %v", target, err)
+		}
+	} else if targetPortStr != "" {
 		// If GetProperty fails we rely on the port inside the Address property
 		// Mostly useful for proxies other than Envoy
 		targetPort, err = strconv.Atoi(targetPortStr)
 		if err != nil {
 			proxywasm.LogInfof("failed to get %s port: %v", target, err)
-		}
-	} else {
-		targetPort, err = parsePort(srcPortRaw)
-		if err != nil {
-			proxywasm.LogWarnf("failed to parse %s port: %v", target, err)
 		}
 	}
 	return targetIP, targetPort
