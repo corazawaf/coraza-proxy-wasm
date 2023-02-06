@@ -544,6 +544,5 @@ func parseServerName(authority string) string {
 		proxywasm.LogDebugf("failed to parse server name from authority %q, %v", authority, err)
 		host = authority
 	}
-	// anyways serverName is returned
 	return host
 }
