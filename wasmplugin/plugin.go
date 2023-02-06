@@ -477,18 +477,18 @@ func logError(error ctypes.MatchedRule) {
 func retrieveAddressInfo(target string) (string, int) {
 	var targetIP, targetPortStr string
 	var targetPort int
-	srcAddressRaw, err := proxywasm.GetProperty([]string{target, "address"})
+	targetAddressRaw, err := proxywasm.GetProperty([]string{target, "address"})
 	if err != nil {
 		proxywasm.LogWarnf("failed to get %s address: %v", target, err)
 	} else {
-		targetIP, targetPortStr, err = net.SplitHostPort(string(srcAddressRaw))
+		targetIP, targetPortStr, err = net.SplitHostPort(string(targetAddressRaw))
 		if err != nil {
 			proxywasm.LogWarnf("failed to parse %s address: %v", target, err)
 		}
 	}
-	srcPortRaw, err := proxywasm.GetProperty([]string{target, "port"})
+	targetPortRaw, err := proxywasm.GetProperty([]string{target, "port"})
 	if err == nil {
-		targetPort, err = parsePort(srcPortRaw)
+		targetPort, err = parsePort(targetPortRaw)
 		if err != nil {
 			proxywasm.LogWarnf("failed to parse %s port: %v", target, err)
 		}
