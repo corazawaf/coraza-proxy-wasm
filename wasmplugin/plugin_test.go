@@ -5,7 +5,7 @@ package wasmplugin
 
 import (
 	"testing"
-	
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/proxytest"
@@ -14,25 +14,25 @@ import (
 
 func TestRetrieveAddressInfo(t *testing.T) {
 	testCases := map[string]struct {
-		address []byte
-		port []byte
+		address          []byte
+		port             []byte
 		expectedTargetIP string
-		expectedPort int
+		expectedPort     int
 	}{
 		"empty": {
 			expectedTargetIP: "",
-			expectedPort: 0,
+			expectedPort:     0,
 		},
 		"127.0.0.1:8080": {
-			address: []byte("127.0.0.10:8080"),
+			address:          []byte("127.0.0.10:8080"),
 			expectedTargetIP: "127.0.0.10",
-			expectedPort: 8080,
+			expectedPort:     8080,
 		},
 		"127.0.0.1:8080 with port": {
-			address: []byte("127.0.0.11:8080"),
-			port: []byte{5, 10, 0, 0, 0, 0, 0, 0}, // 256*10 + 5
+			address:          []byte("127.0.0.11:8080"),
+			port:             []byte{5, 10, 0, 0, 0, 0, 0, 0}, // 256*10 + 5
 			expectedTargetIP: "127.0.0.11",
-			expectedPort: 2565,
+			expectedPort:     2565,
 		},
 	}
 
@@ -43,20 +43,22 @@ func TestRetrieveAddressInfo(t *testing.T) {
 					opt := proxytest.
 						NewEmulatorOption().
 						WithVMContext(NewVMContext())
-				
+
 					host, reset := proxytest.NewHostEmulator(opt)
 					defer reset()
-				
+
 					require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
-				
+
 					id := host.InitializeHttpContext()
 
 					if len(tCase.address) > 0 {
-						host.SetProperty([]string{target, "address"}, []byte(tCase.address))
+						err := host.SetProperty([]string{target, "address"}, []byte(tCase.address))
+						require.NoError(t, err)
 					}
 
 					if len(tCase.port) > 0 {
-						host.SetProperty([]string{target, "port"}, []byte(tCase.port))
+						err := host.SetProperty([]string{target, "port"}, []byte(tCase.port))
+						require.NoError(t, err)
 					}
 
 					targetIP, port := retrieveAddressInfo(target)
