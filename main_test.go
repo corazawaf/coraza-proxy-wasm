@@ -161,6 +161,17 @@ func TestLifecycle(t *testing.T) {
 			respondedNullBody:  false,
 		},
 		{
+			name: "server name denied",
+			inlineRules: `
+			SecRuleEngine On\nSecRule SERVER_NAME \"@streq localhost\" \"id:101,phase:1,t:lowercase,deny\"
+			`,
+			requestHdrsAction:  types.ActionPause,
+			requestBodyAction:  types.ActionContinue,
+			responseHdrsAction: types.ActionContinue,
+			responded403:       true,
+			respondedNullBody:  false,
+		},
+		{
 			name: "request header value accepted",
 			inlineRules: `
 			SecRuleEngine On\nSecRule REQUEST_HEADERS:user-agent \"@streq rusttest\" \"id:101,phase:1,t:lowercase,deny\"
@@ -964,6 +975,64 @@ func TestRetrieveAddressInfo(t *testing.T) {
 					require.Equal(t, tt.requestHdrsAction, action)
 				})
 			}
+		}
+	})
+}
+
+func TestParseServerName(t *testing.T) {
+	testCases := map[string]struct {
+		autorityHeader string
+		expServerName  string
+	}{
+		"authority with port": {
+			autorityHeader: "coraza.io:443",
+			expServerName:  "coraza.io",
+		},
+		"authority without port": {
+			autorityHeader: "coraza.io",
+			expServerName:  "coraza.io",
+		},
+		"IPv6 with port": {
+			autorityHeader: "[2001:db8::1]:8080",
+			expServerName:  "2001:db8::1",
+		},
+		"IPv6": {
+			autorityHeader: "2001:db8::1",
+			expServerName:  "2001:db8::1",
+		},
+		"bad format": {
+			autorityHeader: "hostA:hostB:8080",
+			expServerName:  "hostA:hostB:8080",
+		},
+	}
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+		for name, tCase := range testCases {
+			inlineRules := fmt.Sprintf(`
+			SecRuleEngine On\nSecRule SERVER_NAME \"@streq %s\" \"id:101,phase:1,deny\"`, tCase.expServerName)
+
+			conf := `{}`
+			if inlineRules := strings.TrimSpace(inlineRules); inlineRules != "" {
+				conf = fmt.Sprintf(`{"rules": ["%s"]}`, inlineRules)
+			}
+			t.Run(name, func(t *testing.T) {
+				opt := proxytest.
+					NewEmulatorOption().
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte(conf))
+
+				host, reset := proxytest.NewHostEmulator(opt)
+				defer reset()
+
+				require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+				id := host.InitializeHttpContext()
+				reqHdrs := [][2]string{
+					{":path", "/hello"},
+					{":method", "GET"},
+					{":authority", tCase.autorityHeader},
+				}
+				action := host.CallOnRequestHeaders(id, reqHdrs, false)
+				require.Equal(t, types.ActionPause, action)
+			})
 		}
 	})
 }

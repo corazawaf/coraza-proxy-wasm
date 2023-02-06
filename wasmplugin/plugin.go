@@ -159,6 +159,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	authority, err := proxywasm.GetHttpRequestHeader(":authority")
 	if err == nil {
 		tx.AddRequestHeader("Host", authority)
+		tx.SetServerName(parseServerName(authority))
 	}
 
 	interruption := tx.ProcessRequestHeaders()
@@ -532,4 +533,16 @@ func replaceResponseBodyWhenInterrupted(bodySize int) types.Action {
 	}
 	proxywasm.LogWarn("response body intervention occurred: body replaced")
 	return types.ActionContinue
+}
+
+// parseServerName parses :authority pseudo-header in order to retrieve the
+// virtual host.
+func parseServerName(authority string) string {
+	host, _, err := net.SplitHostPort(authority)
+	if err != nil {
+		// missing port or bad format
+		proxywasm.LogDebugf("failed to parse server name from authority %q, %v", authority, err)
+		host = authority
+	}
+	return host
 }
