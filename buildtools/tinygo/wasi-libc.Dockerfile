@@ -1,9 +1,9 @@
 # Copyright 2022 The OWASP Coraza contributors
 # SPDX-License-Identifier: Apache-2.0
 
-FROM ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-wasi-sdk:main
+FROM ghcr.io/webassembly/wasi-sdk:wasi-sdk-19
 
-RUN apt-get install -y git
+RUN apt-get update && apt-get install -y git
 
 RUN git clone https://github.com/tinygo-org/tinygo --branch dev
 WORKDIR /tinygo

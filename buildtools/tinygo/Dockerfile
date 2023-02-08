@@ -4,10 +4,11 @@
 ARG WASI_LIBC_IMAGE
 FROM --platform=linux/amd64 ${WASI_LIBC_IMAGE:-ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo-wasi-libc:main} AS wasi-libc
 
-FROM ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-wasi-sdk:main
+FROM ghcr.io/webassembly/wasi-sdk:wasi-sdk-19
 
 ARG TARGETARCH
 
+RUN apt-get update && apt-get install -y curl
 RUN curl -L https://go.dev/dl/go1.19.2.linux-${TARGETARCH:-amd64}.tar.gz | tar -xz
 
 ENV PATH /go/bin:/root/go/bin:$PATH
