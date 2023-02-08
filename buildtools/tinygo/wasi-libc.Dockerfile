@@ -3,7 +3,7 @@
 
 FROM ghcr.io/webassembly/wasi-sdk:wasi-sdk-19
 
-RUN apt-get update && apt-get install -y git
+RUN apt-get update && apt-get install -y git curl
 
 RUN git clone https://github.com/tinygo-org/tinygo --branch dev
 WORKDIR /tinygo
