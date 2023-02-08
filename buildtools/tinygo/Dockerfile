@@ -8,6 +8,7 @@ FROM ghcr.io/webassembly/wasi-sdk:wasi-sdk-19
 
 ARG TARGETARCH
 
+RUN apt-get update && apt-get install -y curl
 RUN curl -L https://go.dev/dl/go1.19.2.linux-${TARGETARCH:-amd64}.tar.gz | tar -xz
 
 ENV PATH /go/bin:/root/go/bin:$PATH
