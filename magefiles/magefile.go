@@ -20,7 +20,7 @@ import (
 )
 
 var minGoVersion = "1.19"
-var tinygoMinorVersion = "0.26"
+var tinygoMinorVersion = "0.27"
 var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
 var golangCILintVer = "v1.48.0"                                    // https://github.com/golangci/golangci-lint/releases
 var gosImportsVer = "v0.3.1"                                       // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
@@ -185,16 +185,7 @@ func Build() error {
 		}
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	script := fmt.Sprintf(`
-cd /src && \
-tinygo build -gc=custom -opt=2 -o %s -scheduler=none -target=wasi %s`, filepath.Join("build", "mainraw.wasm"), buildTagArg)
-	if err := sh.RunV("docker", "run", "--pull=always", "--rm", "-v", fmt.Sprintf("%s:/src", wd), "ghcr.io/corazawaf/coraza-proxy-wasm/buildtools-tinygo:sha-96443bb",
-		"bash", "-c", script); err != nil {
+	if err := sh.RunV("tinygo", "build", "-gc=custom", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", buildTagArg); err != nil {
 		return err
 	}
 
