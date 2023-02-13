@@ -9,8 +9,7 @@ on:
 
 env:
   GO_VERSION: 1.19
-  TINYGO_VERSION: 0.26.0
-  WABT_VERSION: 1.0.29
+  TINYGO_VERSION: 0.27.0
 
 jobs:
   test:
@@ -25,15 +24,11 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
-      - name: Install TinyGo and wabt
+      - name: Install TinyGo
         run: |
           gh release download v${TINYGO_VERSION} -p '*.linux-amd64.tar.gz' -D ~ -R github.com/tinygo-org/tinygo
           tar -xf ~/tinygo${TINYGO_VERSION}.linux-amd64.tar.gz  -C $HOME
           echo "$HOME/tinygo/bin" >> $GITHUB_PATH
-
-          gh release download ${WABT_VERSION} -p '*-ubuntu.tar.gz' -D ~ -R github.com/WebAssembly/wabt
-          tar -xf ~/wabt-${WABT_VERSION}-ubuntu.tar.gz  -C $HOME
-          echo "$HOME/wabt-${WABT_VERSION}/bin" >> $GITHUB_PATH
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
