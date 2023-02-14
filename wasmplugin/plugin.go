@@ -223,7 +223,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		} else if err != types.ErrorStatusNotFound {
 			// When using FWT sometimes (it is inconsistent) we receive calls where ctx.bodyReadIndex == bodySize
 			// meaning that the incoming size in the body is the same as the already read body.
-			// When that happens, this code failes to retrieve the body through proxywasm.GetHttpRequestBody
+			// When that happens, this code fails to retrieve the body through proxywasm.GetHttpRequestBody
 			// as the total body is from 0 up to X bytes and since the last bodySize = X it attempts to read
 			// from X up to X bytes and it returns a types.ErrorStatusNotFound. This could happen despite
 			// endOfStream being true or false.
@@ -515,7 +515,7 @@ func parsePort(b []byte) (int, error) {
 	// and correctly fit int (at least 32 bits in size)
 	unsignedInt := binary.LittleEndian.Uint64(b)
 	if unsignedInt > math.MaxInt32 {
-		return 0, errors.New("port convertion error")
+		return 0, errors.New("port conversion error")
 	}
 	return int(unsignedInt), nil
 }
