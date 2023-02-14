@@ -105,7 +105,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: ${{context}}/Dockerfile
+          file: Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}-scratch
           labels: ${{ steps.meta.outputs.labels }}
@@ -116,7 +116,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: ${{context}}/Dockerfile-full
+          file: Dockerfile-full
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}-busybox
           labels: ${{ steps.meta.outputs.labels }}
