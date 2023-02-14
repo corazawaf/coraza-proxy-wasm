@@ -40,7 +40,7 @@ func init() {
 	}
 }
 
-// checkGoVersion checks the minium version of Go is supported.
+// checkGoVersion checks the minimum version of Go is supported.
 func checkGoVersion() error {
 	v, err := sh.Output("go", "version")
 	if err != nil {
