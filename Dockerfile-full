@@ -1,0 +1,41 @@
+# Multi-stage Build
+
+# Stage 1 : build wasi-libc
+FROM ghcr.io/webassembly/wasi-sdk:wasi-sdk-19 as wasi-libc
+
+RUN apt-get update && apt-get install -y git
+
+RUN git clone https://github.com/tinygo-org/tinygo --branch dev
+WORKDIR /tinygo
+# https://github.com/tinygo-org/tinygo/commit/47ca1c037baaa137aeb7387454a9c244d4168896
+RUN git fetch origin dev && git reset --hard 47ca1c037baaa137aeb7387454a9c244d4168896
+RUN git submodule update --init lib/wasi-libc
+RUN make wasi-libc
+
+# Stage 2 : Build Tinygo
+FROM ghcr.io/webassembly/wasi-sdk:wasi-sdk-19 as tinygo
+
+ARG TARGETARCH
+
+RUN apt-get update && apt-get install -y curl
+RUN curl -L https://go.dev/dl/go1.19.2.linux-${TARGETARCH:-amd64}.tar.gz | tar -xz
+
+ENV PATH /go/bin:/root/go/bin:$PATH
+ENV GOROOT /go
+
+RUN apt-get update && apt-get install -y libclang-15-dev wabt binaryen
+
+COPY --from=wasi-libc /tinygo /tinygo
+WORKDIR /tinygo
+RUN go install
+
+# Stage 3 : Build coraza-proxy-wasm
+FROM tinygo as wasm-builder
+
+WORKDIR /src
+COPY . .
+RUN tinygo build -gc=custom -opt=2 -o build/mainraw.wasm -scheduler=none -target=wasi -tags='custommalloc'
+
+# Stage 4 : Build coraza-proxy-wasm container image
+FROM busybox:1.35.0
+COPY --from=wasm-builder /src/build/main.wasm /plugin.wasm
