@@ -4,15 +4,6 @@ UPSTREAM_HOST=${UPSTREAM_HOST:-httpbin}
 KONG_HOST=${KONG_HOST:-kong}
 KONG_HOSTPORT=${KONG_HOST}:8001
 
-numRetries=0
-for numRetries in {1..5}; do 
-    sleep 10
-    http ${KONG_HOSTPORT} && break
-    echo "Retrying...";
-done
-
-if [ numRetries == 5 ] exit 1; fi
-
 http --ignore-stdin POST ${KONG_HOSTPORT}/services name="httpbin" host="${UPSTREAM_HOST}" path="/" port:=10080 protocol="http"
 
 http --ignore-stdin POST ${KONG_HOSTPORT}/services/httpbin/routes name="httpbin" "paths[]=/" "paths[]=/anything" "paths[]=/uuid"
