@@ -10,7 +10,7 @@ require (
 	github.com/wasilibs/go-aho-corasick v0.2.0
 	github.com/wasilibs/go-libinjection v0.1.0
 	github.com/wasilibs/go-re2 v0.1.0
-	github.com/wasilibs/nottinygc v0.0.0-20230202022930-bb230a97db8e
+	github.com/wasilibs/nottinygc v0.2.0
 )
 
 require (
