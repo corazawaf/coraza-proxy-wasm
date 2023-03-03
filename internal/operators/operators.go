@@ -6,14 +6,12 @@
 package operators
 
 import (
-	"github.com/corazawaf/coraza/v3/operators"
+	wasilibs "github.com/corazawaf/coraza-wasilibs"
 )
 
 func Register() {
-
-	operators.Register("detectSQLi", newDetectSQLi)
-	operators.Register("detectXSS", newDetectXSS)
-	operators.Register("rx", newRX)
-	operators.Register("pm", newPM)
-	operators.Register("pmFromFile", newPMFromFile)
+	wasilibs.RegisterRX()
+	wasilibs.RegisterPM()
+	wasilibs.RegisterSQLi()
+	wasilibs.RegisterXSS()
 }
