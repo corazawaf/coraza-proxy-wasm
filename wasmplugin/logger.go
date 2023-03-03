@@ -6,45 +6,45 @@ package wasmplugin
 import (
 	"io"
 
-	"github.com/corazawaf/coraza/v3/debuglog"
+	"github.com/corazawaf/coraza/v3/debuglogger"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 )
 
 type logger struct {
-	debuglog.Logger
+	debuglogger.Logger
 }
 
-var _ debuglog.Logger = logger{}
+var _ debuglogger.Logger = logger{}
 
-var logPrinterFactory = func(io.Writer) debuglog.Printer {
-	return func(lvl debuglog.LogLevel, message, fields string) {
+var logPrinterFactory = func(io.Writer) debuglogger.Printer {
+	return func(lvl debuglogger.LogLevel, message, fields string) {
 		switch lvl {
-		case debuglog.LogLevelTrace:
+		case debuglogger.LogLevelTrace:
 			proxywasm.LogTracef("%s %s", message, fields)
-		case debuglog.LogLevelDebug:
+		case debuglogger.LogLevelDebug:
 			proxywasm.LogDebugf("%s %s", message, fields)
-		case debuglog.LogLevelInfo:
+		case debuglogger.LogLevelInfo:
 			proxywasm.LogInfof("%s %s", message, fields)
-		case debuglog.LogLevelWarn:
+		case debuglogger.LogLevelWarn:
 			proxywasm.LogWarnf("%s %s", message, fields)
-		case debuglog.LogLevelError:
+		case debuglogger.LogLevelError:
 			proxywasm.LogErrorf("%s %s", message, fields)
 		default:
 		}
 	}
 }
 
-func DefaultLogger() debuglog.Logger {
+func DefaultLogger() debuglogger.Logger {
 	return logger{
-		debuglog.DefaultWithPrinterFactory(logPrinterFactory),
+		debuglogger.DefaultWithPrinterFactory(logPrinterFactory),
 	}
 }
 
-func (l logger) WithLevel(lvl debuglog.LogLevel) debuglog.Logger {
+func (l logger) WithLevel(lvl debuglogger.LogLevel) debuglogger.Logger {
 	return logger{l.Logger.WithLevel(lvl)}
 }
 
-func (l logger) WithOutput(_ io.Writer) debuglog.Logger {
+func (l logger) WithOutput(_ io.Writer) debuglogger.Logger {
 	proxywasm.LogWarn("ignoring SecDebugLog directive, debug logs are always routed to proxy logs")
 	return l
 }

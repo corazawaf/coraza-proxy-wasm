@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	"github.com/corazawaf/coraza/v3"
-	"github.com/corazawaf/coraza/v3/debuglog"
+	"github.com/corazawaf/coraza/v3/debuglogger"
 	ctypes "github.com/corazawaf/coraza/v3/types"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
@@ -59,7 +59,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	// First we initialize our waf and our seclang parser
 	conf := coraza.NewWAFConfig().
 		WithErrorCallback(logError).
-		WithDebugLogger(debuglog.DefaultWithPrinterFactory(logPrinterFactory)).
+		WithDebugLogger(debuglogger.DefaultWithPrinterFactory(logPrinterFactory)).
 		// TODO(anuraaga): Make this configurable in plugin configuration.
 		// WithRequestBodyLimit(1024 * 1024 * 1024).
 		// WithRequestBodyInMemoryLimit(1024 * 1024 * 1024).
@@ -88,7 +88,7 @@ func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 		metrics: ctx.metrics,
 		logger: ctx.waf.NewTransaction().
 			DebugLogger().
-			With(debuglog.Uint("context_id", uint(contextID))),
+			With(debuglogger.Uint("context_id", uint(contextID))),
 	}
 }
 
@@ -104,7 +104,7 @@ type httpContext struct {
 	bodyReadIndex         int
 	metrics               *wafMetrics
 	interruptionHandled   bool
-	logger                debuglog.Logger
+	logger                debuglogger.Logger
 }
 
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
@@ -509,18 +509,18 @@ func logError(error ctypes.MatchedRule) {
 // retrieveAddressInfo retrieves address properties from the proxy
 // Expected targets are "source" or "destination"
 // Envoy ref: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/attributes#connection-attributes
-func retrieveAddressInfo(logger debuglog.Logger, target string) (string, int) {
+func retrieveAddressInfo(logger debuglogger.Logger, target string) (string, int) {
 	var targetIP, targetPortStr string
 	var targetPort int
 	targetAddressRaw, err := proxywasm.GetProperty([]string{target, "address"})
 	if err != nil {
-		logger.Debug().
+		logger.Warn().
 			Err(err).
 			Msg(fmt.Sprintf("Failed to get %s address", target))
 	} else {
 		targetIP, targetPortStr, err = net.SplitHostPort(string(targetAddressRaw))
 		if err != nil {
-			logger.Debug().
+			logger.Warn().
 				Err(err).
 				Msg(fmt.Sprintf("Failed to parse %s address", target))
 		}
@@ -529,7 +529,7 @@ func retrieveAddressInfo(logger debuglog.Logger, target string) (string, int) {
 	if err == nil {
 		targetPort, err = parsePort(targetPortRaw)
 		if err != nil {
-			logger.Debug().
+			logger.Warn().
 				Err(err).
 				Msg(fmt.Sprintf("Failed to parse %s port", target))
 		}
@@ -538,7 +538,7 @@ func retrieveAddressInfo(logger debuglog.Logger, target string) (string, int) {
 		// Mostly useful for proxies other than Envoy
 		targetPort, err = strconv.Atoi(targetPortStr)
 		if err != nil {
-			logger.Debug().
+			logger.Warn().
 				Err(err).
 				Msg(fmt.Sprintf("Failed to get %s port", target))
 
@@ -566,7 +566,7 @@ func parsePort(b []byte) (int, error) {
 // replaceResponseBodyWhenInterrupted address an interruption raised during phase 4.
 // At this phase, response headers are already sent downstream, therefore an interruption
 // can not change anymore the status code, but only tweak the response body
-func replaceResponseBodyWhenInterrupted(logger debuglog.Logger, bodySize int) types.Action {
+func replaceResponseBodyWhenInterrupted(logger debuglogger.Logger, bodySize int) types.Action {
 	// TODO(M4tteoP): Update response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
 	// Currently returns a body filled with null bytes that replaces the sensitive data potentially leaked
 	err := proxywasm.ReplaceHttpResponseBody(bytes.Repeat([]byte("\x00"), bodySize))
@@ -580,7 +580,7 @@ func replaceResponseBodyWhenInterrupted(logger debuglog.Logger, bodySize int) ty
 
 // parseServerName parses :authority pseudo-header in order to retrieve the
 // virtual host.
-func parseServerName(logger debuglog.Logger, authority string) string {
+func parseServerName(logger debuglogger.Logger, authority string) string {
 	host, _, err := net.SplitHostPort(authority)
 	if err != nil {
 		// missing port or bad format
