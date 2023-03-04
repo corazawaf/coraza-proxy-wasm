@@ -6,7 +6,7 @@ require (
 	github.com/corazawaf/coraza-wasilibs v0.0.0-20230203072127-1efe825d0089
 	github.com/corazawaf/coraza/v3 v3.0.0-20230214110518-a823d91882bb
 	github.com/stretchr/testify v1.8.0
-	github.com/tetratelabs/proxy-wasm-go-sdk v0.21.0
+	github.com/tetratelabs/proxy-wasm-go-sdk v0.22.0
 	github.com/tidwall/gjson v1.14.4
 	github.com/wasilibs/nottinygc v0.2.0
 )
@@ -18,7 +18,7 @@ require (
 	github.com/magefile/mage v1.14.0 // indirect
 	github.com/petar-dambovaliev/aho-corasick v0.0.0-20211021192214-5ab2d9280aa9 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/tetratelabs/wazero v1.0.0-pre.8 // indirect
+	github.com/tetratelabs/wazero v1.0.0-rc.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/wasilibs/go-aho-corasick v0.2.0 // indirect
