@@ -11,8 +11,6 @@ total_steps=1
 max_retries=15 #seconds for the server reachability timeout
 host=${1:-envoy}
 health_url="http://${host}:80"
-unfiltered_url="http://${host}:80/home"
-filtered_url="http://${host}:80/admin"
 
 # Testing if the server is up
 echo "[$step/$total_steps] Testing application reachability"
