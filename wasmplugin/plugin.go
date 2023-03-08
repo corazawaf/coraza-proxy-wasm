@@ -87,8 +87,8 @@ func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 		// TODO(jcchavezs): figure out how/when enable/disable metrics
 		metrics: ctx.metrics,
 		logger: ctx.waf.NewTransaction().
-			DebugLogger().
-			With(debuglog.Uint("context_id", uint(contextID))),
+			DebugLogger(), /*.
+		With(debuglog.Uint("context_id", uint(contextID))),*/
 	}
 }
 
