@@ -44,6 +44,9 @@ static_resources:
                               "rules": [
                                 "Include @demo-conf",
                                 "Include @crs-setup-demo-conf",
+                                "SecDefaultAction \"phase:3,log,auditlog,pass\"",
+                                "SecDefaultAction \"phase:4,log,auditlog,pass\"",
+                                "SecDefaultAction \"phase:5,log,auditlog,pass\"",
                                 "SecDebugLogLevel 3",
                                 "Include @owasp_crs/*.conf",
                                 "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
