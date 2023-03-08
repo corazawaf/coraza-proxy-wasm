@@ -31,8 +31,6 @@ testoverride:
 
     # Failing tests to be addressed
     '920180-4': 'False positive. go-ftw sends POST / HTTP/2.0, but coraza-proxy-wasm reads HTTP/1.0. It does not happen with curl --http2-prior-knowledge'
-    '980170-1': 'Related to phase 4 logs. Not detected'
-    '980170-2': 'Related to phase 4 logs. Not detected'
 
     # Coraza related issues
     '920171-2': 'Rule 920171 not detected. GET/HEAD with body. Coraza side'
