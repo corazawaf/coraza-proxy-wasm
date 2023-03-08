@@ -514,13 +514,13 @@ func retrieveAddressInfo(logger debuglog.Logger, target string) (string, int) {
 	var targetPort int
 	targetAddressRaw, err := proxywasm.GetProperty([]string{target, "address"})
 	if err != nil {
-		logger.Warn().
+		logger.Debug().
 			Err(err).
 			Msg(fmt.Sprintf("Failed to get %s address", target))
 	} else {
 		targetIP, targetPortStr, err = net.SplitHostPort(string(targetAddressRaw))
 		if err != nil {
-			logger.Warn().
+			logger.Debug().
 				Err(err).
 				Msg(fmt.Sprintf("Failed to parse %s address", target))
 		}
@@ -529,7 +529,7 @@ func retrieveAddressInfo(logger debuglog.Logger, target string) (string, int) {
 	if err == nil {
 		targetPort, err = parsePort(targetPortRaw)
 		if err != nil {
-			logger.Warn().
+			logger.Debug().
 				Err(err).
 				Msg(fmt.Sprintf("Failed to parse %s port", target))
 		}
@@ -538,7 +538,7 @@ func retrieveAddressInfo(logger debuglog.Logger, target string) (string, int) {
 		// Mostly useful for proxies other than Envoy
 		targetPort, err = strconv.Atoi(targetPortStr)
 		if err != nil {
-			logger.Warn().
+			logger.Debug().
 				Err(err).
 				Msg(fmt.Sprintf("Failed to get %s port", target))
 
