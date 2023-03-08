@@ -534,7 +534,7 @@ func TestBadConfig(t *testing.T) {
 		{
 			name: "bad json",
 			conf: "{",
-			msg:  `error parsing plugin configuration:`,
+			msg:  `Failed to parse plugin configuration:`,
 		},
 	}
 
@@ -570,14 +570,14 @@ func TestBadRequest(t *testing.T) {
 			reqHdrs: [][2]string{
 				{":method", "GET"},
 			},
-			msg: "failed to get :path",
+			msg: "Failed to get :path",
 		},
 		{
 			name: "missing method",
 			reqHdrs: [][2]string{
 				{":path", "/hello"},
 			},
-			msg: "failed to get :method",
+			msg: "Failed to get :method",
 		},
 	}
 
@@ -599,7 +599,7 @@ func TestBadRequest(t *testing.T) {
 				action := host.CallOnRequestHeaders(id, tt.reqHdrs, false)
 				require.Equal(t, types.ActionContinue, action)
 
-				logs := strings.Join(host.GetCriticalLogs(), "\n")
+				logs := strings.Join(host.GetErrorLogs(), "\n")
 				require.Contains(t, logs, tt.msg)
 			})
 		}
@@ -617,7 +617,7 @@ func TestBadResponse(t *testing.T) {
 			respHdrs: [][2]string{
 				{"content-length", "12"},
 			},
-			msg: "failed to get :status",
+			msg: "Failed to get :status",
 		},
 	}
 
@@ -639,7 +639,7 @@ func TestBadResponse(t *testing.T) {
 				action := host.CallOnResponseHeaders(id, tt.respHdrs, false)
 				require.Equal(t, types.ActionContinue, action)
 
-				logs := strings.Join(host.GetCriticalLogs(), "\n")
+				logs := strings.Join(host.GetErrorLogs(), "\n")
 				require.Contains(t, logs, tt.msg)
 			})
 		}

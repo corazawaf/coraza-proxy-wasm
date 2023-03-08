@@ -6,50 +6,45 @@ package wasmplugin
 import (
 	"io"
 
-	"github.com/corazawaf/coraza/v3/loggers"
+	"github.com/corazawaf/coraza/v3/debuglog"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 )
 
-type debugLogger struct {
-	level loggers.LogLevel
+type logger struct {
+	debuglog.Logger
 }
 
-var _ loggers.DebugLogger = (*debugLogger)(nil)
+var _ debuglog.Logger = logger{}
 
-func (l *debugLogger) Info(message string, args ...interface{}) {
-	if l.level >= loggers.LogLevelInfo {
-		proxywasm.LogInfof(message, args...)
+var logPrinterFactory = func(io.Writer) debuglog.Printer {
+	return func(lvl debuglog.LogLevel, message, fields string) {
+		switch lvl {
+		case debuglog.LogLevelTrace:
+			proxywasm.LogTracef("%s %s", message, fields)
+		case debuglog.LogLevelDebug:
+			proxywasm.LogDebugf("%s %s", message, fields)
+		case debuglog.LogLevelInfo:
+			proxywasm.LogInfof("%s %s", message, fields)
+		case debuglog.LogLevelWarn:
+			proxywasm.LogWarnf("%s %s", message, fields)
+		case debuglog.LogLevelError:
+			proxywasm.LogErrorf("%s %s", message, fields)
+		default:
+		}
 	}
 }
 
-func (l *debugLogger) Warn(message string, args ...interface{}) {
-	if l.level >= loggers.LogLevelWarn {
-		proxywasm.LogWarnf(message, args...)
+func DefaultLogger() debuglog.Logger {
+	return logger{
+		debuglog.DefaultWithPrinterFactory(logPrinterFactory),
 	}
 }
 
-func (l *debugLogger) Error(message string, args ...interface{}) {
-	if l.level >= loggers.LogLevelError {
-		proxywasm.LogErrorf(message, args...)
-	}
+func (l logger) WithLevel(lvl debuglog.LogLevel) debuglog.Logger {
+	return logger{l.Logger.WithLevel(lvl)}
 }
 
-func (l *debugLogger) Debug(message string, args ...interface{}) {
-	if l.level >= loggers.LogLevelDebug {
-		proxywasm.LogDebugf(message, args...)
-	}
-}
-
-func (l *debugLogger) Trace(message string, args ...interface{}) {
-	if l.level >= loggers.LogLevelTrace {
-		proxywasm.LogTracef(message, args...)
-	}
-}
-
-func (l *debugLogger) SetLevel(level loggers.LogLevel) {
-	l.level = level
-}
-
-func (l *debugLogger) SetOutput(w io.WriteCloser) {
+func (l logger) WithOutput(_ io.Writer) debuglog.Logger {
 	proxywasm.LogWarn("ignoring SecDebugLog directive, debug logs are always routed to proxy logs")
+	return l
 }

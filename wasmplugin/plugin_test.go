@@ -6,6 +6,7 @@ package wasmplugin
 import (
 	"testing"
 
+	"github.com/corazawaf/coraza/v3/debuglog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/proxytest"
@@ -61,7 +62,7 @@ func TestRetrieveAddressInfo(t *testing.T) {
 						require.NoError(t, err)
 					}
 
-					targetIP, port := retrieveAddressInfo(target)
+					targetIP, port := retrieveAddressInfo(debuglog.Nop(), target)
 					assert.Equal(t, tCase.expectedTargetIP, targetIP)
 					assert.Equal(t, tCase.expectedPort, port)
 

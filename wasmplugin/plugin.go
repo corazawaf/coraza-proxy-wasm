@@ -7,12 +7,14 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"math"
 	"net"
 	"strconv"
 	"strings"
 
 	"github.com/corazawaf/coraza/v3"
+	"github.com/corazawaf/coraza/v3/debuglog"
 	ctypes "github.com/corazawaf/coraza/v3/types"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
@@ -50,14 +52,14 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	}
 	config, err := parsePluginConfiguration(data)
 	if err != nil {
-		proxywasm.LogCriticalf("error parsing plugin configuration: %v", err)
+		proxywasm.LogCriticalf("Failed to parse plugin configuration: %v", err)
 		return types.OnPluginStartStatusFailed
 	}
 
 	// First we initialize our waf and our seclang parser
 	conf := coraza.NewWAFConfig().
 		WithErrorCallback(logError).
-		WithDebugLogger(&debugLogger{}).
+		WithDebugLogger(debuglog.DefaultWithPrinterFactory(logPrinterFactory)).
 		// TODO(anuraaga): Make this configurable in plugin configuration.
 		// WithRequestBodyLimit(1024 * 1024 * 1024).
 		// WithRequestBodyInMemoryLimit(1024 * 1024 * 1024).
@@ -67,7 +69,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 	waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(config.rules, "\n")))
 	if err != nil {
-		proxywasm.LogCriticalf("failed to parse rules: %v", err)
+		proxywasm.LogCriticalf("Failed to parse rules: %v", err)
 		return types.OnPluginStartStatusFailed
 	}
 
@@ -84,6 +86,9 @@ func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 		tx:        ctx.waf.NewTransaction(),
 		// TODO(jcchavezs): figure out how/when enable/disable metrics
 		metrics: ctx.metrics,
+		logger: ctx.waf.NewTransaction().
+			DebugLogger().
+			With(debuglog.Uint("context_id", uint(contextID))),
 	}
 }
 
@@ -99,6 +104,7 @@ type httpContext struct {
 	bodyReadIndex         int
 	metrics               *wafMetrics
 	interruptionHandled   bool
+	logger                debuglog.Logger
 }
 
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
@@ -115,8 +121,8 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		return types.ActionContinue
 	}
 	// OnHttpRequestHeaders does not terminate if IP/Port retrieve goes wrong
-	srcIP, srcPort := retrieveAddressInfo("source")
-	dstIP, dstPort := retrieveAddressInfo("destination")
+	srcIP, srcPort := retrieveAddressInfo(ctx.logger, "source")
+	dstIP, dstPort := retrieveAddressInfo(ctx.logger, "destination")
 
 	tx.ProcessConnection(srcIP, srcPort, dstIP, dstPort)
 
@@ -124,13 +130,17 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	// See https://httpwg.org/specs/rfc9113.html#rfc.section.8.3.1
 	uri, err := proxywasm.GetHttpRequestHeader(":path")
 	if err != nil {
-		proxywasm.LogCriticalf("failed to get :path: %v", err)
+		ctx.logger.Error().
+			Err(err).
+			Msg("Failed to get :path")
 		return types.ActionContinue
 	}
 
 	method, err := proxywasm.GetHttpRequestHeader(":method")
 	if err != nil {
-		proxywasm.LogCriticalf("failed to get :method: %v", err)
+		ctx.logger.Error().
+			Err(err).
+			Msg("Failed to get :method")
 		return types.ActionContinue
 	}
 
@@ -147,7 +157,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	hs, err := proxywasm.GetHttpRequestHeaders()
 	if err != nil {
-		proxywasm.LogCriticalf("failed to get request headers: %v", err)
+		ctx.logger.Error().Err(err).Msg("Failed to get request headers")
 		return types.ActionContinue
 	}
 
@@ -159,7 +169,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	authority, err := proxywasm.GetHttpRequestHeader(":authority")
 	if err == nil {
 		tx.AddRequestHeader("Host", authority)
-		tx.SetServerName(parseServerName(authority))
+		tx.SetServerName(parseServerName(ctx.logger, authority))
 	}
 
 	interruption := tx.ProcessRequestHeaders()
@@ -174,7 +184,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	defer logTime("OnHttpRequestBody", currentTime())
 
 	if ctx.interruptionHandled {
-		proxywasm.LogErrorf("interruption already handled")
+		ctx.logger.Error().Msg("Interruption already handled")
 		return types.ActionPause
 	}
 
@@ -190,12 +200,12 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 
 	// Do not perform any action related to request body data if SecRequestBodyAccess is set to false
 	if !tx.IsRequestBodyAccessible() {
-		proxywasm.LogDebug("skipping request body inspection, SecRequestBodyAccess is off.")
+		ctx.logger.Debug().Msg("Skipping request body inspection, SecRequestBodyAccess is off.")
 		// ProcessRequestBody is still performed for phase 2 rules, checking already populated variables
 		ctx.processedRequestBody = true
 		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
-			proxywasm.LogCriticalf("failed to process request body: %v", err)
+			ctx.logger.Error().Err(err).Msg("Failed to process request body")
 			return types.ActionContinue
 		}
 
@@ -211,7 +221,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		if err == nil {
 			interruption, _, err := tx.WriteRequestBody(b)
 			if err != nil {
-				proxywasm.LogCriticalf("failed to write request body: %v", err)
+				ctx.logger.Error().Err(err).Msg("Failed to write request body")
 				return types.ActionContinue
 			}
 
@@ -229,7 +239,11 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 			// endOfStream being true or false.
 			// The tests in 920410 show this problem.
 			// TODO(jcchavezs): Verify if this is a FTW problem.
-			proxywasm.LogCriticalf("failed to read request body from %d up to %d bytes: %v", ctx.bodyReadIndex, bodySize, err)
+			ctx.logger.Error().
+				Err(err).
+				Int("body_read_index", ctx.bodyReadIndex).
+				Int("body_size", bodySize).
+				Msg("Failed to read request body")
 			return types.ActionContinue
 		}
 	}
@@ -239,7 +253,9 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		ctx.bodyReadIndex = 0 // cleaning for further usage
 		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
-			proxywasm.LogCriticalf("failed to process request body: %v", err)
+			ctx.logger.Error().
+				Err(err).
+				Msg("Failed to process request body")
 			return types.ActionContinue
 		}
 		if interruption != nil {
@@ -262,10 +278,10 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 		// We expect a response that is ending the stream, with exactly one header (:status) and no body.
 		// See https://github.com/corazawaf/coraza-proxy-wasm/pull/126
 		if numHeaders == 1 && endOfStream {
-			proxywasm.LogDebugf("interruption already handled, sending downstream the local response")
+			ctx.logger.Debug().Msg("Interruption already handled, sending downstream the local response")
 			return types.ActionContinue
 		} else {
-			proxywasm.LogErrorf("interruption already handled, unexpected local response")
+			ctx.logger.Error().Msg("Interruption already handled, unexpected local response")
 			return types.ActionPause
 		}
 	}
@@ -282,7 +298,8 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 		ctx.processedRequestBody = true
 		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
-			proxywasm.LogCriticalf("failed to process request body: %v", err)
+			ctx.logger.Error().
+				Err(err).Msg("Failed to process request body")
 			return types.ActionContinue
 		}
 		if interruption != nil {
@@ -292,7 +309,9 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 
 	status, err := proxywasm.GetHttpResponseHeader(":status")
 	if err != nil {
-		proxywasm.LogCriticalf("failed to get :status: %v", err)
+		ctx.logger.Error().
+			Err(err).
+			Msg("Failed to get :status")
 		return types.ActionContinue
 	}
 	code, err := strconv.Atoi(status)
@@ -302,7 +321,9 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 
 	hs, err := proxywasm.GetHttpResponseHeaders()
 	if err != nil {
-		proxywasm.LogCriticalf("failed to get response headers: %v", err)
+		ctx.logger.Error().
+			Err(err).
+			Msg("Failed to get response headers")
 		return types.ActionContinue
 	}
 
@@ -327,9 +348,10 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		// If OnHttpResponseBody is called again and an interruption has already been raised, it means that
 		// we have to keep going with the sanitization of the response, emptying it.
 		// Sending the crafted HttpResponse with empty body, we don't expect to trigger OnHttpResponseBody
-		proxywasm.LogWarn("response body interruption already handled, keeping replacing the body")
+		ctx.logger.Warn().
+			Msg("Response body interruption already handled, keeping replacing the body")
 		// Interruption happened, we don't want to send response body data
-		return replaceResponseBodyWhenInterrupted(bodySize)
+		return replaceResponseBodyWhenInterrupted(ctx.logger, bodySize)
 	}
 
 	tx := ctx.tx
@@ -340,12 +362,12 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 
 	// Do not perform any action related to response body data if SecResponseBodyAccess is set to false
 	if !tx.IsResponseBodyAccessible() {
-		proxywasm.LogDebug("skipping response body inspection, SecResponseBodyAccess is off.")
+		ctx.logger.Debug().Msg("Skipping response body inspection, SecResponseBodyAccess is off.")
 		// ProcessResponseBody is performed for phase 4 rules, checking already populated variables
 		ctx.processedResponseBody = true
 		interruption, err := tx.ProcessResponseBody()
 		if err != nil {
-			proxywasm.LogCriticalf("failed to process response body: %v", err)
+			ctx.logger.Error().Err(err).Msg("Failed to process response body")
 			return types.ActionContinue
 		}
 
@@ -363,7 +385,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		if err == nil {
 			interruption, _, err := tx.WriteResponseBody(body)
 			if err != nil {
-				proxywasm.LogCriticalf("failed to write response body: %v", err)
+				ctx.logger.Error().Err(err).Msg("Failed to write response body")
 				return types.ActionContinue
 			}
 			// bodyReadIndex has to be updated before evaluating the interruption
@@ -373,7 +395,11 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 				return ctx.handleInterruption("http_response_body", interruption)
 			}
 		} else if err != types.ErrorStatusNotFound {
-			proxywasm.LogCriticalf("failed to read response body from %d up to %d bytes: %v", ctx.bodyReadIndex, bodySize, err)
+			ctx.logger.Error().
+				Int("body_read_index", ctx.bodyReadIndex).
+				Int("body_size", bodySize).
+				Err(err).
+				Msg("Failed to read response body")
 			return types.ActionContinue
 		}
 	}
@@ -385,7 +411,9 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		ctx.processedResponseBody = true
 		interruption, err := tx.ProcessResponseBody()
 		if err != nil {
-			proxywasm.LogCriticalf("failed to process response body: %v", err)
+			ctx.logger.Error().
+				Err(err).
+				Msg("Failed to process response body")
 			return types.ActionContinue
 		}
 		if interruption != nil {
@@ -409,7 +437,9 @@ func (ctx *httpContext) OnHttpStreamDone() {
 			ctx.processedResponseBody = true
 			_, err := tx.ProcessResponseBody()
 			if err != nil {
-				proxywasm.LogCriticalf("failed to process response body: %v", err)
+				ctx.logger.Error().
+					Err(err).
+					Msg("Failed to process response body")
 			}
 		}
 	}
@@ -418,7 +448,7 @@ func (ctx *httpContext) OnHttpStreamDone() {
 	ctx.tx.ProcessLogging()
 
 	_ = ctx.tx.Close()
-	proxywasm.LogInfof("%d finished", ctx.contextID)
+	ctx.logger.Info().Msg("Finished")
 	logMemStats()
 }
 
@@ -427,15 +457,19 @@ const noGRPCStream int32 = -1
 func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.Interruption) types.Action {
 	if ctx.interruptionHandled {
 		// handleInterruption should never be called more than once
-		panic("interruption already handled")
+		panic("Interruption already handled")
 	}
 
 	ctx.metrics.CountTXInterruption(phase, interruption.RuleID)
 
-	proxywasm.LogInfof("%d interrupted, action %q, phase %q", ctx.contextID, interruption.Action, phase)
+	ctx.logger.Info().
+		Str("action", interruption.Action).
+		Str("phase", phase).
+		Msg("Transaction interrupted")
+
 	ctx.interruptionHandled = true
 	if phase == "http_response_body" {
-		return replaceResponseBodyWhenInterrupted(ctx.bodyReadIndex)
+		return replaceResponseBodyWhenInterrupted(ctx.logger, ctx.bodyReadIndex)
 	}
 
 	statusCode := interruption.Status
@@ -475,30 +509,39 @@ func logError(error ctypes.MatchedRule) {
 // retrieveAddressInfo retrieves address properties from the proxy
 // Expected targets are "source" or "destination"
 // Envoy ref: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/attributes#connection-attributes
-func retrieveAddressInfo(target string) (string, int) {
+func retrieveAddressInfo(logger debuglog.Logger, target string) (string, int) {
 	var targetIP, targetPortStr string
 	var targetPort int
 	targetAddressRaw, err := proxywasm.GetProperty([]string{target, "address"})
 	if err != nil {
-		proxywasm.LogWarnf("failed to get %s address: %v", target, err)
+		logger.Debug().
+			Err(err).
+			Msg(fmt.Sprintf("Failed to get %s address", target))
 	} else {
 		targetIP, targetPortStr, err = net.SplitHostPort(string(targetAddressRaw))
 		if err != nil {
-			proxywasm.LogWarnf("failed to parse %s address: %v", target, err)
+			logger.Debug().
+				Err(err).
+				Msg(fmt.Sprintf("Failed to parse %s address", target))
 		}
 	}
 	targetPortRaw, err := proxywasm.GetProperty([]string{target, "port"})
 	if err == nil {
 		targetPort, err = parsePort(targetPortRaw)
 		if err != nil {
-			proxywasm.LogWarnf("failed to parse %s port: %v", target, err)
+			logger.Debug().
+				Err(err).
+				Msg(fmt.Sprintf("Failed to parse %s port", target))
 		}
 	} else if targetPortStr != "" {
 		// If GetProperty fails we rely on the port inside the Address property
 		// Mostly useful for proxies other than Envoy
 		targetPort, err = strconv.Atoi(targetPortStr)
 		if err != nil {
-			proxywasm.LogInfof("failed to get %s port: %v", target, err)
+			logger.Debug().
+				Err(err).
+				Msg(fmt.Sprintf("Failed to get %s port", target))
+
 		}
 	}
 	return targetIP, targetPort
@@ -523,25 +566,28 @@ func parsePort(b []byte) (int, error) {
 // replaceResponseBodyWhenInterrupted address an interruption raised during phase 4.
 // At this phase, response headers are already sent downstream, therefore an interruption
 // can not change anymore the status code, but only tweak the response body
-func replaceResponseBodyWhenInterrupted(bodySize int) types.Action {
+func replaceResponseBodyWhenInterrupted(logger debuglog.Logger, bodySize int) types.Action {
 	// TODO(M4tteoP): Update response body interruption logic after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
 	// Currently returns a body filled with null bytes that replaces the sensitive data potentially leaked
 	err := proxywasm.ReplaceHttpResponseBody(bytes.Repeat([]byte("\x00"), bodySize))
 	if err != nil {
-		proxywasm.LogErrorf("failed to replace response body: %v", err)
+		logger.Error().Err(err).Msg("Failed to replace response body")
 		return types.ActionContinue
 	}
-	proxywasm.LogWarn("response body intervention occurred: body replaced")
+	logger.Warn().Msg("Response body intervention occurred: body replaced")
 	return types.ActionContinue
 }
 
 // parseServerName parses :authority pseudo-header in order to retrieve the
 // virtual host.
-func parseServerName(authority string) string {
+func parseServerName(logger debuglog.Logger, authority string) string {
 	host, _, err := net.SplitHostPort(authority)
 	if err != nil {
 		// missing port or bad format
-		proxywasm.LogDebugf("failed to parse server name from authority %q, %v", authority, err)
+		logger.Debug().
+			Str("authority", authority).
+			Err(err).
+			Msg("Failed to parse server name from authority")
 		host = authority
 	}
 	return host
