@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/corazawaf/coraza-wasilibs v0.0.0-20230203072127-1efe825d0089
-	github.com/corazawaf/coraza/v3 v3.0.0-20230306125904-229f7fff9975
+	github.com/corazawaf/coraza/v3 v3.0.0-20230309093239-31ffef063e2d
 	github.com/stretchr/testify v1.8.0
 	github.com/tetratelabs/proxy-wasm-go-sdk v0.22.0
 	github.com/tidwall/gjson v1.14.4

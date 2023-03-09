@@ -1,7 +1,7 @@
 github.com/corazawaf/coraza-wasilibs v0.0.0-20230203072127-1efe825d0089 h1:g2hQT6RtJqt2pgs6W1Fc3EFq4pGBAAkyT0VPLwJsKvg=
 github.com/corazawaf/coraza-wasilibs v0.0.0-20230203072127-1efe825d0089/go.mod h1:J6mAYvwpBb16W9l2e/H6NFwK0OICzn3pWW56B4Lbz64=
-github.com/corazawaf/coraza/v3 v3.0.0-20230306125904-229f7fff9975 h1:UHOXatH3RvNgDJxnnUSpmx4MYmy9S3XksiSlYOcoMSA=
-github.com/corazawaf/coraza/v3 v3.0.0-20230306125904-229f7fff9975/go.mod h1:bLyQJ+i9Nc5y7OH7ZznU8SX4Vmr25Ak1MpPbeVoIhRo=
+github.com/corazawaf/coraza/v3 v3.0.0-20230309093239-31ffef063e2d h1:raMdhDElGTZMN6buaHwxzP0vT240NW2sCWj/5XAX9L0=
+github.com/corazawaf/coraza/v3 v3.0.0-20230309093239-31ffef063e2d/go.mod h1:GhpyYpKaOG/wHZtdyUpu74wo9StS3fzmtKvgSzms/XQ=
 github.com/corazawaf/libinjection-go v0.1.2 h1:oeiV9pc5rvJ+2oqOqXEAMJousPpGiup6f7Y3nZj5GoM=
 github.com/corazawaf/libinjection-go v0.1.2/go.mod h1:OP4TM7xdJ2skyXqNX1AN1wN5nNZEmJNuWbNPOItn7aw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -44,11 +44,11 @@ github.com/wasilibs/go-re2 v0.1.0 h1:+pcjlvge6E9WWU4eaMlULRikEUkhPDXSFfCF5p7htMI
 github.com/wasilibs/go-re2 v0.1.0/go.mod h1:F91Yac+zPNDFrrd8fl4mSd7+TTu2tYiX56BEIEPQl2M=
 github.com/wasilibs/nottinygc v0.2.0 h1:cXz2Ac9bVMLkpuOlUlPQMWowjw0K2cOErXZOFdAj7yE=
 github.com/wasilibs/nottinygc v0.2.0/go.mod h1:oDcIotskuYNMpqMF23l7Z8uzD4TC0WXHK8jetlB3HIo=
-golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 h1:6zppjxzCulZykYSLyVDYbneBfbaBIQPYMevg0bEwv2s=
+golang.org/x/mod v0.8.0 h1:LUYupSeNrTNCGzR/hVBk2NHZO4hXcVaW1k4Qx7rjPx8=
 golang.org/x/net v0.8.0 h1:Zrh2ngAOFYneWTAIAPethzeaQLuHwhuBkuV6ZiRnUaQ=
 golang.org/x/net v0.8.0/go.mod h1:QVkue5JL9kW//ek3r6jTKnTFis1tRmNAW2P1shuFdJc=
 golang.org/x/sys v0.6.0 h1:MVltZSvRTcU2ljQOhs94SXPftV6DCNnZViHeQps87pQ=
-golang.org/x/tools v0.1.12 h1:VveCTK38A2rkS8ZqFY25HIDFscX5X9OoEhJd3quQmXU=
+golang.org/x/tools v0.6.0 h1:BOw41kyTf3PuCW1pVQf8+Cyg8pMlkYB1oo9iJ6D/lKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 h1:qIbj1fsPNlZgppZ+VLlY7N33q108Sa+fhmuc+sWQYwY=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
