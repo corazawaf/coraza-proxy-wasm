@@ -17,17 +17,17 @@ type logger struct {
 var _ debuglog.Logger = logger{}
 
 var logPrinterFactory = func(io.Writer) debuglog.Printer {
-	return func(lvl debuglog.LogLevel, message, fields string) {
+	return func(lvl debuglog.Level, message, fields string) {
 		switch lvl {
-		case debuglog.LogLevelTrace:
+		case debuglog.LevelTrace:
 			proxywasm.LogTracef("%s %s", message, fields)
-		case debuglog.LogLevelDebug:
+		case debuglog.LevelDebug:
 			proxywasm.LogDebugf("%s %s", message, fields)
-		case debuglog.LogLevelInfo:
+		case debuglog.LevelInfo:
 			proxywasm.LogInfof("%s %s", message, fields)
-		case debuglog.LogLevelWarn:
+		case debuglog.LevelWarn:
 			proxywasm.LogWarnf("%s %s", message, fields)
-		case debuglog.LogLevelError:
+		case debuglog.LevelError:
 			proxywasm.LogErrorf("%s %s", message, fields)
 		default:
 		}
@@ -40,11 +40,11 @@ func DefaultLogger() debuglog.Logger {
 	}
 }
 
-func (l logger) WithLevel(lvl debuglog.LogLevel) debuglog.Logger {
+func (l logger) WithLevel(lvl debuglog.Level) debuglog.Logger {
 	return logger{l.Logger.WithLevel(lvl)}
 }
 
 func (l logger) WithOutput(_ io.Writer) debuglog.Logger {
-	proxywasm.LogWarn("ignoring SecDebugLog directive, debug logs are always routed to proxy logs")
+	proxywasm.LogWarn("Ignoring SecDebugLog directive, debug logs are always routed to proxy logs")
 	return l
 }
