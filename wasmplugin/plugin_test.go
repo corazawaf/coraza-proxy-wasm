@@ -62,7 +62,7 @@ func TestRetrieveAddressInfo(t *testing.T) {
 						require.NoError(t, err)
 					}
 
-					targetIP, port := retrieveAddressInfo(debuglog.Nop(), target)
+					targetIP, port := retrieveAddressInfo(debuglog.Noop(), target)
 					assert.Equal(t, tCase.expectedTargetIP, targetIP)
 					assert.Equal(t, tCase.expectedPort, port)
 
