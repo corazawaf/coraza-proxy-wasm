@@ -1,14 +1,6 @@
 # Inspired in https://github.com/Kong/docker-kong
 version: '3.9'
 
-x-kong-config:
-  &kong-env
-  KONG_DATABASE: postgres
-  KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong}
-  KONG_PG_HOST: db
-  KONG_PG_USER: ${KONG_PG_USER:-kong}
-  KONG_PG_PASSWORD_FILE: /run/secrets/kong_postgres_password
-
 volumes:
   kong_data: {}
   kong_prefix_vol:
@@ -25,38 +17,11 @@ networks:
     external: false
 
 services:
-  kong-migrations:
-    image: "kong/incubator:gateway-wasmer-3.0.0.0"
-    command: kong migrations bootstrap
-    depends_on:
-      - db
-    environment:
-      <<: *kong-env
-    secrets:
-      - kong_postgres_password
-    networks:
-      - kong-net
-    restart: on-failure
-
-  kong-migrations-up:
-    image: "kong/incubator:gateway-wasmer-3.0.0.0"
-    command: kong migrations up && kong migrations finish
-    depends_on:
-      - db
-      - kong-migrations
-    environment:
-      <<: *kong-env
-    secrets:
-      - kong_postgres_password
-    networks:
-      - kong-net
-    restart: on-failure
-
   kong:
     image: "kong/incubator:gateway-wasmer-3.0.0.0"
     user: "${KONG_USER:-kong}"
     environment:
-      <<: *kong-env
+      KONG_DATABASE: "off"
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_PROXY_LISTEN: "${KONG_PROXY_LISTEN:-0.0.0.0:8000}"
@@ -67,8 +32,6 @@ services:
       KONG_DECLARATIVE_CONFIG: "/opt/kong/kong.yaml"
       KONG_WASM: "on"
       KONG_WASM_MODULES: "/wasm/main.wasm"
-    secrets:
-      - kong_postgres_password
     networks:
       - kong-net
     ports:
@@ -100,47 +63,11 @@ services:
     depends_on:
       - httpbin
 
-  db:
-    image: postgres:9.5
-    environment:
-      POSTGRES_DB: ${KONG_PG_DATABASE:-kong}
-      POSTGRES_USER: ${KONG_PG_USER:-kong}
-      POSTGRES_PASSWORD_FILE: /run/secrets/kong_postgres_password
-    secrets:
-      - kong_postgres_password
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "${KONG_PG_USER:-kong}" ]
-      interval: 30s
-      timeout: 30s
-      retries: 3
-    restart: on-failure
-    stdin_open: true
-    tty: true
-    networks:
-      - kong-net
-    volumes:
-      - kong_data:/var/lib/postgresql/data
-
   httpbin:
     image: mccutchen/go-httpbin:v2.5.0
     environment:
       - MAX_BODY_SIZE=15728640 # 15 MiB
     ports:
-      - 10080:8080
+      - 8080:8080
     networks:
       - kong-net
-
-  service-provisioner:
-    image: clue/httpie
-    volumes:
-      - .:/run
-    entrypoint: [ "/run/service-provisioner.sh" ]
-    depends_on:
-      - httpbin
-      - kong
-    networks:
-      - kong-net
-
-secrets:
-  kong_postgres_password:
-    file: ./POSTGRES_PASSWORD
