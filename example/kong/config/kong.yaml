@@ -25,6 +25,7 @@ services:
            "rules": [
               "Include @demo-conf",
               "Include @crs-setup-demo-conf",
+              "SecRuleEngine DetectionOnly",
               "SecDebugLogLevel 3",
               "Include @owasp_crs/*.conf",
               "SecRule REQUEST_URI \"@streq /uuid\" \"id:101,phase:1,t:lowercase,deny\"",

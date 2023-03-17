@@ -2,7 +2,6 @@
 version: '3.9'
 
 volumes:
-  kong_data: {}
   kong_prefix_vol:
     driver_opts:
       type: tmpfs
