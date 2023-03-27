@@ -1,7 +1,7 @@
 github.com/corazawaf/coraza-wasilibs v0.0.0-20230408002644-e2e3af21f503 h1:hGXspDwUBHQUne1NT2D6PmkR9wFCXsibjaJpz7xhf+g=
 github.com/corazawaf/coraza-wasilibs v0.0.0-20230408002644-e2e3af21f503/go.mod h1:bTc+NV7T2wQevFQHDDWhD/+IAA5bvKbbK4CxzfvJx/o=
-github.com/corazawaf/coraza/v3 v3.0.0-rc.1.0.20230407165813-a18681b1ec28 h1:Jrlvhe4YCR/PMCazDEBeun/XTYhlzczBN0WN4/ejORo=
-github.com/corazawaf/coraza/v3 v3.0.0-rc.1.0.20230407165813-a18681b1ec28/go.mod h1:TKREBLh55w3SiBbLsQpH9EFzjBAmEUH4KRaZ/kFYz20=
+github.com/corazawaf/coraza/v3 v3.0.0-rc.2.0.20230418111541-6f9312c6b733 h1:/D+1htLf7C2icBM8UyZYlzoTLP1/3uy43IA1CdPoREk=
+github.com/corazawaf/coraza/v3 v3.0.0-rc.2.0.20230418111541-6f9312c6b733/go.mod h1:TKREBLh55w3SiBbLsQpH9EFzjBAmEUH4KRaZ/kFYz20=
 github.com/corazawaf/libinjection-go v0.1.2 h1:oeiV9pc5rvJ+2oqOqXEAMJousPpGiup6f7Y3nZj5GoM=
 github.com/corazawaf/libinjection-go v0.1.2/go.mod h1:OP4TM7xdJ2skyXqNX1AN1wN5nNZEmJNuWbNPOItn7aw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
