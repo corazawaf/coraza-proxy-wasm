@@ -109,7 +109,7 @@ configuration:
 
 ### Running go-ftw (CRS Regression tests)
 
-The following command runs the [go-ftw](https://github.com/fzipi/go-ftw) test suite against the filter with the CRS fully loaded.
+The following command runs the [go-ftw](https://github.com/coreruleset/go-ftw) test suite against the filter with the CRS fully loaded.
 
 ```bash
 go run mage.go ftw

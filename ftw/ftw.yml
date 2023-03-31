@@ -24,13 +24,21 @@ testoverride:
     '920274-2': 'PL4 - False positive. Envoy Populates :path header, therefore invalid character are detected'
     '920274-3': 'PL4 - False positive. Envoy Populates :path header, therefore invalid character are detected'
     '920274-5': 'PL4 - False positive. Envoy Populates :path header, therefore invalid character are detected'
-    
+    '932161-7': 'Referer header is sanitized by Envoy and removed from the request'
+    '932161-8': 'Referer header is sanitized by Envoy and removed from the request'
+    '932161-9': 'Referer header is sanitized by Envoy and removed from the request'
+    '932161-10': 'Referer header is sanitized by Envoy and removed from the request'
+    '932161-11': 'Referer header is sanitized by Envoy and removed from the request'
+    '932161-12': 'Referer header is sanitized by Envoy and removed from the request'
+    '932236-6': 'Referer header is sanitized by Envoy and removed from the request'
+    '932236-7': 'Referer header is sanitized by Envoy and removed from the request'
+    '932236-28': 'Referer header is sanitized by Envoy and removed from the request'
+    '932237-6': 'Referer header is sanitized by Envoy and removed from the request'
+    '932237-7': 'Referer header is sanitized by Envoy and removed from the request'
+    '932237-8': 'Referer header is sanitized by Envoy and removed from the request'
+
     # Rules working, tests excluded for different expected output
     '920270-4': 'Log contains 920270. Test has log_contains disabled.'
-    # '920340-2': 'Log contains 920340, but tests expects expect_error: true'
-
-    # Failing tests to be addressed
-    '920180-4': 'False positive. go-ftw sends POST / HTTP/2.0, but coraza-proxy-wasm reads HTTP/1.0. It does not happen with curl --http2-prior-knowledge'
 
     # Coraza related issues
     '920171-2': 'Rule 920171 not detected. GET/HEAD with body. Coraza side'
@@ -42,21 +50,8 @@ testoverride:
     '920430-5': 'Rule 920430 not detected. Proto version. Coraza side'
     '920430-8': 'Rule 920430 not detected. Proto version. Coraza side'
     '920430-9': 'Rule 920430 not detected. Proto version. Coraza side'
-    '921180-2': 'False Positive. Parameters with the same name. Coraza Side'
-    '921180-4': 'False Positive. Parameters with the same name. Coraza Side'
-    '921180-5': 'False Positive. Parameters with the same name. Coraza Side'
-    '921180-6': 'False Positive. Parameters with the same name. Coraza Side'
     '934120-23': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
     '934120-24': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
     '934120-25': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
     '934120-26': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
     '934120-39': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
-    '934130-8': 'Rule 934130 partially detected.'
-    '934130-9': 'Rule 934130 partially detected. Coraza side'
-    '934130-10': 'Rule 934130 partially detected. Coraza side'
-    '934130-11': 'Rule 934130 partially detected. Coraza side'
-    '934131-2': 'Rule 934131 not detected. Coraza side'
-    '941310-1': 'Rule 941310 partially detected. Coraza side'
-    '941310-3': 'Rule 941310 partially detected. Coraza side'
-    '942522-7': 'Rule 944200 partially detected. Coraza side'
-    '944200-1': 'Rule 944200 not detected. Coraza side'

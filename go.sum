@@ -1,7 +1,7 @@
-github.com/corazawaf/coraza-wasilibs v0.0.0-20230203072127-1efe825d0089 h1:g2hQT6RtJqt2pgs6W1Fc3EFq4pGBAAkyT0VPLwJsKvg=
-github.com/corazawaf/coraza-wasilibs v0.0.0-20230203072127-1efe825d0089/go.mod h1:J6mAYvwpBb16W9l2e/H6NFwK0OICzn3pWW56B4Lbz64=
-github.com/corazawaf/coraza/v3 v3.0.0-20230316212719-785cdce7062c h1:eQ9zs6FAUScxDbBFZ8e7Kpm9R3emPK04OIZhC5ALGiU=
-github.com/corazawaf/coraza/v3 v3.0.0-20230316212719-785cdce7062c/go.mod h1:GhpyYpKaOG/wHZtdyUpu74wo9StS3fzmtKvgSzms/XQ=
+github.com/corazawaf/coraza-wasilibs v0.0.0-20230330075532-813619a9f702 h1:AERcQzqpM2f487riXo7j+GTXbKb209xKbC7hebtkhPI=
+github.com/corazawaf/coraza-wasilibs v0.0.0-20230330075532-813619a9f702/go.mod h1:649+6RWhv7A3FhTnzlbkbRSonLwhY7drUkYmAQZj5hk=
+github.com/corazawaf/coraza/v3 v3.0.0-rc.1.0.20230331094959-1207ffe628c0 h1:jZUD3AlDJyH0XrhjoSAqimUhAGyARLBwzMogEMzc4UE=
+github.com/corazawaf/coraza/v3 v3.0.0-rc.1.0.20230331094959-1207ffe628c0/go.mod h1:BKoHfX9ElA9uw7GBtKisLYM1snL2TRnA55GTA+Z/4ow=
 github.com/corazawaf/libinjection-go v0.1.2 h1:oeiV9pc5rvJ+2oqOqXEAMJousPpGiup6f7Y3nZj5GoM=
 github.com/corazawaf/libinjection-go v0.1.2/go.mod h1:OP4TM7xdJ2skyXqNX1AN1wN5nNZEmJNuWbNPOItn7aw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -27,8 +27,8 @@ github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PK
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/tetratelabs/proxy-wasm-go-sdk v0.22.0 h1:kS7BvMKN+FiptV4pfwiNX8e3q14evxAWkhYbxt8EI1M=
 github.com/tetratelabs/proxy-wasm-go-sdk v0.22.0/go.mod h1:qkW5MBz2jch2u8bS59wws65WC+Gtx3x0aPUX5JL7CXI=
-github.com/tetratelabs/wazero v1.0.0-rc.1 h1:ytecMV5Ue0BwezjKh/cM5yv1Mo49ep2R2snSsQUyToc=
-github.com/tetratelabs/wazero v1.0.0-rc.1/go.mod h1:wYx2gNRg8/WihJfSDxA1TIL8H+GkfLYm+bIfbblu9VQ=
+github.com/tetratelabs/wazero v1.0.1 h1:xyWBoGyMjYekG3mEQ/W7xm9E05S89kJ/at696d/9yuc=
+github.com/tetratelabs/wazero v1.0.1/go.mod h1:wYx2gNRg8/WihJfSDxA1TIL8H+GkfLYm+bIfbblu9VQ=
 github.com/tidwall/gjson v1.14.4 h1:uo0p8EbA09J7RQaflQ1aBRffTR7xedD2bcIVSYxLnkM=
 github.com/tidwall/gjson v1.14.4/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/match v1.1.1 h1:+Ho715JplO36QYgwN9PGYNhgZvoUSc9X2c80KVTi+GA=
@@ -36,12 +36,12 @@ github.com/tidwall/match v1.1.1/go.mod h1:eRSPERbgtNPcGhD8UCthc6PmLEQXEWd3PRB5JT
 github.com/tidwall/pretty v1.2.0/go.mod h1:ITEVvHYasfjBbM0u2Pg8T2nJnzm8xPwvNhhsoaGGjNU=
 github.com/tidwall/pretty v1.2.1 h1:qjsOFOWWQl+N3RsoF5/ssm1pHmJJwhjlSbZ51I6wMl4=
 github.com/tidwall/pretty v1.2.1/go.mod h1:ITEVvHYasfjBbM0u2Pg8T2nJnzm8xPwvNhhsoaGGjNU=
-github.com/wasilibs/go-aho-corasick v0.2.0 h1:32cgC99Id42dzoUupwn0nMPMxz3QD6DlxdjYpOVfZOA=
-github.com/wasilibs/go-aho-corasick v0.2.0/go.mod h1:70K0dlZi6vyp5xyczyd73SCZMYcxswRXLVnUwQSKpM4=
-github.com/wasilibs/go-libinjection v0.1.0 h1:WivsHc8c0cNWETEVhG0NpCezxvCn9zlVli/YkekFgXk=
-github.com/wasilibs/go-libinjection v0.1.0/go.mod h1:yRoVK5Ks0kH65fJB1uzppuEn77pJmP8hagoAdPcgbtI=
-github.com/wasilibs/go-re2 v0.1.0 h1:+pcjlvge6E9WWU4eaMlULRikEUkhPDXSFfCF5p7htMI=
-github.com/wasilibs/go-re2 v0.1.0/go.mod h1:F91Yac+zPNDFrrd8fl4mSd7+TTu2tYiX56BEIEPQl2M=
+github.com/wasilibs/go-aho-corasick v0.3.0 h1:ScfPQhAwop/ELIkwY0dfMTFb/bwOdYI/MB3mkX2WOZI=
+github.com/wasilibs/go-aho-corasick v0.3.0/go.mod h1:LKW6EW9NWuWYE8PII+sFpRbbY3UcrMUgfUTkGaoWyMY=
+github.com/wasilibs/go-libinjection v0.2.1 h1:1aSwyE4oNpPGpFw3i3hoM15sF3qn1s4P0jC2jgFM2Qk=
+github.com/wasilibs/go-libinjection v0.2.1/go.mod h1:ZUoVe+HLQYq+QPBNTSgg3fxGvZsvXiDbi0UomBlsGzo=
+github.com/wasilibs/go-re2 v1.0.0 h1:pvrqtMzZgTMHVPfXJrk4YZwiqIXOKdfo5aed6CzUAW4=
+github.com/wasilibs/go-re2 v1.0.0/go.mod h1:8g69JapfgjSCx49dKOQij1dqA3sOvoH5NteaUy1X0SA=
 github.com/wasilibs/nottinygc v0.2.0 h1:cXz2Ac9bVMLkpuOlUlPQMWowjw0K2cOErXZOFdAj7yE=
 github.com/wasilibs/nottinygc v0.2.0/go.mod h1:oDcIotskuYNMpqMF23l7Z8uzD4TC0WXHK8jetlB3HIo=
 golang.org/x/mod v0.8.0 h1:LUYupSeNrTNCGzR/hVBk2NHZO4hXcVaW1k4Qx7rjPx8=
@@ -55,3 +55,5 @@ gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
+rsc.io/binaryregexp v0.2.0 h1:HfqmD5MEmC0zvwBuF187nq9mdnXjXsSivRiXN7SmRkE=
+rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
