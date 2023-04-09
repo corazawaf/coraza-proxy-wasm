@@ -3,8 +3,8 @@ module github.com/corazawaf/coraza-proxy-wasm
 go 1.19
 
 require (
-	github.com/corazawaf/coraza-wasilibs v0.0.0-20230330075532-813619a9f702
-	github.com/corazawaf/coraza/v3 v3.0.0-rc.1.0.20230331094959-1207ffe628c0
+	github.com/corazawaf/coraza-wasilibs v0.0.0-20230408002644-e2e3af21f503
+	github.com/corazawaf/coraza/v3 v3.0.0-rc.1.0.20230407165813-a18681b1ec28
 	github.com/stretchr/testify v1.8.0
 	github.com/tetratelabs/proxy-wasm-go-sdk v0.22.0
 	github.com/tidwall/gjson v1.14.4
@@ -24,7 +24,7 @@ require (
 	github.com/wasilibs/go-aho-corasick v0.3.0 // indirect
 	github.com/wasilibs/go-libinjection v0.2.1 // indirect
 	github.com/wasilibs/go-re2 v1.0.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	rsc.io/binaryregexp v0.2.0 // indirect
