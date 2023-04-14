@@ -270,14 +270,28 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 
 func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
 	defer logTime("OnHttpResponseHeaders", currentTime())
-
+	tx := ctx.tx
 	if ctx.interruptionHandled {
 		// Handling the interruption (see handleInterruption) generates a HttpResponse with the required status code.
 		// If handleInterruption is raised during OnHttpRequestHeaders or OnHttpRequestBody, the crafted response is sent
 		// downstream via the filter chain, therefore OnHttpResponseHeaders is called.
-		// We expect a response that is ending the stream, with exactly one header (:status) and no body.
+		// We expect a response that is ending the stream, with a :status header equal to the status defined in the interruption
+		// and no body.
 		// See https://github.com/corazawaf/coraza-proxy-wasm/pull/126
-		if numHeaders == 1 && endOfStream {
+		status, err := proxywasm.GetHttpResponseHeader(":status")
+		if err != nil {
+			ctx.logger.Error().Err(err).Msg("Interruption already handled, failed to get :status")
+			return types.ActionPause
+		}
+		intStatus, err := strconv.Atoi(status)
+		if err != nil {
+			ctx.logger.Error().Err(err).Msg("Interruption already handled, failed to convert :status")
+			return types.ActionPause
+		}
+		// Because of extra headers that may be added alongside the :status header, this check does not scrictly enforces exactly one header
+		// See
+		// TODO: investigate if we want to remove extra headers to avoid possible leaks
+		if intStatus == tx.Interruption().Status && endOfStream {
 			ctx.logger.Debug().Msg("Interruption already handled, sending downstream the local response")
 			return types.ActionContinue
 		} else {
@@ -285,8 +299,6 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 			return types.ActionPause
 		}
 	}
-
-	tx := ctx.tx
 
 	if tx.IsRuleEngineOff() {
 		return types.ActionContinue
@@ -472,11 +484,10 @@ func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.In
 		return replaceResponseBodyWhenInterrupted(ctx.logger, ctx.bodyReadIndex)
 	}
 
-	statusCode := interruption.Status
-	if statusCode == 0 {
-		statusCode = 403
+	if interruption.Status == 0 {
+		interruption.Status = 403
 	}
-	if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, noGRPCStream); err != nil {
+	if err := proxywasm.SendHttpResponse(uint32(interruption.Status), nil, nil, noGRPCStream); err != nil {
 		panic(err)
 	}
 
