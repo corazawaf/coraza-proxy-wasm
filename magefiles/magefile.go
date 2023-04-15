@@ -233,6 +233,7 @@ func TeardownExample() error {
 	return sh.RunV("docker-compose", "--file", "example/docker-compose.yml", "down")
 }
 
+// ReloadExample reload the test environment (container) in case of envoy or wasm update. Requires docker-compose
 func ReloadExample() error {
 	return sh.RunV("docker-compose", "--file", "example/docker-compose.yml", "restart")
 }
