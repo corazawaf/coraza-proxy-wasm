@@ -233,6 +233,10 @@ func TeardownExample() error {
 	return sh.RunV("docker-compose", "--file", "example/docker-compose.yml", "down")
 }
 
+func ReloadExample() error {
+	return sh.RunV("docker-compose", "--file", "example/docker-compose.yml", "restart")
+}
+
 var Default = Build
 
 func patchWasm(inPath, outPath string, initialPages int) error {
