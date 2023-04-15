@@ -6,6 +6,8 @@ stats_config:
       regex: "(_phase=([a-z_]+))"
     - tag_name: rule_id
       regex: "(_ruleid=([0-9]+))"
+    - tag_name: authority
+      regex: "(_authority=([0-9a-z.:]+))"
 
 static_resources:
   listeners:
