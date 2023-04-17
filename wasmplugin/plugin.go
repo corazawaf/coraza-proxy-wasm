@@ -288,10 +288,14 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 			ctx.logger.Error().Err(err).Msg("Interruption already handled, failed to convert :status")
 			return types.ActionPause
 		}
+		expectedInterruptionStatus := tx.Interruption().Status
+		if expectedInterruptionStatus == 0 {
+			expectedInterruptionStatus = defaultInterruptionStatusCode
+		}
 		// Because of extra headers that may be added alongside the :status header, this check does not scrictly enforces exactly one header
 		// See
-		// TODO: investigate if we want to remove extra headers to avoid possible leaks
-		if intStatus == tx.Interruption().Status && endOfStream {
+		// TODO: investigate if we want to remove from the response the extra headers added alongside the status header to avoid possible leaks
+		if intStatus == expectedInterruptionStatus && endOfStream {
 			ctx.logger.Debug().Msg("Interruption already handled, sending downstream the local response")
 			return types.ActionContinue
 		} else {
@@ -465,6 +469,7 @@ func (ctx *httpContext) OnHttpStreamDone() {
 }
 
 const noGRPCStream int32 = -1
+const defaultInterruptionStatusCode int = 403
 
 func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.Interruption) types.Action {
 	if ctx.interruptionHandled {
@@ -484,10 +489,11 @@ func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.In
 		return replaceResponseBodyWhenInterrupted(ctx.logger, ctx.bodyReadIndex)
 	}
 
-	if interruption.Status == 0 {
-		interruption.Status = 403
+	statusCode := interruption.Status
+	if statusCode == 0 {
+		statusCode = defaultInterruptionStatusCode
 	}
-	if err := proxywasm.SendHttpResponse(uint32(interruption.Status), nil, nil, noGRPCStream); err != nil {
+	if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, noGRPCStream); err != nil {
 		panic(err)
 	}
 
