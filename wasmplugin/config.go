@@ -12,7 +12,8 @@ import (
 
 // pluginConfiguration is a type to represent an example configuration for this wasm plugin.
 type pluginConfiguration struct {
-	rules []string
+	rules      []string
+	identifier string
 }
 
 func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
@@ -30,6 +31,11 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 	jsonData := gjson.ParseBytes(data)
 	jsonData.Get("rules").ForEach(func(_, value gjson.Result) bool {
 		config.rules = append(config.rules, value.String())
+		return true
+	})
+
+	jsonData.Get("identifier").ForEach(func(_, value gjson.Result) bool {
+		config.identifier = value.String()
 		return true
 	})
 	return config, nil
