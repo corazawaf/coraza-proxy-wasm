@@ -111,7 +111,6 @@ type httpContext struct {
 	interruptionHandled   bool
 	logger                debuglog.Logger
 	identifier            string
-	authority             string
 }
 
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
@@ -178,7 +177,6 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		tx.AddRequestHeader("Host", authority)
 		tx.SetServerName(parseServerName(ctx.logger, authority))
 	}
-	ctx.authority = authority
 
 	interruption := tx.ProcessRequestHeaders()
 	if interruption != nil {

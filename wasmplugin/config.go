@@ -34,9 +34,12 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 		return true
 	})
 
-	jsonData.Get("identifier").ForEach(func(_, value gjson.Result) bool {
-		config.identifier = value.String()
-		return true
-	})
+	identifier := jsonData.Get("identifier")
+	if identifier.Exists() {
+		config.identifier = identifier.String()
+	} else {
+		config.identifier = "default"
+	}
+
 	return config, nil
 }
