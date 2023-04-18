@@ -16,8 +16,8 @@ env:
   TINYGO_VERSION: 0.27.0
   # Test against latest two releases and latest dev
   ENVOY_IMAGES: >
-    envoyproxy/envoy:v1.24-latest
-    envoyproxy/envoy:v1.23-latest
+    envoyproxy/envoy:v1.26-latest
+    envoyproxy/envoy:v1.25-latest
     envoyproxy/envoy-dev:latest
 
 jobs:
