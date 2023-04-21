@@ -270,39 +270,18 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 
 func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
 	defer logTime("OnHttpResponseHeaders", currentTime())
-	tx := ctx.tx
+
 	if ctx.interruptionHandled {
-		// Handling the interruption (see handleInterruption) generates a HttpResponse with the required status code.
+		// Handling the interruption (see handleInterruption) generates a HttpResponse with the required interruption status code.
 		// If handleInterruption is raised during OnHttpRequestHeaders or OnHttpRequestBody, the crafted response is sent
-		// downstream via the filter chain, therefore OnHttpResponseHeaders is called.
-		// We expect a response that is ending the stream, with a :status header equal to the status defined in the interruption
-		// and no body.
+		// downstream via the filter chain, therefore OnHttpResponseHeaders is called. It has to continue to properly send back the interruption action.
+		// A doublecheck might be eventually added, checking that the :status header matches the expected interruption status code.
 		// See https://github.com/corazawaf/coraza-proxy-wasm/pull/126
-		status, err := proxywasm.GetHttpResponseHeader(":status")
-		if err != nil {
-			ctx.logger.Error().Err(err).Msg("Interruption already handled, failed to get :status")
-			return types.ActionPause
-		}
-		intStatus, err := strconv.Atoi(status)
-		if err != nil {
-			ctx.logger.Error().Err(err).Msg("Interruption already handled, failed to convert :status")
-			return types.ActionPause
-		}
-		expectedInterruptionStatus := tx.Interruption().Status
-		if expectedInterruptionStatus == 0 {
-			expectedInterruptionStatus = defaultInterruptionStatusCode
-		}
-		// Because of extra headers that may be added alongside the :status header, this check does not scrictly enforces exactly one header
-		// See
-		// TODO: investigate if we want to remove from the response the extra headers added alongside the status header to avoid possible leaks
-		if intStatus == expectedInterruptionStatus && endOfStream {
-			ctx.logger.Debug().Msg("Interruption already handled, sending downstream the local response")
-			return types.ActionContinue
-		} else {
-			ctx.logger.Error().Msg("Interruption already handled, unexpected local response")
-			return types.ActionPause
-		}
+		ctx.logger.Debug().Msg("Interruption already handled, sending downstream the local response")
+		return types.ActionContinue
 	}
+
+	tx := ctx.tx
 
 	if tx.IsRuleEngineOff() {
 		return types.ActionContinue
