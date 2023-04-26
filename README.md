@@ -20,7 +20,6 @@ Targets:
   runExample         spins up the test environment, access at http://localhost:8080.
   teardownExample    tears down the test environment.
   test               runs all unit tests.
-  updateLibs         updates the C++ filter dependencies.
 
 * default target
 ```
@@ -32,9 +31,6 @@ go run mage.go build
 ```
 
 You will find the WASM plugin under `./build/main.wasm`.
-
-For performance purposes, some libs are built from non-Go implementations. The compiled polyglot wasm libs are already checked in under [./lib/](./lib/). It is possible to rely on the Dockerfiles under [./buildtools/](./buildtools/) if you wish to rebuild them from scratch
-using `go run mage.go updateLibs`.
 
 ### Running the filter in an Envoy process
 
