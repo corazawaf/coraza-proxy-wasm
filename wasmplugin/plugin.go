@@ -180,7 +180,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	interruption := tx.ProcessRequestHeaders()
 	if interruption != nil {
-		return ctx.handleInterruption("http_request_headers", interruption, ctx.identifier)
+		return ctx.handleInterruption("http_request_headers", interruption)
 	}
 
 	return types.ActionContinue
@@ -216,7 +216,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		}
 
 		if interruption != nil {
-			return ctx.handleInterruption("http_request_body", interruption, ctx.identifier)
+			return ctx.handleInterruption("http_request_body", interruption)
 		}
 
 		return types.ActionContinue
@@ -232,7 +232,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 			}
 
 			if interruption != nil {
-				return ctx.handleInterruption("http_request_body", interruption, ctx.identifier)
+				return ctx.handleInterruption("http_request_body", interruption)
 			}
 
 			ctx.bodyReadIndex += bodySize
@@ -265,7 +265,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 			return types.ActionContinue
 		}
 		if interruption != nil {
-			return ctx.handleInterruption("http_request_body", interruption, ctx.identifier)
+			return ctx.handleInterruption("http_request_body", interruption)
 		}
 
 		return types.ActionContinue
@@ -309,7 +309,7 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 			return types.ActionContinue
 		}
 		if interruption != nil {
-			return ctx.handleInterruption("http_response_headers", interruption, ctx.identifier)
+			return ctx.handleInterruption("http_response_headers", interruption)
 		}
 	}
 
@@ -339,7 +339,7 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 
 	interruption := tx.ProcessResponseHeaders(code, ctx.httpProtocol)
 	if interruption != nil {
-		return ctx.handleInterruption("http_response_headers", interruption, ctx.identifier)
+		return ctx.handleInterruption("http_response_headers", interruption)
 	}
 
 	return types.ActionContinue
@@ -381,7 +381,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 			// Proxy-wasm can not anymore deny the response. The best interruption is emptying the body
 			// Coraza Multiphase evaluation will help here avoiding late interruptions
 			ctx.bodyReadIndex = bodySize // hacky: bodyReadIndex stores the body size that has to be replaced
-			return ctx.handleInterruption("http_response_body", interruption, ctx.identifier)
+			return ctx.handleInterruption("http_response_body", interruption)
 		}
 		return types.ActionContinue
 	}
@@ -398,7 +398,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 			// it is internally needed to replace the full body if the tx is interrupted
 			ctx.bodyReadIndex += bodySize
 			if interruption != nil {
-				return ctx.handleInterruption("http_response_body", interruption, ctx.identifier)
+				return ctx.handleInterruption("http_response_body", interruption)
 			}
 		} else if err != types.ErrorStatusNotFound {
 			ctx.logger.Error().
@@ -423,7 +423,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 			return types.ActionContinue
 		}
 		if interruption != nil {
-			return ctx.handleInterruption("http_response_body", interruption, ctx.identifier)
+			return ctx.handleInterruption("http_response_body", interruption)
 		}
 		return types.ActionContinue
 	}
@@ -460,13 +460,13 @@ func (ctx *httpContext) OnHttpStreamDone() {
 
 const noGRPCStream int32 = -1
 
-func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.Interruption, identifier string) types.Action {
+func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.Interruption) types.Action {
 	if ctx.interruptionHandled {
 		// handleInterruption should never be called more than once
 		panic("Interruption already handled")
 	}
 
-	ctx.metrics.CountTXInterruption(phase, interruption.RuleID, identifier)
+	ctx.metrics.CountTXInterruption(phase, interruption.RuleID, ctx.identifier)
 
 	ctx.logger.Info().
 		Str("action", interruption.Action).
