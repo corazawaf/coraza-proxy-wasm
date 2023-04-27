@@ -51,6 +51,24 @@ func TestParsePluginConfiguration(t *testing.T) {
 				rules: []string{"SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
 			},
 		},
+		{
+			name: "metrics label",
+			config: `
+			{ 
+				"rules": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""],
+				"metrics_labels": [{"key": "identifier","value": "global"}]
+			}
+			`,
+			expectConfig: pluginConfiguration{
+				rules: []string{"SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
+				metricsLabels: []map[string]string{
+					{
+						"key":   "identifier",
+						"value": "global",
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -58,6 +76,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 			cfg, err := parsePluginConfiguration([]byte(testCase.config))
 			assert.Equal(t, testCase.expectErr, err)
 			assert.ElementsMatch(t, testCase.expectConfig.rules, cfg.rules)
+			assert.ElementsMatch(t, testCase.expectConfig.metricsLabels, cfg.metricsLabels)
 		})
 	}
 }
