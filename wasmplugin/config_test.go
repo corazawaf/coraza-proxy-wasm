@@ -23,6 +23,10 @@ func TestParsePluginConfiguration(t *testing.T) {
 		{
 			name:   "empty json",
 			config: "{}",
+			expectConfig: pluginConfiguration{
+				rules:         []string{},
+				metricsLabels: map[string]string{},
+			},
 		},
 		{
 			name:      "bad config",
@@ -37,7 +41,8 @@ func TestParsePluginConfiguration(t *testing.T) {
 			}
 			`,
 			expectConfig: pluginConfiguration{
-				rules: []string{"SecRuleEngine On"},
+				rules:         []string{"SecRuleEngine On"},
+				metricsLabels: map[string]string{},
 			},
 		},
 		{
@@ -48,7 +53,8 @@ func TestParsePluginConfiguration(t *testing.T) {
 			}
 			`,
 			expectConfig: pluginConfiguration{
-				rules: []string{"SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
+				rules:         []string{"SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
+				metricsLabels: map[string]string{},
 			},
 		},
 		{
@@ -74,7 +80,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 			cfg, err := parsePluginConfiguration([]byte(testCase.config))
 			assert.Equal(t, testCase.expectErr, err)
 			assert.ElementsMatch(t, testCase.expectConfig.rules, cfg.rules)
-			assert.ObjectsAreEqual(testCase.expectConfig.metricsLabels, cfg.metricsLabels)
+			assert.Equal(t, testCase.expectConfig.metricsLabels, cfg.metricsLabels)
 		})
 	}
 }
