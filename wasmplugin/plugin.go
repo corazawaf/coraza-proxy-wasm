@@ -41,7 +41,7 @@ type corazaPlugin struct {
 
 	waf coraza.WAF
 
-	metricsLabels []map[string]string
+	metricsLabels map[string]string
 
 	metrics *wafMetrics
 }
@@ -110,7 +110,7 @@ type httpContext struct {
 	metrics               *wafMetrics
 	interruptionHandled   bool
 	logger                debuglog.Logger
-	metricsLabels         []map[string]string
+	metricsLabels         map[string]string
 }
 
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
