@@ -171,8 +171,13 @@ and we get the metrics with the corresponding tags:
 
 ```bash
 # TYPE waf_filter_tx_interruptions counter
-waf_filter_tx_interruptions{phase="http_request_body",rule_id="949110"} 1
-waf_filter_tx_interruptions{phase="http_response_headers",rule_id="949110"} 3
+waf_filter_tx_interruptions{phase="http_request_headers_identifier",rule_id="101",identifier="global",owner="coraza"} 1
+waf_filter_tx_interruptions{phase="http_request_body_identifier",rule_id="102",identifier="global",owner="coraza"} 1
+waf_filter_tx_interruptions{phase="http_response_headers_identifier",rule_id="103",identifier="global",owner="coraza"} 1
+waf_filter_tx_interruptions{phase="http_response_body_identifier",rule_id="104",identifier="global",owner="coraza"} 1
+waf_filter_tx_interruptions{phase="http_request_body_identifier",rule_id="949110",identifier="global",owner="coraza"} 1
+waf_filter_tx_interruptions{phase="http_response_headers_identifier",rule_id="949110",identifier="global",owner="coraza"} 1
+waf_filter_tx_interruptions{phase="http_request_headers_identifier",rule_id="949111",identifier="global",owner="coraza"} 1
 # TYPE waf_filter_tx_total counter
-waf_filter_tx_total{} 7
+waf_filter_tx_total{} 11
 ```

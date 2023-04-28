@@ -41,6 +41,8 @@ type corazaPlugin struct {
 
 	waf coraza.WAF
 
+	metricLabels map[string]string
+
 	metrics *wafMetrics
 }
 
@@ -75,6 +77,8 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 	ctx.waf = waf
 
+	ctx.metricLabels = config.metricLabels
+
 	ctx.metrics = NewWAFMetrics()
 
 	return types.OnPluginStartStatusOK
@@ -89,6 +93,7 @@ func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 		logger: ctx.waf.NewTransaction().
 			DebugLogger().
 			With(debuglog.Uint("context_id", uint(contextID))),
+		metricLabels: ctx.metricLabels,
 	}
 }
 
@@ -105,6 +110,7 @@ type httpContext struct {
 	metrics               *wafMetrics
 	interruptionHandled   bool
 	logger                debuglog.Logger
+	metricLabels          map[string]string
 }
 
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
@@ -456,7 +462,7 @@ func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.In
 		panic("Interruption already handled")
 	}
 
-	ctx.metrics.CountTXInterruption(phase, interruption.RuleID)
+	ctx.metrics.CountTXInterruption(phase, interruption.RuleID, ctx.metricLabels)
 
 	ctx.logger.Info().
 		Str("action", interruption.Action).

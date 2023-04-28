@@ -5,6 +5,7 @@ package wasmplugin
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 )
@@ -35,10 +36,17 @@ func (m *wafMetrics) CountTX() {
 	m.incrementCounter("waf_filter.tx.total")
 }
 
-func (m *wafMetrics) CountTXInterruption(phase string, ruleID int) {
-	// This metric is processed as: waf_filter_tx_interruption{phase="http_request_body",rule_id="100"}.
+func (m *wafMetrics) CountTXInterruption(phase string, ruleID int, metricLabels map[string]string) {
+	// This metric is processed as: waf_filter_tx_interruption{phase="http_request_body",rule_id="100",identifier="foo"}.
 	// The extraction rule is defined in envoy.yaml as a bootstrap configuration.
 	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#config-metrics-v3-statsconfig.
-	fqn := fmt.Sprintf("waf_filter.tx.interruptions_ruleid=%d_phase=%s", ruleID, phase)
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("waf_filter.tx.interruptions_ruleid=%d_phase=%s", ruleID, phase))
+
+	for key, value := range metricLabels {
+		sb.WriteString(fmt.Sprintf("_%s=%s", key, value))
+	}
+
+	fqn := sb.String()
 	m.incrementCounter(fqn)
 }

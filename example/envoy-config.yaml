@@ -6,6 +6,10 @@ stats_config:
       regex: "(_phase=([a-z_]+))"
     - tag_name: rule_id
       regex: "(_ruleid=([0-9]+))"
+    - tag_name: identifier
+      regex: "(_identifier=([0-9a-z.:]+))"
+    - tag_name: owner
+      regex: "(_owner=([0-9a-z.:]+))"
 
 static_resources:
   listeners:
@@ -56,7 +60,11 @@ static_resources:
                                 "SecDebugLogLevel 3",
                                 "Include @owasp_crs/*.conf",
                                 "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
-                              ]
+                              ],
+                              "metric_labels": {
+                                "owner": "coraza",
+                                "identifier": "global"
+                              }
                             }
                         vm_config:
                           runtime: "envoy.wasm.runtime.v8"
