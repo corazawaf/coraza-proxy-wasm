@@ -769,7 +769,6 @@ func TestParseCRS(t *testing.T) {
 			NewEmulatorOption().
 			WithVMContext(vm).
 			WithPluginConfiguration([]byte(`{"rulesets": {"default": [ "Include @ftw-conf", "Include @recommended-conf", "Include @crs-setup-conf", "Include @owasp_crs/*.conf" ]}, "default_ruleset": "default"}`))
-			
 
 		host, reset := proxytest.NewHostEmulator(opt)
 		defer reset()
