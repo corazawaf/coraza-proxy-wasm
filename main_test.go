@@ -421,7 +421,7 @@ func TestLifecycle(t *testing.T) {
 			tt := tc
 
 			t.Run(tt.name, func(t *testing.T) {
-				conf := `{}`
+				conf := `{"rulesets": {"default": []}, "default_ruleset": "default"}`
 				if inlineRules := strings.TrimSpace(tt.inlineRules); inlineRules != "" {
 					conf = fmt.Sprintf(`{"rulesets": {"default": ["%s"]}, "default_ruleset": "default"}`, inlineRules)
 				}
@@ -569,6 +569,7 @@ func TestBadRequest(t *testing.T) {
 			name: "missing path",
 			reqHdrs: [][2]string{
 				{":method", "GET"},
+				{":authority", "localhost"},
 			},
 			msg: "Failed to get :path",
 		},
@@ -576,6 +577,7 @@ func TestBadRequest(t *testing.T) {
 			name: "missing method",
 			reqHdrs: [][2]string{
 				{":path", "/hello"},
+				{":authority", "localhost"},
 			},
 			msg: "Failed to get :method",
 		},
@@ -585,9 +587,11 @@ func TestBadRequest(t *testing.T) {
 		for _, tc := range tests {
 			tt := tc
 			t.Run(tt.name, func(t *testing.T) {
+				conf := `{"rulesets": {"default": []}, "default_ruleset": "default"}`
 				opt := proxytest.
 					NewEmulatorOption().
-					WithVMContext(vm)
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte(conf))
 
 				host, reset := proxytest.NewHostEmulator(opt)
 				defer reset()
@@ -609,6 +613,7 @@ func TestBadRequest(t *testing.T) {
 func TestBadResponse(t *testing.T) {
 	tests := []struct {
 		name     string
+		reqHdrs  [][2]string
 		respHdrs [][2]string
 		msg      string
 	}{
@@ -616,6 +621,12 @@ func TestBadResponse(t *testing.T) {
 			name: "missing path",
 			respHdrs: [][2]string{
 				{"content-length", "12"},
+				{":authority", "localhost"},
+			},
+			reqHdrs: [][2]string{
+				{":path", "/hello"},
+				{":method", "GET"},
+				{":authority", "localhost"},
 			},
 			msg: "Failed to get :status",
 		},
@@ -625,9 +636,11 @@ func TestBadResponse(t *testing.T) {
 		for _, tc := range tests {
 			tt := tc
 			t.Run(tt.name, func(t *testing.T) {
+				conf := `{"rulesets": {"default": []}, "default_ruleset": "default"}`
 				opt := proxytest.
 					NewEmulatorOption().
-					WithVMContext(vm)
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte(conf))
 
 				host, reset := proxytest.NewHostEmulator(opt)
 				defer reset()
@@ -635,6 +648,8 @@ func TestBadResponse(t *testing.T) {
 				require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
 
 				id := host.InitializeHttpContext()
+
+				host.CallOnRequestHeaders(id, tt.reqHdrs, false)
 
 				action := host.CallOnResponseHeaders(id, tt.respHdrs, false)
 				require.Equal(t, types.ActionContinue, action)
@@ -659,6 +674,12 @@ func TestEmptyBody(t *testing.T) {
 		require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
 
 		id := host.InitializeHttpContext()
+
+		host.CallOnRequestHeaders(id, [][2]string{
+			{":path", "/hello"},
+			{":method", "GET"},
+			{":authority", "localhost"},
+		}, false)
 
 		action := host.CallOnRequestBody(id, []byte{}, false)
 		require.Equal(t, types.ActionPause, action)
@@ -878,6 +899,7 @@ func TestRetrieveAddressInfo(t *testing.T) {
 	reqHdrs := [][2]string{
 		{":path", "/hello"},
 		{":method", "GET"},
+		{":authority", "localhost"},
 	}
 	testCases := []struct {
 		name              string

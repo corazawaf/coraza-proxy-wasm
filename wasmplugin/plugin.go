@@ -228,6 +228,8 @@ type wafSetHttp struct {
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
 	defer logTime("OnHttpRequestHeaders", currentTime())
 
+	ctx.metrics.CountTX()
+
 	authority, err := proxywasm.GetHttpRequestHeader(":authority")
 	if err != nil {
 		return types.ActionContinue
@@ -258,7 +260,6 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		ctx.metricLabels["authority"] = authority
 	}
 
-	ctx.metrics.CountTX()
 	tx := ctx.tx
 
 	// This currently relies on Envoy's behavior of mapping all requests to HTTP/2 semantics
@@ -604,15 +605,15 @@ func (ctx *httpContext) OnHttpStreamDone() {
 				}
 			}
 		}
+
+		// ProcessLogging is still called even if RuleEngine is off for potential logs generated before the engine is turned off.
+		// Internally, if the engine is off, no log phase rules are evaluated
+		ctx.tx.ProcessLogging()
+
+		_ = ctx.tx.Close()
+		ctx.logger.Info().Msg("Finished")
+		logMemStats()
 	}
-
-	// ProcessLogging is still called even if RuleEngine is off for potential logs generated before the engine is turned off.
-	// Internally, if the engine is off, no log phase rules are evaluated
-	ctx.tx.ProcessLogging()
-
-	_ = ctx.tx.Close()
-	ctx.logger.Info().Msg("Finished")
-	logMemStats()
 }
 
 const noGRPCStream int32 = -1
