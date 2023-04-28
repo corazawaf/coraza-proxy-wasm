@@ -20,16 +20,6 @@ type pluginConfiguration struct {
 
 type RuleSets map[string][]string
 
-func (rs RuleSets) Exists(name string) bool {
-	for key := range rs {
-		if key == name {
-			return true
-		}
-	}
-
-	return false
-}
-
 func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 	config := pluginConfiguration{}
 
@@ -46,8 +36,8 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 
 	config.ruleSets = make(RuleSets)
 	jsonData.Get("rulesets").ForEach(func(key, value gjson.Result) bool {
-		_, ok := config.ruleSets[key.String()]
-		if ok {
+		ruleSetName := key.String()
+		if _, ok := config.ruleSets[ruleSetName]; ok {
 			return true
 		}
 
@@ -57,7 +47,7 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 			return true
 		})
 
-		config.ruleSets[key.String()] = rule
+		config.ruleSets[ruleSetName] = rule
 		return true
 	})
 
@@ -69,11 +59,12 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 
 	defaultRuleSet := jsonData.Get("default_ruleset")
 	if defaultRuleSet.Exists() {
-		if !config.ruleSets.Exists(defaultRuleSet.String()) {
-			return config, fmt.Errorf("ruleset not found for default ruleset: %q", defaultRuleSet.String())
+		defaultRuleSetName := defaultRuleSet.String()
+		if _, ok := config.ruleSets[defaultRuleSetName]; !ok {
+			return config, fmt.Errorf("ruleset not found for default ruleset: %q", defaultRuleSetName)
 		}
 
-		config.defaultRuleSet = defaultRuleSet.String()
+		config.defaultRuleSet = defaultRuleSetName
 	}
 
 	config.perAuthorityRuleSets = make(map[string]string)
@@ -83,7 +74,7 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 	})
 
 	for authority, ruleSetName := range config.perAuthorityRuleSets {
-		if !config.ruleSets.Exists(ruleSetName) {
+		if _, ok := config.ruleSets[ruleSetName]; !ok {
 			return config, fmt.Errorf("ruleset not found for authority %s: %q", authority, ruleSetName)
 		}
 	}
