@@ -12,8 +12,8 @@ import (
 
 // pluginConfiguration is a type to represent an example configuration for this wasm plugin.
 type pluginConfiguration struct {
-	rules         []string
-	metricsLabels map[string]string
+	rules        []string
+	metricLabels map[string]string
 }
 
 func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
@@ -34,9 +34,9 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 		return true
 	})
 
-	config.metricsLabels = make(map[string]string)
-	jsonData.Get("metrics_labels").ForEach(func(key, value gjson.Result) bool {
-		config.metricsLabels[key.String()] = value.String()
+	config.metricLabels = make(map[string]string)
+	jsonData.Get("metric_labels").ForEach(func(key, value gjson.Result) bool {
+		config.metricLabels[key.String()] = value.String()
 		return true
 	})
 
