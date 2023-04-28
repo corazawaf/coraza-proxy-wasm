@@ -38,12 +38,39 @@ type corazaPlugin struct {
 	// Embed the default plugin context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultPluginContext
+	wafSets wafSets
 
-	waf coraza.WAF
+	wafDefaultEnabled bool
+	wafDefaultRuleSet string
 
-	metricLabels map[string]string
+	perAuthorityWafSets perAuthorityWafSets
+	metricLabels        map[string]string
 
 	metrics *wafMetrics
+}
+
+type wafSets []wafSet
+
+func (wfs wafSets) newWAFSetsHttp(contextID uint32) wafSetsHttp {
+	var wafSetsHttp wafSetsHttp
+
+	for _, wafSet := range wfs {
+		var wafSetHttp wafSetHttp
+		wafSetHttp.tx = wafSet.waf.NewTransaction()
+		wafSetHttp.logger = wafSet.waf.NewTransaction().
+			DebugLogger().
+			With(debuglog.Uint("context_id", uint(contextID)))
+		wafSetHttp.name = wafSet.name
+
+		wafSetsHttp = append(wafSetsHttp, wafSetHttp)
+	}
+
+	return wafSetsHttp
+}
+
+type wafSet struct {
+	waf  coraza.WAF
+	name string
 }
 
 func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
@@ -58,27 +85,40 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		return types.OnPluginStartStatusFailed
 	}
 
-	// First we initialize our waf and our seclang parser
-	conf := coraza.NewWAFConfig().
-		WithErrorCallback(logError).
-		WithDebugLogger(debuglog.DefaultWithPrinterFactory(logPrinterFactory)).
-		// TODO(anuraaga): Make this configurable in plugin configuration.
-		// WithRequestBodyLimit(1024 * 1024 * 1024).
-		// WithRequestBodyInMemoryLimit(1024 * 1024 * 1024).
-		// Limit equal to MemoryLimit: TinyGo compilation will prevent
-		// buffering request body to files anyways.
-		WithRootFS(root)
+	var wafSets wafSets
+	for name, ruleSet := range config.ruleSets {
+		var wafset wafSet
+		wafset.name = name
 
-	waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(config.rules, "\n")))
-	if err != nil {
-		proxywasm.LogCriticalf("Failed to parse rules: %v", err)
-		return types.OnPluginStartStatusFailed
+		// First we initialize our waf and our seclang parser
+		conf := coraza.NewWAFConfig().
+			WithErrorCallback(logError).
+			WithDebugLogger(debuglog.DefaultWithPrinterFactory(logPrinterFactory)).
+			// TODO(anuraaga): Make this configurable in plugin configuration.
+			// WithRequestBodyLimit(1024 * 1024 * 1024).
+			// WithRequestBodyInMemoryLimit(1024 * 1024 * 1024).
+			// Limit equal to MemoryLimit: TinyGo compilation will prevent
+			// buffering request body to files anyways.
+			WithRootFS(root)
+
+		waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(ruleSet, "\n")))
+		if err != nil {
+			proxywasm.LogCriticalf("Failed to parse rules: %v", err)
+			return types.OnPluginStartStatusFailed
+		}
+
+		wafset.waf = waf
+		wafSets = append(wafSets, wafset)
 	}
 
-	ctx.waf = waf
+	if len(config.defaultRuleSet) != 0 {
+		ctx.wafDefaultEnabled = true
+		ctx.wafDefaultRuleSet = config.defaultRuleSet
+	}
 
+	ctx.wafSets = wafSets
+	ctx.perAuthorityWafSets = config.perAuthorityRuleSets
 	ctx.metricLabels = config.metricLabels
-
 	ctx.metrics = NewWAFMetrics()
 
 	return types.OnPluginStartStatusOK
@@ -86,14 +126,13 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 	return &httpContext{
-		contextID: contextID,
-		tx:        ctx.waf.NewTransaction(),
-		// TODO(jcchavezs): figure out how/when enable/disable metrics
-		metrics: ctx.metrics,
-		logger: ctx.waf.NewTransaction().
-			DebugLogger().
-			With(debuglog.Uint("context_id", uint(contextID))),
-		metricLabels: ctx.metricLabels,
+		contextID:           contextID,
+		metrics:             ctx.metrics,
+		metricLabels:        ctx.metricLabels,
+		wafSets:             ctx.wafSets.newWAFSetsHttp(contextID),
+		wafDefaultEnabled:   ctx.wafDefaultEnabled,
+		wafDefaultRuleSet:   ctx.wafDefaultRuleSet,
+		perAuthorityWafSets: ctx.perAuthorityWafSets,
 	}
 }
 
@@ -103,21 +142,115 @@ type httpContext struct {
 	types.DefaultHttpContext
 	contextID             uint32
 	tx                    ctypes.Transaction
+	logger                debuglog.Logger
+	wafSets               wafSetsHttp
+	wafDefaultEnabled     bool
+	wafDefaultRuleSet     string
+	perAuthorityWafSets   perAuthorityWafSets
 	httpProtocol          string
 	processedRequestBody  bool
 	processedResponseBody bool
 	bodyReadIndex         int
 	metrics               *wafMetrics
 	interruptionHandled   bool
-	logger                debuglog.Logger
 	metricLabels          map[string]string
+}
+
+type perAuthorityWafSets map[string]string
+
+func (aws perAuthorityWafSets) getRuleSetName(authority string) (string, bool) {
+	for key, value := range aws {
+		if key == authority {
+			return value, true
+		}
+	}
+
+	return "", false
+}
+
+type wafSetsHttp []wafSetHttp
+
+func (wsh wafSetsHttp) getTx(name string) (ctypes.Transaction, bool) {
+	for _, wafSet := range wsh {
+		if wafSet.name == name {
+			return wafSet.tx, true
+		}
+	}
+
+	return nil, false
+}
+
+func (wsh wafSetsHttp) getlogger(name string) (debuglog.Logger, bool) {
+	for _, wafSet := range wsh {
+		if wafSet.name == name {
+			return wafSet.logger, true
+		}
+	}
+
+	return nil, false
+}
+
+type wafSetHttp struct {
+	tx     ctypes.Transaction
+	logger debuglog.Logger
+	name   string
 }
 
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
 	defer logTime("OnHttpRequestHeaders", currentTime())
 
+	proxywasm.LogInfof("here1")
+
+	authority, err := proxywasm.GetHttpRequestHeader(":authority")
+	if err != nil {
+		return types.ActionContinue
+	}
+
+	proxywasm.LogInfof("here2")
+
+	wafRuleName, exist := ctx.perAuthorityWafSets.getRuleSetName(authority)
+	if !exist && ctx.wafDefaultEnabled {
+		proxywasm.LogInfof("here3")
+
+		ctx.tx, exist = ctx.wafSets.getTx(ctx.wafDefaultRuleSet)
+		if !exist {
+			return types.ActionContinue
+		}
+
+		proxywasm.LogInfof("here4")
+
+		ctx.logger, exist = ctx.wafSets.getlogger(ctx.wafDefaultRuleSet)
+		if !exist {
+			return types.ActionContinue
+		}
+
+		proxywasm.LogInfof("here5")
+	} else {
+		proxywasm.LogInfof("here7")
+		ctx.tx, exist = ctx.wafSets.getTx(wafRuleName)
+		if !exist {
+			return types.ActionContinue
+		}
+
+		proxywasm.LogInfof("here8")
+
+		ctx.logger, exist = ctx.wafSets.getlogger(wafRuleName)
+		if !exist {
+			return types.ActionContinue
+		}
+
+		proxywasm.LogInfof("here9")
+
+		ctx.metricLabels["authority"] = authority
+
+		proxywasm.LogInfof("here10")
+	}
+	proxywasm.LogInfof("here11")
 	ctx.metrics.CountTX()
+	proxywasm.LogInfof("here12")
 	tx := ctx.tx
+
+	proxywasm.LogInfof("here13")
 
 	// This currently relies on Envoy's behavior of mapping all requests to HTTP/2 semantics
 	// and its request properties, but they may not be true of other proxies implementing
@@ -172,7 +305,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	}
 
 	// CRS rules tend to expect Host even with HTTP/2
-	authority, err := proxywasm.GetHttpRequestHeader(":authority")
+	authority, err = proxywasm.GetHttpRequestHeader(":authority")
 	if err == nil {
 		tx.AddRequestHeader("Host", authority)
 		tx.SetServerName(parseServerName(ctx.logger, authority))
@@ -195,6 +328,10 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	}
 
 	if ctx.processedRequestBody {
+		return types.ActionContinue
+	}
+
+	if ctx.tx == nil {
 		return types.ActionContinue
 	}
 
@@ -287,6 +424,10 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 		return types.ActionContinue
 	}
 
+	if ctx.tx == nil {
+		return types.ActionContinue
+	}
+
 	tx := ctx.tx
 
 	if tx.IsRuleEngineOff() {
@@ -353,6 +494,10 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 			Msg("Response body interruption already handled, keeping replacing the body")
 		// Interruption happened, we don't want to send response body data
 		return replaceResponseBodyWhenInterrupted(ctx.logger, bodySize)
+	}
+
+	if ctx.tx == nil {
+		return types.ActionContinue
 	}
 
 	tx := ctx.tx
@@ -431,19 +576,22 @@ func (ctx *httpContext) OnHttpStreamDone() {
 	defer logTime("OnHttpStreamDone", currentTime())
 	tx := ctx.tx
 
-	if !tx.IsRuleEngineOff() {
-		// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
-		// phase that still need to be executed. If they haven't been executed yet, now is the time.
-		if !ctx.processedResponseBody {
-			ctx.processedResponseBody = true
-			_, err := tx.ProcessResponseBody()
-			if err != nil {
-				ctx.logger.Error().
-					Err(err).
-					Msg("Failed to process response body")
+	if tx != nil {
+		if !tx.IsRuleEngineOff() {
+			// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
+			// phase that still need to be executed. If they haven't been executed yet, now is the time.
+			if !ctx.processedResponseBody {
+				ctx.processedResponseBody = true
+				_, err := tx.ProcessResponseBody()
+				if err != nil {
+					ctx.logger.Error().
+						Err(err).
+						Msg("Failed to process response body")
+				}
 			}
 		}
 	}
+
 	// ProcessLogging is still called even if RuleEngine is off for potential logs generated before the engine is turned off.
 	// Internally, if the engine is off, no log phase rules are evaluated
 	ctx.tx.ProcessLogging()
