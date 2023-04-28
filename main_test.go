@@ -423,7 +423,7 @@ func TestLifecycle(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				conf := `{}`
 				if inlineRules := strings.TrimSpace(tt.inlineRules); inlineRules != "" {
-					conf = fmt.Sprintf(`{"rules": ["%s"]}`, inlineRules)
+					conf = fmt.Sprintf(`{"rulesets": {"default": ["%s"]}, "default_ruleset": "default"}`, inlineRules)
 				}
 				opt := proxytest.
 					NewEmulatorOption().
@@ -651,7 +651,7 @@ func TestEmptyBody(t *testing.T) {
 		opt := proxytest.
 			NewEmulatorOption().
 			WithVMContext(vm).
-			WithPluginConfiguration([]byte(`{ "rules": [ "SecRequestBodyAccess On", "SecResponseBodyAccess On" ] }`))
+			WithPluginConfiguration([]byte(`{"rulesets": {"default": [ "SecRequestBodyAccess On", "SecResponseBodyAccess On" ]}, "default_ruleset": "default"}`))
 
 		host, reset := proxytest.NewHostEmulator(opt)
 		defer reset()
@@ -740,11 +740,7 @@ func TestLogError(t *testing.T) {
 		for _, tc := range tests {
 			tt := tc
 			t.Run(fmt.Sprintf("severity %d", tt.severity), func(t *testing.T) {
-				conf := fmt.Sprintf(`
-{
-	"rules" : ["SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:%d,msg:'%%{MATCHED_VAR}',pass,t:none\""]
-}
-`, tt.severity)
+				conf := fmt.Sprintf(`{"rulesets": {"default": ["SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:%d,msg:'%%{MATCHED_VAR}',pass,t:none\""]}, "default_ruleset": "default"}`, tt.severity)
 
 				opt := proxytest.
 					NewEmulatorOption().
@@ -772,7 +768,8 @@ func TestParseCRS(t *testing.T) {
 		opt := proxytest.
 			NewEmulatorOption().
 			WithVMContext(vm).
-			WithPluginConfiguration([]byte(`{ "rules": [ "Include @ftw-conf", "Include @recommended-conf", "Include @crs-setup-conf", "Include @owasp_crs/*.conf" ] }`))
+			WithPluginConfiguration([]byte(`{"rulesets": {"default": [ "Include @ftw-conf", "Include @recommended-conf", "Include @crs-setup-conf", "Include @owasp_crs/*.conf" ]}, "default_ruleset": "default"}`))
+			
 
 		host, reset := proxytest.NewHostEmulator(opt)
 		defer reset()
@@ -842,7 +839,7 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:4,t:lower
 
 			t.Run(tt.name, func(t *testing.T) {
 				conf := fmt.Sprintf(`
-					{ "rules": ["%s"] }
+					{"rulesets": {"default": ["%s"]}, "default_ruleset": "default"}
 				`, strings.TrimSpace(tt.rules))
 				opt := proxytest.
 					NewEmulatorOption().
@@ -949,7 +946,7 @@ func TestRetrieveAddressInfo(t *testing.T) {
 
 				conf := `{}`
 				if inlineRules := strings.TrimSpace(inlineRules); inlineRules != "" {
-					conf = fmt.Sprintf(`{"rules": ["%s"]}`, inlineRules)
+					conf = fmt.Sprintf(`{"rulesets": {"default": ["%s"]}, "default_ruleset": "default"}`, inlineRules)
 				}
 				t.Run(tt.name, func(t *testing.T) {
 					opt := proxytest.
@@ -1012,7 +1009,7 @@ func TestParseServerName(t *testing.T) {
 
 			conf := `{}`
 			if inlineRules := strings.TrimSpace(inlineRules); inlineRules != "" {
-				conf = fmt.Sprintf(`{"rules": ["%s"]}`, inlineRules)
+				conf = fmt.Sprintf(`{"rulesets": {"default": ["%s"]}, "default_ruleset": "default"}`, inlineRules)
 			}
 			t.Run(name, func(t *testing.T) {
 				opt := proxytest.
