@@ -21,6 +21,12 @@ static_resources:
                 stat_prefix: ingress_http
                 codec_type: auto
                 route_config:
+                  # A custom response header is added for e2e testing purposes. A local response, triggered by an interruption,
+                  # has to allow custom added headers like this. See https://github.com/corazawaf/coraza-proxy-wasm/pull/172
+                  response_headers_to_add:
+                    - header: 
+                        key: "custom_header"
+                        value: "custom_value"
                   virtual_hosts:
                     - name: local_route
                       domains:

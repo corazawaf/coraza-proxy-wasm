@@ -272,18 +272,13 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 	defer logTime("OnHttpResponseHeaders", currentTime())
 
 	if ctx.interruptionHandled {
-		// Handling the interruption (see handleInterruption) generates a HttpResponse with the required status code.
+		// Handling the interruption (see handleInterruption) generates a HttpResponse with the required interruption status code.
 		// If handleInterruption is raised during OnHttpRequestHeaders or OnHttpRequestBody, the crafted response is sent
-		// downstream via the filter chain, therefore OnHttpResponseHeaders is called.
-		// We expect a response that is ending the stream, with exactly one header (:status) and no body.
+		// downstream via the filter chain, therefore OnHttpResponseHeaders is called. It has to continue to properly send back the interruption action.
+		// A doublecheck might be eventually added, checking that the :status header matches the expected interruption status code.
 		// See https://github.com/corazawaf/coraza-proxy-wasm/pull/126
-		if numHeaders == 1 && endOfStream {
-			ctx.logger.Debug().Msg("Interruption already handled, sending downstream the local response")
-			return types.ActionContinue
-		} else {
-			ctx.logger.Error().Msg("Interruption already handled, unexpected local response")
-			return types.ActionPause
-		}
+		ctx.logger.Debug().Msg("Interruption already handled, sending downstream the local response")
+		return types.ActionContinue
 	}
 
 	tx := ctx.tx
@@ -453,6 +448,7 @@ func (ctx *httpContext) OnHttpStreamDone() {
 }
 
 const noGRPCStream int32 = -1
+const defaultInterruptionStatusCode int = 403
 
 func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.Interruption) types.Action {
 	if ctx.interruptionHandled {
@@ -474,7 +470,7 @@ func (ctx *httpContext) handleInterruption(phase string, interruption *ctypes.In
 
 	statusCode := interruption.Status
 	if statusCode == 0 {
-		statusCode = 403
+		statusCode = defaultInterruptionStatusCode
 	}
 	if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, noGRPCStream); err != nil {
 		panic(err)
