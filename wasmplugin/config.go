@@ -21,7 +21,7 @@ type pluginConfiguration struct {
 type RuleSets map[string][]string
 
 func (rs RuleSets) Exists(name string) bool {
-	for key, _ := range rs {
+	for key := range rs {
 		if key == name {
 			return true
 		}
