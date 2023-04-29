@@ -592,9 +592,10 @@ func (ctx *httpContext) OnHttpStreamDone() {
 	tx := ctx.tx
 
 	if tx != nil {
-		if !tx.IsRuleEngineOff() {
+		if !tx.IsRuleEngineOff() && !ctx.interruptedAt.isInterrupted() {
 			// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
-			// phase that still need to be executed. If they haven't been executed yet, now is the time.
+			// phase that still need to be executed. If they haven't been executed yet, and there has not been a previous
+			// interruption, now is the time.
 			if !ctx.processedResponseBody {
 				ctx.processedResponseBody = true
 				_, err := tx.ProcessResponseBody()
