@@ -24,10 +24,10 @@ func TestParsePluginConfiguration(t *testing.T) {
 			name:   "empty json",
 			config: "{}",
 			expectConfig: pluginConfiguration{
-				ruleSets:             RuleSets{},
-				metricLabels:         map[string]string{},
-				defaultRuleSet:       "",
-				perAuthorityRuleSets: map[string]string{},
+				directivesMap:          DirectivesMap{},
+				metricLabels:           map[string]string{},
+				defaultDirective:       "",
+				perAuthorityDirectives: map[string]string{},
 			},
 		},
 		{
@@ -39,78 +39,78 @@ func TestParsePluginConfiguration(t *testing.T) {
 			name: "inline",
 			config: `
 			{
-				"rulesets": {
+				"directives_map": {
 					"default": ["SecRuleEngine On"]
 				},
-				"default_ruleset": "default"
+				"default_directive": "default"
 			}
 			`,
 			expectConfig: pluginConfiguration{
-				ruleSets: RuleSets{
+				directivesMap: DirectivesMap{
 					"default": []string{"SecRuleEngine On"},
 				},
-				metricLabels:         map[string]string{},
-				defaultRuleSet:       "default",
-				perAuthorityRuleSets: map[string]string{},
+				metricLabels:           map[string]string{},
+				defaultDirective:       "default",
+				perAuthorityDirectives: map[string]string{},
 			},
 		},
 		{
 			name: "inline many entries",
 			config: `
 			{
-				"rulesets": {
+				"directives_map": {
 					"default": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""]
 				},
-				"default_ruleset": "default"
+				"default_directive": "default"
 			}
 			`,
 			expectConfig: pluginConfiguration{
-				ruleSets: RuleSets{
+				directivesMap: DirectivesMap{
 					"default": []string{"SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
 				},
-				metricLabels:         map[string]string{},
-				defaultRuleSet:       "default",
-				perAuthorityRuleSets: map[string]string{},
+				metricLabels:           map[string]string{},
+				defaultDirective:       "default",
+				perAuthorityDirectives: map[string]string{},
 			},
 		},
 		{
 			name: "metrics label",
 			config: `
 			{
-				"rulesets": {
+				"directives_map": {
 					"default": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""]
 				},
-				"default_ruleset": "default",
+				"default_directive": "default",
 				"metric_labels": {"owner": "coraza","identifier": "global"}
 			}
 			`,
 			expectConfig: pluginConfiguration{
-				ruleSets: RuleSets{
+				directivesMap: DirectivesMap{
 					"default": []string{"SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
 				},
 				metricLabels: map[string]string{
 					"owner":      "coraza",
 					"identifier": "global",
 				},
-				defaultRuleSet:       "default",
-				perAuthorityRuleSets: map[string]string{},
+				defaultDirective:       "default",
+				perAuthorityDirectives: map[string]string{},
 			},
 		},
 		{
-			name: "multiple rulesets",
+			name: "multiple directives_map",
 			config: `
 			{
-				"rulesets": {
+				"directives_map": {
 					"default": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""],
 					"custom-01": ["SecRuleEngine On"],
 					"custom-02": ["SecRuleEngine On"]
 				},
-				"default_ruleset": "default",
+				"default_directive": "default",
 				"metric_labels": {"owner": "coraza","identifier": "global"}
 			}
 			`,
 			expectConfig: pluginConfiguration{
-				ruleSets: RuleSets{
+				directivesMap: DirectivesMap{
 					"default":   []string{"SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
 					"custom-02": []string{"SecRuleEngine On"},
 					"custom-01": []string{"SecRuleEngine On"},
@@ -119,29 +119,29 @@ func TestParsePluginConfiguration(t *testing.T) {
 					"owner":      "coraza",
 					"identifier": "global",
 				},
-				defaultRuleSet:       "default",
-				perAuthorityRuleSets: map[string]string{},
+				defaultDirective:       "default",
+				perAuthorityDirectives: map[string]string{},
 			},
 		},
 		{
-			name: "multiple rulesets with authority",
+			name: "multiple directives_map with authority",
 			config: `
 			{
-				"rulesets": {
+				"directives_map": {
 					"default": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""],
 					"custom-01": ["SecRuleEngine On"],
 					"custom-02": ["SecRuleEngine On"]
 				},
-				"default_ruleset": "default",
+				"default_directive": "default",
 				"metric_labels": {"owner": "coraza","identifier": "global"},
-				"per_authority_ruleset": {
+				"per_authority_directives": {
 					"mydomain.com":"custom-01",
 					"mydomain2.com":"custom-02"
 				}
 			}
 			`,
 			expectConfig: pluginConfiguration{
-				ruleSets: RuleSets{
+				directivesMap: DirectivesMap{
 					"default":   []string{"SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
 					"custom-02": []string{"SecRuleEngine On"},
 					"custom-01": []string{"SecRuleEngine On"},
@@ -150,43 +150,43 @@ func TestParsePluginConfiguration(t *testing.T) {
 					"owner":      "coraza",
 					"identifier": "global",
 				},
-				defaultRuleSet: "default",
-				perAuthorityRuleSets: map[string]string{
+				defaultDirective: "default",
+				perAuthorityDirectives: map[string]string{
 					"mydomain.com":  "custom-01",
 					"mydomain2.com": "custom-02",
 				},
 			},
 		},
 		{
-			name: "default ruleset not found",
+			name: "default directive not found",
 			config: `
 			{
-				"rulesets": {
+				"directives_map": {
 					"default": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""]
 				},
-				"default_ruleset": "foo"
+				"default_directive": "foo"
 			}
 			`,
-			expectErr: errors.New("ruleset not found for default ruleset: \"foo\""),
+			expectErr: errors.New("directive map not found for default directive: \"foo\""),
 		},
 		{
 			name: "per authority rule set not found",
 			config: `
 			{
-				"rulesets": {
+				"directives_map": {
 					"default": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""],
 					"custom-01": ["SecRuleEngine On"],
 					"custom-02": ["SecRuleEngine On"]
 				},
-				"default_ruleset": "default",
+				"default_directive": "default",
 				"metric_labels": {"owner": "coraza","identifier": "global"},
-				"per_authority_ruleset": {
+				"per_authority_directives": {
 					"mydomain.com":"custom-01",
 					"mydomain2.com":"custom-03"
 				}
 			}
 			`,
-			expectErr: errors.New("ruleset not found for authority mydomain2.com: \"custom-03\""),
+			expectErr: errors.New("directive map not found for authority mydomain2.com: \"custom-03\""),
 		},
 	}
 
@@ -196,10 +196,10 @@ func TestParsePluginConfiguration(t *testing.T) {
 			assert.Equal(t, testCase.expectErr, err)
 
 			if testCase.expectErr == nil {
-				assert.Equal(t, testCase.expectConfig.ruleSets, cfg.ruleSets)
+				assert.Equal(t, testCase.expectConfig.directivesMap, cfg.directivesMap)
 				assert.Equal(t, testCase.expectConfig.metricLabels, cfg.metricLabels)
-				assert.Equal(t, testCase.expectConfig.defaultRuleSet, cfg.defaultRuleSet)
-				assert.Equal(t, testCase.expectConfig.perAuthorityRuleSets, cfg.perAuthorityRuleSets)
+				assert.Equal(t, testCase.expectConfig.defaultDirective, cfg.defaultDirective)
+				assert.Equal(t, testCase.expectConfig.perAuthorityDirectives, cfg.perAuthorityDirectives)
 			}
 		})
 	}

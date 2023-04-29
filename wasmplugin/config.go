@@ -12,13 +12,13 @@ import (
 
 // pluginConfiguration is a type to represent an example configuration for this wasm plugin.
 type pluginConfiguration struct {
-	ruleSets             RuleSets
-	metricLabels         map[string]string
-	defaultRuleSet       string
-	perAuthorityRuleSets map[string]string
+	directivesMap          DirectivesMap
+	metricLabels           map[string]string
+	defaultDirective       string
+	perAuthorityDirectives map[string]string
 }
 
-type RuleSets map[string][]string
+type DirectivesMap map[string][]string
 
 func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 	config := pluginConfiguration{}
@@ -34,20 +34,20 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 
 	jsonData := gjson.ParseBytes(data)
 
-	config.ruleSets = make(RuleSets)
-	jsonData.Get("rulesets").ForEach(func(key, value gjson.Result) bool {
-		ruleSetName := key.String()
-		if _, ok := config.ruleSets[ruleSetName]; ok {
+	config.directivesMap = make(DirectivesMap)
+	jsonData.Get("directives_map").ForEach(func(key, value gjson.Result) bool {
+		directiveName := key.String()
+		if _, ok := config.directivesMap[directiveName]; ok {
 			return true
 		}
 
-		var rule []string
+		var directive []string
 		value.ForEach(func(_, value gjson.Result) bool {
-			rule = append(rule, value.String())
+			directive = append(directive, value.String())
 			return true
 		})
 
-		config.ruleSets[ruleSetName] = rule
+		config.directivesMap[directiveName] = directive
 		return true
 	})
 
@@ -57,25 +57,25 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 		return true
 	})
 
-	defaultRuleSet := jsonData.Get("default_ruleset")
-	if defaultRuleSet.Exists() {
-		defaultRuleSetName := defaultRuleSet.String()
-		if _, ok := config.ruleSets[defaultRuleSetName]; !ok {
-			return config, fmt.Errorf("ruleset not found for default ruleset: %q", defaultRuleSetName)
+	defaultDirective := jsonData.Get("default_directive")
+	if defaultDirective.Exists() {
+		defaultDirectiveName := defaultDirective.String()
+		if _, ok := config.directivesMap[defaultDirectiveName]; !ok {
+			return config, fmt.Errorf("directive map not found for default directive: %q", defaultDirectiveName)
 		}
 
-		config.defaultRuleSet = defaultRuleSetName
+		config.defaultDirective = defaultDirectiveName
 	}
 
-	config.perAuthorityRuleSets = make(map[string]string)
-	jsonData.Get("per_authority_ruleset").ForEach(func(key, value gjson.Result) bool {
-		config.perAuthorityRuleSets[key.String()] = value.String()
+	config.perAuthorityDirectives = make(map[string]string)
+	jsonData.Get("per_authority_directives").ForEach(func(key, value gjson.Result) bool {
+		config.perAuthorityDirectives[key.String()] = value.String()
 		return true
 	})
 
-	for authority, ruleSetName := range config.perAuthorityRuleSets {
-		if _, ok := config.ruleSets[ruleSetName]; !ok {
-			return config, fmt.Errorf("ruleset not found for authority %s: %q", authority, ruleSetName)
+	for authority, directiveName := range config.perAuthorityDirectives {
+		if _, ok := config.directivesMap[directiveName]; !ok {
+			return config, fmt.Errorf("directive map not found for authority %s: %q", authority, directiveName)
 		}
 	}
 

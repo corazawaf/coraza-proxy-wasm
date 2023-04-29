@@ -40,8 +40,8 @@ type corazaPlugin struct {
 	types.DefaultPluginContext
 	wafSets wafSets
 
-	wafDefaultEnabled bool
-	wafDefaultRuleSet string
+	wafDefaultEnabled   bool
+	wafDefaultDirective string
 
 	perAuthorityWafSets perAuthorityWafSets
 	metricLabels        map[string]string
@@ -86,7 +86,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	}
 
 	var wafSets wafSets
-	for name, ruleSet := range config.ruleSets {
+	for name, directive := range config.directivesMap {
 		var wafset wafSet
 		wafset.name = name
 
@@ -101,9 +101,9 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 			// buffering request body to files anyways.
 			WithRootFS(root)
 
-		waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(ruleSet, "\n")))
+		waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(directive, "\n")))
 		if err != nil {
-			proxywasm.LogCriticalf("Failed to parse rules: %v", err)
+			proxywasm.LogCriticalf("Failed to parse directive: %v", err)
 			return types.OnPluginStartStatusFailed
 		}
 
@@ -111,13 +111,13 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		wafSets = append(wafSets, wafset)
 	}
 
-	if len(config.defaultRuleSet) != 0 {
+	if len(config.defaultDirective) != 0 {
 		ctx.wafDefaultEnabled = true
-		ctx.wafDefaultRuleSet = config.defaultRuleSet
+		ctx.wafDefaultDirective = config.defaultDirective
 	}
 
 	ctx.wafSets = wafSets
-	ctx.perAuthorityWafSets = config.perAuthorityRuleSets
+	ctx.perAuthorityWafSets = config.perAuthorityDirectives
 	ctx.metricLabels = config.metricLabels
 	ctx.metrics = NewWAFMetrics()
 
@@ -131,7 +131,7 @@ func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 		metricLabels:        ctx.metricLabels,
 		wafSets:             ctx.wafSets.newWAFSetsHttp(contextID),
 		wafDefaultEnabled:   ctx.wafDefaultEnabled,
-		wafDefaultRuleSet:   ctx.wafDefaultRuleSet,
+		wafDefaultDirective: ctx.wafDefaultDirective,
 		perAuthorityWafSets: ctx.perAuthorityWafSets,
 	}
 }
@@ -173,7 +173,7 @@ type httpContext struct {
 	tx                    ctypes.Transaction
 	wafSets               wafSetsHttp
 	wafDefaultEnabled     bool
-	wafDefaultRuleSet     string
+	wafDefaultDirective   string
 	perAuthorityWafSets   perAuthorityWafSets
 	httpProtocol          string
 	processedRequestBody  bool
@@ -187,7 +187,7 @@ type httpContext struct {
 
 type perAuthorityWafSets map[string]string
 
-func (aws perAuthorityWafSets) getRuleSetName(authority string) (string, bool) {
+func (aws perAuthorityWafSets) getdirectivesName(authority string) (string, bool) {
 	for key, value := range aws {
 		if key == authority {
 			return value, true
@@ -235,24 +235,24 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		return types.ActionContinue
 	}
 
-	wafRuleName, exist := ctx.perAuthorityWafSets.getRuleSetName(authority)
+	wafDirectiveName, exist := ctx.perAuthorityWafSets.getdirectivesName(authority)
 	if !exist && ctx.wafDefaultEnabled {
-		ctx.tx, exist = ctx.wafSets.getTx(ctx.wafDefaultRuleSet)
+		ctx.tx, exist = ctx.wafSets.getTx(ctx.wafDefaultDirective)
 		if !exist {
 			return types.ActionContinue
 		}
 
-		ctx.logger, exist = ctx.wafSets.getlogger(ctx.wafDefaultRuleSet)
+		ctx.logger, exist = ctx.wafSets.getlogger(ctx.wafDefaultDirective)
 		if !exist {
 			return types.ActionContinue
 		}
 	} else {
-		ctx.tx, exist = ctx.wafSets.getTx(wafRuleName)
+		ctx.tx, exist = ctx.wafSets.getTx(wafDirectiveName)
 		if !exist {
 			return types.ActionContinue
 		}
 
-		ctx.logger, exist = ctx.wafSets.getlogger(wafRuleName)
+		ctx.logger, exist = ctx.wafSets.getlogger(wafDirectiveName)
 		if !exist {
 			return types.ActionContinue
 		}

@@ -53,7 +53,7 @@ static_resources:
                           "@type": "type.googleapis.com/google.protobuf.StringValue"
                           value: |
                             {
-                              "rulesets": {
+                              "directives_map": {
                                   "rs1": [
                                     "Include @demo-conf",
                                     "Include @crs-setup-demo-conf",
@@ -75,12 +75,12 @@ static_resources:
                                     "SecRule REQUEST_URI \"@streq /example\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
                                   ]
                               },
-                              "default_ruleset": "rs1",
+                              "default_directive": "rs1",
                               "metric_labels": {
                                 "owner": "coraza",
                                 "identifier": "global"
                               },
-                              "per_authority_ruleset":{
+                              "per_authority_directives":{
                                   "foo.example.com":"rs2",
                                   "bar.example.com":"rs2"
                               }

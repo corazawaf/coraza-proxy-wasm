@@ -36,7 +36,7 @@ static_resources:
                           # NB: inline rules order matter. Some ftw-config rules override the coraza-recommended default ones.
                           value: |
                             {
-                              "rulesets": {
+                              "directives_map": {
                                   "default": [
                                     "Include @recommended-conf",
                                     "Include @ftw-conf",
@@ -44,9 +44,9 @@ static_resources:
                                     "Include @owasp_crs/*.conf"
                                   ]
                               },
-                              "default_ruleset": "default",
+                              "default_directive": "default",
                               "metric_labels": {},
-                              "per_authority_ruleset":{}
+                              "per_authority_directives":{}
                             }
                         vm_config:
                           runtime: "envoy.wasm.runtime.v8"
