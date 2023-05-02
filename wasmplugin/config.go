@@ -79,16 +79,19 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 		}
 	}
 
-	rules := jsonData.Get("rules")
-	if rules.Exists() && len(config.directivesMap) == 0 {
-		config.defaultDirective = "default"
+	if len(config.directivesMap) == 0 {
+		rules := jsonData.Get("rules")
 
-		var directive []string
-		rules.ForEach(func(_, value gjson.Result) bool {
-			directive = append(directive, value.String())
-			return true
-		})
-		config.directivesMap["default"] = directive
+		if rules.Exists() {
+			config.defaultDirective = "default"
+
+			var directive []string
+			rules.ForEach(func(_, value gjson.Result) bool {
+				directive = append(directive, value.String())
+				return true
+			})
+			config.directivesMap["default"] = directive
+		}
 	}
 
 	return config, nil
