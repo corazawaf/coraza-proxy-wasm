@@ -33,7 +33,6 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 	}
 
 	jsonData := gjson.ParseBytes(data)
-
 	config.directivesMap = make(DirectivesMap)
 	jsonData.Get("directives_map").ForEach(func(key, value gjson.Result) bool {
 		directiveName := key.String()
