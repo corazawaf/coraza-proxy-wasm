@@ -188,6 +188,42 @@ func TestParsePluginConfiguration(t *testing.T) {
 			`,
 			expectErr: errors.New("directive map not found for authority mydomain2.com: \"custom-03\""),
 		},
+		{
+			name: "backward compatibility with rules",
+			config: `
+			{ 
+				"rules": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""]
+			}
+			`,
+			expectConfig: pluginConfiguration{
+				directivesMap: DirectivesMap{
+					"default": []string{"SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
+				},
+				defaultDirective:       "default",
+				metricLabels:           map[string]string{},
+				perAuthorityDirectives: map[string]string{},
+			},
+		},
+		{
+			name: "prefer directives instead of rules",
+			config: `
+			{ 
+				"rules": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /rules\" \"id:101,phase:1,t:lowercase,deny\""],
+				"directives_map": {
+					"foo": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /directives\" \"id:101,phase:1,t:lowercase,deny\""]
+				},
+				"default_directive": "foo"
+			}
+			`,
+			expectConfig: pluginConfiguration{
+				directivesMap: DirectivesMap{
+					"foo": []string{"SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /directives\" \"id:101,phase:1,t:lowercase,deny\""},
+				},
+				defaultDirective:       "foo",
+				metricLabels:           map[string]string{},
+				perAuthorityDirectives: map[string]string{},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
