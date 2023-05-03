@@ -137,38 +137,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Cache WASM filter
-        # Cached only on tag creation
-        if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-        id: cache-wasm-filter
-        uses: actions/cache@v3
-        with:
-          path: build/main.wasm
-          key: ${{ hashFiles('wasmplugin/**') }}
-
-  # Triggered only on tag creation
-  release:
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-    needs: build
-    name: Release
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-
-      - uses: actions/cache/restore@v3
-        id: cache-wasm-filter
-        with:
-          path: build/main.wasm
-          key: ${{ hashFiles('wasmplugin/**') }}
-          fail-on-cache-miss: true
-
       - name: Create draft release
+        # Triggered only on tag creation
+        if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
         run: |
+          sudo apt install zip -y
           ls build
+          mv build/main.wasm build/coraza-proxy-wasm.wasm
           tag="${GITHUB_REF#refs/tags/}"
-          mv build/main.wasm build/coraza-proxy-wasm-${tag}.wasm
+          zip -j build/coraza-proxy-wasm-${tag}.zip build/coraza-proxy-wasm.wasm
           ./.github/workflows/release_notes.sh ${tag} > release-notes.txt
-          gh release create ${tag} --draft --notes-file release-notes.txt --title ${GITHUB_REF#refs/tags/} ./build/coraza-proxy-wasm-${tag}.wasm
+          gh release create ${tag} --draft --notes-file release-notes.txt --title ${GITHUB_REF#refs/tags/} ./build/coraza-proxy-wasm-${tag}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
