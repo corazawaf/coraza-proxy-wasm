@@ -46,7 +46,7 @@ static_resources:
                               },
                               "default_directive": "default",
                               "metric_labels": {},
-                              "per_authority_directives":{}
+                              "per_authority_directives": {}
                             }
                         vm_config:
                           runtime: "envoy.wasm.runtime.v8"

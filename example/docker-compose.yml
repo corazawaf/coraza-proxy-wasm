@@ -26,7 +26,7 @@ services:
       - --log-level
       - info
       - --component-log-level
-      - wasm:trace
+      - wasm:debug
       - --log-format [%Y-%m-%d %T.%f][%t][%l][%n] [%g:%#] %v
       - --log-path
       - /home/envoy/logs/envoy.log
