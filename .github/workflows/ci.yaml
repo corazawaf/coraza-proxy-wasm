@@ -136,3 +136,17 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Create draft release
+        # Triggered only on tag creation
+        if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+        run: |
+          sudo apt install zip -y
+          ls build
+          mv build/main.wasm build/coraza-proxy-wasm.wasm
+          tag="${GITHUB_REF#refs/tags/}"
+          zip -j build/coraza-proxy-wasm-${tag}.zip build/coraza-proxy-wasm.wasm
+          ./.github/workflows/release_notes.sh ${tag} > release-notes.txt
+          gh release create ${tag} --draft --notes-file release-notes.txt --title ${GITHUB_REF#refs/tags/} ./build/coraza-proxy-wasm-${tag}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
