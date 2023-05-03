@@ -246,6 +246,11 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		if !exist {
 			return types.ActionContinue
 		}
+
+		_, ok := ctx.metricLabels["authority"]
+		if ok {
+			delete(ctx.metricLabels, "authority")
+		}
 	} else {
 		ctx.tx, exist = ctx.wafSets.getTx(wafDirectiveName)
 		if !exist {
