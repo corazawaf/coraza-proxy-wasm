@@ -59,11 +59,14 @@ In order to run the coraza-proxy-wasm we need to spin up an envoy configuration 
                         "@type": "type.googleapis.com/google.protobuf.StringValue"
                         value: |
                         {
-                            "rules": [
-                                "SecDebugLogLevel 9",
-                                "SecRuleEngine On",
-                                "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
-                            ]
+                            "directives_map": {
+                                "default": [
+                                    "SecDebugLogLevel 9",
+                                    "SecRuleEngine On",
+                                    "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
+                                ]
+                            },
+                            "default_directive": "default",
                         }
                     vm_config:
                         runtime: "envoy.wasm.runtime.v8"
@@ -84,7 +87,14 @@ configuration:
     "@type": "type.googleapis.com/google.protobuf.StringValue"
     value: |
     {
-        "rules": [ "SecDebugLogLevel 9", "SecRuleEngine On", "Include @owasp_crs/*.conf" ]
+        "directives_map": {
+            "default": [
+                "SecDebugLogLevel 9",
+                "SecRuleEngine On",
+                "Include @owasp_crs/*.conf"
+            ]
+        },
+        "default_directive": "default",
     }
 ```
 
@@ -95,7 +105,14 @@ configuration:
     "@type": "type.googleapis.com/google.protobuf.StringValue"
     value: |
     {
-        "rules": [ "SecDebugLogLevel 9", "SecRuleEngine On", "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf" ]
+        "directives_map": {
+            "default": [
+                "SecDebugLogLevel 9",
+                "SecRuleEngine On",
+                "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf"
+            ]
+        },
+        "default_directive": "default",
     }
 ```
 
