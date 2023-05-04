@@ -210,9 +210,12 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	if err == nil {
 		if waf, err := ctx.perAuthorityWAFs.getWAF(authority); err == nil {
 			ctx.tx = waf.NewTransaction()
+			ctx.logger = ctx.tx.DebugLogger().With(debuglog.Uint("context_id", uint(ctx.contextID)), debuglog.Str("authority", authority))
+
 			// CRS rules tend to expect Host even with HTTP/2
 			ctx.tx.AddRequestHeader("Host", authority)
 			ctx.tx.SetServerName(parseServerName(ctx.logger, authority))
+
 			ctx.metricLabelsKV = append(ctx.metricLabelsKV, "authority", authority)
 		} else {
 			ctx.tx.DebugLogger().Warn().Str("authority", authority).Msg("Couldn't resolve the WAF from authority")
@@ -222,8 +225,6 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		ctx.tx.DebugLogger().Warn().Err(err).Msg("Couldn't get the :authority pseudo-header")
 		return types.ActionContinue
 	}
-
-	ctx.logger = ctx.tx.DebugLogger().With(debuglog.Uint("context_id", uint(ctx.contextID)), debuglog.Str("authority", authority))
 
 	tx := ctx.tx
 
