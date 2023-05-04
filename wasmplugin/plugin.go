@@ -123,7 +123,11 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 			return types.OnPluginStartStatusFailed
 		}
 
-		perAuthorityWAFs.put(name, waf)
+		err = perAuthorityWAFs.put(name, waf)
+		if err != nil {
+			proxywasm.LogCriticalf("Failed to register authority WAF: %v", err)
+			return types.OnPluginStartStatusFailed
+		}
 	}
 
 	if len(config.defaultDirectives) > 0 {
