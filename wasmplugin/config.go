@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tidwall/gjson"
 )
 
@@ -56,7 +57,7 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 		return true
 	})
 
-	defaultDirective := jsonData.Get("default_directive")
+	defaultDirective := jsonData.Get("default_directives")
 	if defaultDirective.Exists() {
 		defaultDirectiveName := defaultDirective.String()
 		if _, ok := config.directivesMap[defaultDirectiveName]; !ok {
@@ -82,6 +83,8 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 		rules := jsonData.Get("rules")
 
 		if rules.Exists() {
+			proxywasm.LogInfo("Defaulting to deprecated 'rules' field")
+
 			config.defaultDirectives = "default"
 
 			var directive []string

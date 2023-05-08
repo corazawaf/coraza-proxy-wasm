@@ -47,7 +47,7 @@ func newWAFMap(capacity int) wafMap {
 
 func (m *wafMap) put(key string, waf coraza.WAF) error {
 	if len(key) == 0 {
-		return errors.New("empty key")
+		return errors.New("empty WAF key")
 	}
 
 	m.kv[key] = waf
@@ -56,7 +56,7 @@ func (m *wafMap) put(key string, waf coraza.WAF) error {
 
 func (m *wafMap) setDefaultKey(key string) error {
 	if len(key) == 0 {
-		return errors.New("empty default key")
+		return errors.New("empty default WAF key")
 	}
 
 	if _, ok := m.kv[key]; ok {
@@ -64,23 +64,19 @@ func (m *wafMap) setDefaultKey(key string) error {
 		return nil
 	}
 
-	return fmt.Errorf("unknown key %q", key)
+	return fmt.Errorf("unknown default WAF key %q", key)
 }
 
-func (m *wafMap) getWAF(key string) (coraza.WAF, error) {
+func (m *wafMap) getWAFOrDefault(key string) (coraza.WAF, bool, error) {
 	if w, ok := m.kv[key]; ok {
-		return w, nil
+		return w, false, nil
 	}
 
-	return m.getDefaultWAF()
-}
-
-func (m *wafMap) getDefaultWAF() (coraza.WAF, error) {
 	if len(m.defaultKey) == 0 {
-		return nil, errors.New("no default key")
+		return nil, false, errors.New("no default WAF key")
 	}
 
-	return m.kv[m.defaultKey], nil
+	return m.kv[m.defaultKey], true, nil
 }
 
 type corazaPlugin struct {
@@ -95,7 +91,7 @@ type corazaPlugin struct {
 func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
 	data, err := proxywasm.GetPluginConfiguration()
 	if err != nil && err != types.ErrorStatusNotFound {
-		proxywasm.LogCriticalf("error reading plugin configuration: %v", err)
+		proxywasm.LogCriticalf("Failed to read plugin configuration: %v", err)
 		return types.OnPluginStartStatusFailed
 	}
 	config, err := parsePluginConfiguration(data)
@@ -119,7 +115,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 		waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(directives, "\n")))
 		if err != nil {
-			proxywasm.LogCriticalf("Failed to parse directive: %v", err)
+			proxywasm.LogCriticalf("Failed to parse directives: %v", err)
 			return types.OnPluginStartStatusFailed
 		}
 
@@ -208,21 +204,28 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	authority, err := proxywasm.GetHttpRequestHeader(":authority")
 	if err == nil {
-		if waf, err := ctx.perAuthorityWAFs.getWAF(authority); err == nil {
+		if waf, isDefault, err := ctx.perAuthorityWAFs.getWAFOrDefault(authority); err != nil {
 			ctx.tx = waf.NewTransaction()
-			ctx.logger = ctx.tx.DebugLogger().With(debuglog.Uint("context_id", uint(ctx.contextID)), debuglog.Str("authority", authority))
+
+			logFields := []debuglog.ContextField{debuglog.Uint("context_id", uint(ctx.contextID))}
+			if !isDefault {
+				logFields = append(logFields, debuglog.Str("authority", authority))
+			}
+			ctx.logger = ctx.tx.DebugLogger().With(logFields...)
 
 			// CRS rules tend to expect Host even with HTTP/2
 			ctx.tx.AddRequestHeader("Host", authority)
 			ctx.tx.SetServerName(parseServerName(ctx.logger, authority))
 
-			ctx.metricLabelsKV = append(ctx.metricLabelsKV, "authority", authority)
+			if !isDefault {
+				ctx.metricLabelsKV = append(ctx.metricLabelsKV, "authority", authority)
+			}
 		} else {
-			ctx.tx.DebugLogger().Warn().Str("authority", authority).Msg("Couldn't resolve the WAF from authority")
+			proxywasm.LogWarnf("Failed to resolve WAF for authority %q: %v", authority, err)
 			return types.ActionContinue
 		}
 	} else {
-		ctx.tx.DebugLogger().Warn().Err(err).Msg("Couldn't get the :authority pseudo-header")
+		proxywasm.LogWarnf("Failed to get the :authority pseudo-header: %v", err)
 		return types.ActionContinue
 	}
 
@@ -710,7 +713,6 @@ func parseServerName(logger debuglog.Logger, authority string) string {
 	if err != nil {
 		// missing port or bad format
 		logger.Debug().
-			Str("authority", authority).
 			Err(err).
 			Msg("Failed to parse server name from authority")
 		host = authority
