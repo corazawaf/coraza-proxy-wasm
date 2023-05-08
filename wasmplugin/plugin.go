@@ -94,7 +94,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		proxywasm.LogCriticalf("Failed to read plugin configuration: %v", err)
 		return types.OnPluginStartStatusFailed
 	}
-	config, err := parsePluginConfiguration(data)
+	config, err := parsePluginConfiguration(data, proxywasm.LogInfo)
 	if err != nil {
 		proxywasm.LogCriticalf("Failed to parse plugin configuration: %v", err)
 		return types.OnPluginStartStatusFailed
@@ -204,7 +204,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	authority, err := proxywasm.GetHttpRequestHeader(":authority")
 	if err == nil {
-		if waf, isDefault, err := ctx.perAuthorityWAFs.getWAFOrDefault(authority); err != nil {
+		if waf, isDefault, resolveWAFErr := ctx.perAuthorityWAFs.getWAFOrDefault(authority); resolveWAFErr == nil {
 			ctx.tx = waf.NewTransaction()
 
 			logFields := []debuglog.ContextField{debuglog.Uint("context_id", uint(ctx.contextID))}
@@ -221,7 +221,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 				ctx.metricLabelsKV = append(ctx.metricLabelsKV, "authority", authority)
 			}
 		} else {
-			proxywasm.LogWarnf("Failed to resolve WAF for authority %q: %v", authority, err)
+			proxywasm.LogWarnf("Failed to resolve WAF for authority %q: %v", authority, resolveWAFErr)
 			return types.ActionContinue
 		}
 	} else {
@@ -234,10 +234,10 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	// This currently relies on Envoy's behavior of mapping all requests to HTTP/2 semantics
 	// and its request properties, but they may not be true of other proxies implementing
 	// proxy-wasm.
-
 	if tx.IsRuleEngineOff() {
 		return types.ActionContinue
 	}
+
 	// OnHttpRequestHeaders does not terminate if IP/Port retrieve goes wrong
 	srcIP, srcPort := retrieveAddressInfo(ctx.logger, "source")
 	dstIP, dstPort := retrieveAddressInfo(ctx.logger, "destination")

@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tidwall/gjson"
 )
 
@@ -21,7 +20,7 @@ type pluginConfiguration struct {
 
 type DirectivesMap map[string][]string
 
-func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
+func parsePluginConfiguration(data []byte, infoLogger func(string)) (pluginConfiguration, error) {
 	config := pluginConfiguration{}
 
 	data = bytes.TrimSpace(data)
@@ -57,14 +56,14 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 		return true
 	})
 
-	defaultDirective := jsonData.Get("default_directives")
-	if defaultDirective.Exists() {
-		defaultDirectiveName := defaultDirective.String()
-		if _, ok := config.directivesMap[defaultDirectiveName]; !ok {
-			return config, fmt.Errorf("directive map not found for default directive: %q", defaultDirectiveName)
+	defaultDirectives := jsonData.Get("default_directives")
+	if defaultDirectives.Exists() {
+		defaultDirectivesName := defaultDirectives.String()
+		if _, ok := config.directivesMap[defaultDirectivesName]; !ok {
+			return config, fmt.Errorf("directive map not found for default directive: %q", defaultDirectivesName)
 		}
 
-		config.defaultDirectives = defaultDirectiveName
+		config.defaultDirectives = defaultDirectivesName
 	}
 
 	config.perAuthorityDirectives = make(map[string]string)
@@ -83,7 +82,7 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 		rules := jsonData.Get("rules")
 
 		if rules.Exists() {
-			proxywasm.LogInfo("Defaulting to deprecated 'rules' field")
+			infoLogger("Defaulting to deprecated 'rules' field")
 
 			config.defaultDirectives = "default"
 

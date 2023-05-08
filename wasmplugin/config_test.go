@@ -230,7 +230,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			cfg, err := parsePluginConfiguration([]byte(testCase.config))
+			cfg, err := parsePluginConfiguration([]byte(testCase.config), func(string) {})
 			assert.Equal(t, testCase.expectErr, err)
 
 			if testCase.expectErr == nil {
