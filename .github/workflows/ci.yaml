@@ -29,6 +29,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
+        with:  # Ensure release_notes.sh can see prior commits
+          fetch-depth: 0
 
       - name: Install Go
         uses: actions/setup-go@v3
@@ -141,7 +143,6 @@ jobs:
         # Triggered only on tag creation
         if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
         run: |
-          sudo apt install zip -y
           ls build
           mv build/main.wasm build/coraza-proxy-wasm.wasm
           tag="${GITHUB_REF#refs/tags/}"
