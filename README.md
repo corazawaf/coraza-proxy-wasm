@@ -91,6 +91,7 @@ configuration:
             "default": [
                 "SecDebugLogLevel 9",
                 "SecRuleEngine On",
+                "Include @crs-setup-demo-conf",
                 "Include @owasp_crs/*.conf"
             ]
         },
@@ -109,6 +110,7 @@ configuration:
             "default": [
                 "SecDebugLogLevel 9",
                 "SecRuleEngine On",
+                "Include @crs-setup-demo-conf",
                 "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf"
             ]
         },
