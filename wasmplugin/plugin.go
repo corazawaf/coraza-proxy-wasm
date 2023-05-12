@@ -525,18 +525,19 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	if !tx.IsResponseBodyAccessible() {
 		ctx.logger.Debug().Msg("Skipping response body inspection, SecResponseBodyAccess is off.")
 		// ProcessResponseBody is performed for phase 4 rules, checking already populated variables
-		ctx.processedResponseBody = true
-		interruption, err := tx.ProcessResponseBody()
-		if err != nil {
-			ctx.logger.Error().Err(err).Msg("Failed to process response body")
-			return types.ActionContinue
-		}
-
-		if interruption != nil {
-			// Proxy-wasm can not anymore deny the response. The best interruption is emptying the body
-			// Coraza Multiphase evaluation will help here avoiding late interruptions
-			ctx.bodyReadIndex = bodySize // hacky: bodyReadIndex stores the body size that has to be replaced
-			return ctx.handleInterruption(interruptionPhaseHttpResponseBody, interruption)
+		if !ctx.processedResponseBody {
+			interruption, err := tx.ProcessResponseBody()
+			if err != nil {
+				ctx.logger.Error().Err(err).Msg("Failed to process response body")
+				return types.ActionContinue
+			}
+			ctx.processedResponseBody = true
+			if interruption != nil {
+				// Proxy-wasm can not anymore deny the response. The best interruption is emptying the body
+				// Coraza Multiphase evaluation will help here avoiding late interruptions
+				ctx.bodyReadIndex = bodySize // hacky: bodyReadIndex stores the body size that has to be replaced
+				return ctx.handleInterruption(interruptionPhaseHttpResponseBody, interruption)
+			}
 		}
 		return types.ActionContinue
 	}
