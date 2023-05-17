@@ -26,6 +26,7 @@ Targets:
 
 ### Building the filter
 
+After having installed [TinyGo](https://tinygo.org/getting-started/install/) (The required version can be found looking at the [`tinygoMinorVersion`](./magefiles/magefile.go) variable), run:
 ```bash
 go run mage.go build
 ```
