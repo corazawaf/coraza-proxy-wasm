@@ -165,7 +165,7 @@ func Build() error {
 		return err
 	}
 
-	buildTags := []string{"custommalloc", "no_fs_access"}
+	buildTags := []string{"custommalloc", "no_fs_access", "coraza.rule.multiphase_evaluation"}
 	if os.Getenv("TIMING") == "true" {
 		buildTags = append(buildTags, "timing", "proxywasm_timing")
 	}
