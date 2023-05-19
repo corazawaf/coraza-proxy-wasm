@@ -14,13 +14,13 @@ import (
 type pluginConfiguration struct {
 	directivesMap          DirectivesMap
 	metricLabels           map[string]string
-	defaultDirective       string
+	defaultDirectives      string
 	perAuthorityDirectives map[string]string
 }
 
 type DirectivesMap map[string][]string
 
-func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
+func parsePluginConfiguration(data []byte, infoLogger func(string)) (pluginConfiguration, error) {
 	config := pluginConfiguration{}
 
 	data = bytes.TrimSpace(data)
@@ -56,14 +56,14 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 		return true
 	})
 
-	defaultDirective := jsonData.Get("default_directive")
-	if defaultDirective.Exists() {
-		defaultDirectiveName := defaultDirective.String()
-		if _, ok := config.directivesMap[defaultDirectiveName]; !ok {
-			return config, fmt.Errorf("directive map not found for default directive: %q", defaultDirectiveName)
+	defaultDirectives := jsonData.Get("default_directives")
+	if defaultDirectives.Exists() {
+		defaultDirectivesName := defaultDirectives.String()
+		if _, ok := config.directivesMap[defaultDirectivesName]; !ok {
+			return config, fmt.Errorf("directive map not found for default directive: %q", defaultDirectivesName)
 		}
 
-		config.defaultDirective = defaultDirectiveName
+		config.defaultDirectives = defaultDirectivesName
 	}
 
 	config.perAuthorityDirectives = make(map[string]string)
@@ -82,7 +82,9 @@ func parsePluginConfiguration(data []byte) (pluginConfiguration, error) {
 		rules := jsonData.Get("rules")
 
 		if rules.Exists() {
-			config.defaultDirective = "default"
+			infoLogger("Defaulting to deprecated 'rules' field")
+
+			config.defaultDirectives = "default"
 
 			var directive []string
 			rules.ForEach(func(_, value gjson.Result) bool {

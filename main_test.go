@@ -423,9 +423,9 @@ func TestLifecycle(t *testing.T) {
 			tt := tc
 
 			t.Run(tt.name, func(t *testing.T) {
-				conf := `{"directives_map": {"default": []}, "default_directive": "default"}`
+				conf := `{"directives_map": {"default": []}, "default_directives": "default"}`
 				if inlineRules := strings.TrimSpace(tt.inlineRules); inlineRules != "" {
-					conf = fmt.Sprintf(`{"directives_map": {"default": ["%s"]}, "default_directive": "default"}`, inlineRules)
+					conf = fmt.Sprintf(`{"directives_map": {"default": ["%s"]}, "default_directives": "default"}`, inlineRules)
 				}
 				opt := proxytest.
 					NewEmulatorOption().
@@ -589,7 +589,7 @@ func TestBadRequest(t *testing.T) {
 		for _, tc := range tests {
 			tt := tc
 			t.Run(tt.name, func(t *testing.T) {
-				conf := `{"directives_map": {"default": []}, "default_directive": "default"}`
+				conf := `{"directives_map": {"default": []}, "default_directives": "default"}`
 				opt := proxytest.
 					NewEmulatorOption().
 					WithVMContext(vm).
@@ -638,7 +638,7 @@ func TestBadResponse(t *testing.T) {
 		for _, tc := range tests {
 			tt := tc
 			t.Run(tt.name, func(t *testing.T) {
-				conf := `{"directives_map": {"default": []}, "default_directive": "default"}`
+				conf := `{"directives_map": {"default": []}, "default_directives": "default"}`
 				opt := proxytest.
 					NewEmulatorOption().
 					WithVMContext(vm).
@@ -668,7 +668,7 @@ func TestEmptyBody(t *testing.T) {
 		opt := proxytest.
 			NewEmulatorOption().
 			WithVMContext(vm).
-			WithPluginConfiguration([]byte(`{"directives_map": {"default": [ "SecRequestBodyAccess On", "SecResponseBodyAccess On" ]}, "default_directive": "default"}`))
+			WithPluginConfiguration([]byte(`{"directives_map": {"default": [ "SecRequestBodyAccess On", "SecResponseBodyAccess On" ]}, "default_directives": "default"}`))
 
 		host, reset := proxytest.NewHostEmulator(opt)
 		defer reset()
@@ -763,7 +763,7 @@ func TestLogError(t *testing.T) {
 		for _, tc := range tests {
 			tt := tc
 			t.Run(fmt.Sprintf("severity %d", tt.severity), func(t *testing.T) {
-				conf := fmt.Sprintf(`{"directives_map": {"default": ["SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:%d,msg:'%%{MATCHED_VAR}',pass,t:none\""]}, "default_directive": "default"}`, tt.severity)
+				conf := fmt.Sprintf(`{"directives_map": {"default": ["SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:%d,msg:'%%{MATCHED_VAR}',pass,t:none\""]}, "default_directives": "default"}`, tt.severity)
 
 				opt := proxytest.
 					NewEmulatorOption().
@@ -791,7 +791,7 @@ func TestParseCRS(t *testing.T) {
 		opt := proxytest.
 			NewEmulatorOption().
 			WithVMContext(vm).
-			WithPluginConfiguration([]byte(`{"directives_map": {"default": [ "Include @ftw-conf", "Include @recommended-conf", "Include @crs-setup-conf", "Include @owasp_crs/*.conf" ]}, "default_directive": "default"}`))
+			WithPluginConfiguration([]byte(`{"directives_map": {"default": [ "Include @ftw-conf", "Include @recommended-conf", "Include @crs-setup-conf", "Include @owasp_crs/*.conf" ]}, "default_directives": "default"}`))
 
 		host, reset := proxytest.NewHostEmulator(opt)
 		defer reset()
@@ -873,7 +873,7 @@ func TestRetrieveAddressInfo(t *testing.T) {
 
 				conf := `{}`
 				if inlineRules := strings.TrimSpace(inlineRules); inlineRules != "" {
-					conf = fmt.Sprintf(`{"directives_map": {"default": ["%s"]}, "default_directive": "default"}`, inlineRules)
+					conf = fmt.Sprintf(`{"directives_map": {"default": ["%s"]}, "default_directives": "default"}`, inlineRules)
 				}
 				t.Run(tt.name, func(t *testing.T) {
 					opt := proxytest.
@@ -936,7 +936,7 @@ func TestParseServerName(t *testing.T) {
 
 			conf := `{}`
 			if inlineRules := strings.TrimSpace(inlineRules); inlineRules != "" {
-				conf = fmt.Sprintf(`{"directives_map": {"default": ["%s"]}, "default_directive": "default"}`, inlineRules)
+				conf = fmt.Sprintf(`{"directives_map": {"default": ["%s"]}, "default_directives": "default"}`, inlineRules)
 			}
 			t.Run(name, func(t *testing.T) {
 				opt := proxytest.

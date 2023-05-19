@@ -75,7 +75,7 @@ static_resources:
                                     "SecRule REQUEST_URI \"@streq /example\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
                                   ]
                               },
-                              "default_directive": "rs1",
+                              "default_directives": "rs1",
                               "metric_labels": {
                                 "owner": "coraza",
                                 "identifier": "global"

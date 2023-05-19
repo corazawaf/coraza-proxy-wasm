@@ -72,7 +72,7 @@ In order to run the coraza-proxy-wasm we need to spin up an envoy configuration 
                                     "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
                                 ]
                             },
-                            "default_directive": "default",
+                            "default_directives": "default",
                         }
                     vm_config:
                         runtime: "envoy.wasm.runtime.v8"
@@ -101,7 +101,7 @@ configuration:
                 "Include @owasp_crs/*.conf"
             ]
         },
-        "default_directive": "default",
+        "default_directives": "default",
     }
 ```
 
@@ -120,7 +120,7 @@ configuration:
                 "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf"
             ]
         },
-        "default_directive": "default",
+        "default_directives": "default",
     }
 ```
 

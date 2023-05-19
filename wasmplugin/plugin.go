@@ -34,62 +34,74 @@ func (*vmContext) NewPluginContext(contextID uint32) types.PluginContext {
 	return &corazaPlugin{}
 }
 
+type wafMap struct {
+	kv         map[string]coraza.WAF
+	defaultKey string
+}
+
+func newWAFMap(capacity int) wafMap {
+	return wafMap{
+		kv: make(map[string]coraza.WAF, capacity),
+	}
+}
+
+func (m *wafMap) put(key string, waf coraza.WAF) error {
+	if len(key) == 0 {
+		return errors.New("empty WAF key")
+	}
+
+	m.kv[key] = waf
+	return nil
+}
+
+func (m *wafMap) setDefaultKey(key string) error {
+	if len(key) == 0 {
+		return errors.New("empty default WAF key")
+	}
+
+	if _, ok := m.kv[key]; ok {
+		m.defaultKey = key
+		return nil
+	}
+
+	return fmt.Errorf("unknown default WAF key %q", key)
+}
+
+func (m *wafMap) getWAFOrDefault(key string) (coraza.WAF, bool, error) {
+	if w, ok := m.kv[key]; ok {
+		return w, false, nil
+	}
+
+	if len(m.defaultKey) == 0 {
+		return nil, false, errors.New("no default WAF key")
+	}
+
+	return m.kv[m.defaultKey], true, nil
+}
+
 type corazaPlugin struct {
 	// Embed the default plugin context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultPluginContext
-	wafSets wafSets
-
-	wafDefaultEnabled   bool
-	wafDefaultDirective string
-
-	perAuthorityWafSets perAuthorityWafSets
-	metricLabels        map[string]string
-
-	metrics *wafMetrics
-}
-
-type wafSets []wafSet
-
-func (wfs wafSets) newWAFSetsHttp(contextID uint32) wafSetsHttp {
-	var wafSetsHttp wafSetsHttp
-
-	for _, wafSet := range wfs {
-		var wafSetHttp wafSetHttp
-		wafSetHttp.tx = wafSet.waf.NewTransaction()
-		wafSetHttp.logger = wafSet.waf.NewTransaction().
-			DebugLogger().
-			With(debuglog.Uint("context_id", uint(contextID)))
-		wafSetHttp.name = wafSet.name
-
-		wafSetsHttp = append(wafSetsHttp, wafSetHttp)
-	}
-
-	return wafSetsHttp
-}
-
-type wafSet struct {
-	waf  coraza.WAF
-	name string
+	perAuthorityWAFs wafMap
+	metricLabelsKV   []string
+	metrics          *wafMetrics
 }
 
 func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
 	data, err := proxywasm.GetPluginConfiguration()
 	if err != nil && err != types.ErrorStatusNotFound {
-		proxywasm.LogCriticalf("error reading plugin configuration: %v", err)
+		proxywasm.LogCriticalf("Failed to read plugin configuration: %v", err)
 		return types.OnPluginStartStatusFailed
 	}
-	config, err := parsePluginConfiguration(data)
+	config, err := parsePluginConfiguration(data, proxywasm.LogInfo)
 	if err != nil {
 		proxywasm.LogCriticalf("Failed to parse plugin configuration: %v", err)
 		return types.OnPluginStartStatusFailed
 	}
 
-	var wafSets wafSets
-	for name, directive := range config.directivesMap {
-		var wafset wafSet
-		wafset.name = name
-
+	perAuthorityWAFs := newWAFMap(len(config.directivesMap))
+	for name, directives := range config.directivesMap {
 		// First we initialize our waf and our seclang parser
 		conf := coraza.NewWAFConfig().
 			WithErrorCallback(logError).
@@ -101,24 +113,30 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 			// buffering request body to files anyways.
 			WithRootFS(root)
 
-		waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(directive, "\n")))
+		waf, err := coraza.NewWAF(conf.WithDirectives(strings.Join(directives, "\n")))
 		if err != nil {
-			proxywasm.LogCriticalf("Failed to parse directive: %v", err)
+			proxywasm.LogCriticalf("Failed to parse directives: %v", err)
 			return types.OnPluginStartStatusFailed
 		}
 
-		wafset.waf = waf
-		wafSets = append(wafSets, wafset)
+		err = perAuthorityWAFs.put(name, waf)
+		if err != nil {
+			proxywasm.LogCriticalf("Failed to register authority WAF: %v", err)
+			return types.OnPluginStartStatusFailed
+		}
 	}
 
-	if len(config.defaultDirective) != 0 {
-		ctx.wafDefaultEnabled = true
-		ctx.wafDefaultDirective = config.defaultDirective
+	if len(config.defaultDirectives) > 0 {
+		if err := perAuthorityWAFs.setDefaultKey(config.defaultDirectives); err != nil {
+			proxywasm.LogCriticalf("Failed to set the default directives: %v", err)
+			return types.OnPluginStartStatusFailed
+		}
 	}
 
-	ctx.wafSets = wafSets
-	ctx.perAuthorityWafSets = config.perAuthorityDirectives
-	ctx.metricLabels = config.metricLabels
+	ctx.perAuthorityWAFs = perAuthorityWAFs
+	for k, v := range config.metricLabels {
+		ctx.metricLabelsKV = append(ctx.metricLabelsKV, k, v)
+	}
 	ctx.metrics = NewWAFMetrics()
 
 	return types.OnPluginStartStatusOK
@@ -126,13 +144,10 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 	return &httpContext{
-		contextID:           contextID,
-		metrics:             ctx.metrics,
-		metricLabels:        ctx.metricLabels,
-		wafSets:             ctx.wafSets.newWAFSetsHttp(contextID),
-		wafDefaultEnabled:   ctx.wafDefaultEnabled,
-		wafDefaultDirective: ctx.wafDefaultDirective,
-		perAuthorityWafSets: ctx.perAuthorityWafSets,
+		contextID:        contextID,
+		metrics:          ctx.metrics,
+		metricLabelsKV:   ctx.metricLabelsKV,
+		perAuthorityWAFs: ctx.perAuthorityWAFs,
 	}
 }
 
@@ -170,11 +185,8 @@ type httpContext struct {
 	// so that we don't need to reimplement all the methods.
 	types.DefaultHttpContext
 	contextID             uint32
+	perAuthorityWAFs      wafMap
 	tx                    ctypes.Transaction
-	wafSets               wafSetsHttp
-	wafDefaultEnabled     bool
-	wafDefaultDirective   string
-	perAuthorityWafSets   perAuthorityWafSets
 	httpProtocol          string
 	processedRequestBody  bool
 	processedResponseBody bool
@@ -182,47 +194,7 @@ type httpContext struct {
 	metrics               *wafMetrics
 	interruptedAt         interruptionPhase
 	logger                debuglog.Logger
-	metricLabels          map[string]string
-}
-
-type perAuthorityWafSets map[string]string
-
-func (aws perAuthorityWafSets) getdirectivesName(authority string) (string, bool) {
-	for key, value := range aws {
-		if key == authority {
-			return value, true
-		}
-	}
-
-	return "", false
-}
-
-type wafSetsHttp []wafSetHttp
-
-func (wsh wafSetsHttp) getTx(name string) (ctypes.Transaction, bool) {
-	for _, wafSet := range wsh {
-		if wafSet.name == name {
-			return wafSet.tx, true
-		}
-	}
-
-	return nil, false
-}
-
-func (wsh wafSetsHttp) getlogger(name string) (debuglog.Logger, bool) {
-	for _, wafSet := range wsh {
-		if wafSet.name == name {
-			return wafSet.logger, true
-		}
-	}
-
-	return nil, false
-}
-
-type wafSetHttp struct {
-	tx     ctypes.Transaction
-	logger debuglog.Logger
-	name   string
+	metricLabelsKV        []string
 }
 
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
@@ -231,33 +203,30 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	ctx.metrics.CountTX()
 
 	authority, err := proxywasm.GetHttpRequestHeader(":authority")
-	if err != nil {
-		return types.ActionContinue
-	}
+	if err == nil {
+		if waf, isDefault, resolveWAFErr := ctx.perAuthorityWAFs.getWAFOrDefault(authority); resolveWAFErr == nil {
+			ctx.tx = waf.NewTransaction()
 
-	wafDirectiveName, exist := ctx.perAuthorityWafSets.getdirectivesName(authority)
-	if !exist && ctx.wafDefaultEnabled {
-		ctx.tx, exist = ctx.wafSets.getTx(ctx.wafDefaultDirective)
-		if !exist {
-			return types.ActionContinue
-		}
+			logFields := []debuglog.ContextField{debuglog.Uint("context_id", uint(ctx.contextID))}
+			if !isDefault {
+				logFields = append(logFields, debuglog.Str("authority", authority))
+			}
+			ctx.logger = ctx.tx.DebugLogger().With(logFields...)
 
-		ctx.logger, exist = ctx.wafSets.getlogger(ctx.wafDefaultDirective)
-		if !exist {
+			// CRS rules tend to expect Host even with HTTP/2
+			ctx.tx.AddRequestHeader("Host", authority)
+			ctx.tx.SetServerName(parseServerName(ctx.logger, authority))
+
+			if !isDefault {
+				ctx.metricLabelsKV = append(ctx.metricLabelsKV, "authority", authority)
+			}
+		} else {
+			proxywasm.LogWarnf("Failed to resolve WAF for authority %q: %v", authority, resolveWAFErr)
 			return types.ActionContinue
 		}
 	} else {
-		ctx.tx, exist = ctx.wafSets.getTx(wafDirectiveName)
-		if !exist {
-			return types.ActionContinue
-		}
-
-		ctx.logger, exist = ctx.wafSets.getlogger(wafDirectiveName)
-		if !exist {
-			return types.ActionContinue
-		}
-
-		ctx.metricLabels["authority"] = authority
+		proxywasm.LogWarnf("Failed to get the :authority pseudo-header: %v", err)
+		return types.ActionContinue
 	}
 
 	tx := ctx.tx
@@ -265,10 +234,10 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	// This currently relies on Envoy's behavior of mapping all requests to HTTP/2 semantics
 	// and its request properties, but they may not be true of other proxies implementing
 	// proxy-wasm.
-
 	if tx.IsRuleEngineOff() {
 		return types.ActionContinue
 	}
+
 	// OnHttpRequestHeaders does not terminate if IP/Port retrieve goes wrong
 	srcIP, srcPort := retrieveAddressInfo(ctx.logger, "source")
 	dstIP, dstPort := retrieveAddressInfo(ctx.logger, "destination")
@@ -312,13 +281,6 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	for _, h := range hs {
 		tx.AddRequestHeader(h[0], h[1])
-	}
-
-	// CRS rules tend to expect Host even with HTTP/2
-	authority, err = proxywasm.GetHttpRequestHeader(":authority")
-	if err == nil {
-		tx.AddRequestHeader("Host", authority)
-		tx.SetServerName(parseServerName(ctx.logger, authority))
 	}
 
 	interruption := tx.ProcessRequestHeaders()
@@ -626,7 +588,7 @@ func (ctx *httpContext) handleInterruption(phase interruptionPhase, interruption
 		panic("Interruption already handled")
 	}
 
-	ctx.metrics.CountTXInterruption(phase.String(), interruption.RuleID, ctx.metricLabels)
+	ctx.metrics.CountTXInterruption(phase.String(), interruption.RuleID, ctx.metricLabelsKV)
 
 	ctx.logger.Info().
 		Str("action", interruption.Action).
@@ -751,7 +713,6 @@ func parseServerName(logger debuglog.Logger, authority string) string {
 	if err != nil {
 		// missing port or bad format
 		logger.Debug().
-			Str("authority", authority).
 			Err(err).
 			Msg("Failed to parse server name from authority")
 		host = authority

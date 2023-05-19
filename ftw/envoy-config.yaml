@@ -44,7 +44,7 @@ static_resources:
                                     "Include @owasp_crs/*.conf"
                                   ]
                               },
-                              "default_directive": "default",
+                              "default_directives": "default",
                               "metric_labels": {},
                               "per_authority_directives": {}
                             }

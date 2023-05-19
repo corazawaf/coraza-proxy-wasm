@@ -7,7 +7,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/corazawaf/coraza/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParsePluginConfiguration(t *testing.T) {
@@ -26,7 +28,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 			expectConfig: pluginConfiguration{
 				directivesMap:          DirectivesMap{},
 				metricLabels:           map[string]string{},
-				defaultDirective:       "",
+				defaultDirectives:      "",
 				perAuthorityDirectives: map[string]string{},
 			},
 		},
@@ -42,7 +44,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 				"directives_map": {
 					"default": ["SecRuleEngine On"]
 				},
-				"default_directive": "default"
+				"default_directives": "default"
 			}
 			`,
 			expectConfig: pluginConfiguration{
@@ -50,7 +52,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 					"default": []string{"SecRuleEngine On"},
 				},
 				metricLabels:           map[string]string{},
-				defaultDirective:       "default",
+				defaultDirectives:      "default",
 				perAuthorityDirectives: map[string]string{},
 			},
 		},
@@ -61,7 +63,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 				"directives_map": {
 					"default": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""]
 				},
-				"default_directive": "default"
+				"default_directives": "default"
 			}
 			`,
 			expectConfig: pluginConfiguration{
@@ -69,7 +71,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 					"default": []string{"SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
 				},
 				metricLabels:           map[string]string{},
-				defaultDirective:       "default",
+				defaultDirectives:      "default",
 				perAuthorityDirectives: map[string]string{},
 			},
 		},
@@ -80,7 +82,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 				"directives_map": {
 					"default": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""]
 				},
-				"default_directive": "default",
+				"default_directives": "default",
 				"metric_labels": {"owner": "coraza","identifier": "global"}
 			}
 			`,
@@ -92,7 +94,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 					"owner":      "coraza",
 					"identifier": "global",
 				},
-				defaultDirective:       "default",
+				defaultDirectives:      "default",
 				perAuthorityDirectives: map[string]string{},
 			},
 		},
@@ -105,7 +107,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 					"custom-01": ["SecRuleEngine On"],
 					"custom-02": ["SecRuleEngine On"]
 				},
-				"default_directive": "default",
+				"default_directives": "default",
 				"metric_labels": {"owner": "coraza","identifier": "global"}
 			}
 			`,
@@ -119,7 +121,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 					"owner":      "coraza",
 					"identifier": "global",
 				},
-				defaultDirective:       "default",
+				defaultDirectives:      "default",
 				perAuthorityDirectives: map[string]string{},
 			},
 		},
@@ -132,7 +134,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 					"custom-01": ["SecRuleEngine On"],
 					"custom-02": ["SecRuleEngine On"]
 				},
-				"default_directive": "default",
+				"default_directives": "default",
 				"metric_labels": {"owner": "coraza","identifier": "global"},
 				"per_authority_directives": {
 					"mydomain.com":"custom-01",
@@ -150,7 +152,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 					"owner":      "coraza",
 					"identifier": "global",
 				},
-				defaultDirective: "default",
+				defaultDirectives: "default",
 				perAuthorityDirectives: map[string]string{
 					"mydomain.com":  "custom-01",
 					"mydomain2.com": "custom-02",
@@ -164,7 +166,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 				"directives_map": {
 					"default": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""]
 				},
-				"default_directive": "foo"
+				"default_directives": "foo"
 			}
 			`,
 			expectErr: errors.New("directive map not found for default directive: \"foo\""),
@@ -178,7 +180,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 					"custom-01": ["SecRuleEngine On"],
 					"custom-02": ["SecRuleEngine On"]
 				},
-				"default_directive": "default",
+				"default_directives": "default",
 				"metric_labels": {"owner": "coraza","identifier": "global"},
 				"per_authority_directives": {
 					"mydomain.com":"custom-01",
@@ -199,7 +201,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 				directivesMap: DirectivesMap{
 					"default": []string{"SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""},
 				},
-				defaultDirective:       "default",
+				defaultDirectives:      "default",
 				metricLabels:           map[string]string{},
 				perAuthorityDirectives: map[string]string{},
 			},
@@ -212,14 +214,14 @@ func TestParsePluginConfiguration(t *testing.T) {
 				"directives_map": {
 					"foo": ["SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /directives\" \"id:101,phase:1,t:lowercase,deny\""]
 				},
-				"default_directive": "foo"
+				"default_directives": "foo"
 			}
 			`,
 			expectConfig: pluginConfiguration{
 				directivesMap: DirectivesMap{
 					"foo": []string{"SecRuleEngine On", "Include @owasp_crs/*.conf\nSecRule REQUEST_URI \"@streq /directives\" \"id:101,phase:1,t:lowercase,deny\""},
 				},
-				defaultDirective:       "foo",
+				defaultDirectives:      "foo",
 				metricLabels:           map[string]string{},
 				perAuthorityDirectives: map[string]string{},
 			},
@@ -228,15 +230,50 @@ func TestParsePluginConfiguration(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			cfg, err := parsePluginConfiguration([]byte(testCase.config))
+			cfg, err := parsePluginConfiguration([]byte(testCase.config), func(string) {})
 			assert.Equal(t, testCase.expectErr, err)
 
 			if testCase.expectErr == nil {
 				assert.Equal(t, testCase.expectConfig.directivesMap, cfg.directivesMap)
 				assert.Equal(t, testCase.expectConfig.metricLabels, cfg.metricLabels)
-				assert.Equal(t, testCase.expectConfig.defaultDirective, cfg.defaultDirective)
+				assert.Equal(t, testCase.expectConfig.defaultDirectives, cfg.defaultDirectives)
 				assert.Equal(t, testCase.expectConfig.perAuthorityDirectives, cfg.perAuthorityDirectives)
 			}
 		})
 	}
+}
+
+func TestWAFMap(t *testing.T) {
+	w, _ := coraza.NewWAF(coraza.NewWAFConfig())
+
+	wm := newWAFMap(1)
+	err := wm.put("foo", w)
+	require.NoError(t, err)
+
+	t.Run("set unexisting default key", func(t *testing.T) {
+		err = wm.setDefaultKey("bar")
+		require.Error(t, err)
+	})
+
+	t.Run("get unexisting WAF with no default", func(t *testing.T) {
+		_, _, err := wm.getWAFOrDefault("bar")
+		require.Error(t, err)
+	})
+
+	err = wm.setDefaultKey("foo")
+	require.NoError(t, err)
+
+	t.Run("get existing WAF", func(t *testing.T) {
+		expecteWAF, isDefault, err := wm.getWAFOrDefault("foo")
+		require.NotNil(t, expecteWAF)
+		require.False(t, isDefault)
+		require.NoError(t, err)
+	})
+
+	t.Run("get unexisting WAF", func(t *testing.T) {
+		expecteWAF, isDefault, err := wm.getWAFOrDefault("bar")
+		require.NotNil(t, expecteWAF)
+		require.True(t, isDefault)
+		require.NoError(t, err)
+	})
 }
