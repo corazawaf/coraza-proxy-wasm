@@ -79,9 +79,9 @@ func TestLifecycleMultiMatch(t *testing.T) {
 			tt := tc
 
 			t.Run(tt.name, func(t *testing.T) {
-				conf := `{"directives_map": {"default": []}, "default_directive": "default"}`
+				conf := `{"directives_map": {"default": []}, "default_directives": "default"}`
 				if inlineRules := strings.TrimSpace(tt.inlineRules); inlineRules != "" {
-					conf = fmt.Sprintf(`{"directives_map": {"default": ["%s"]}, "default_directive": "default"}`, inlineRules)
+					conf = fmt.Sprintf(`{"directives_map": {"default": ["%s"]}, "default_directives": "default"}`, inlineRules)
 				}
 				opt := proxytest.
 					NewEmulatorOption().
@@ -228,7 +228,7 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:4,t:lower
 
 			t.Run(tt.name, func(t *testing.T) {
 				conf := fmt.Sprintf(`
-					{"directives_map": {"default": ["%s"]}, "default_directive": "default"}
+					{"directives_map": {"default": ["%s"]}, "default_directives": "default"}
 				`, strings.TrimSpace(tt.rules))
 				opt := proxytest.
 					NewEmulatorOption().

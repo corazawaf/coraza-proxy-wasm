@@ -43,8 +43,8 @@ func TestBodyRulesWithoutBody(t *testing.T) {
 		{
 			name: "url accepted in request body phase",
 			rules: `
-SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:2,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:2,t:lowercase,deny\"
+		`,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
 		},
@@ -59,16 +59,16 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:2,t:lower
 		{
 			name: "url accepted in response body phase",
 			rules: `
-SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:4,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:4,t:lowercase,deny\"
+		`,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
 		},
 		{
 			name: "url denied in response body phase",
 			rules: `
-SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:4,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:4,t:lowercase,deny\"
+		`,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
 		},
@@ -80,7 +80,7 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:4,t:lower
 
 			t.Run(tt.name, func(t *testing.T) {
 				conf := fmt.Sprintf(`
-					{"directives_map": {"default": ["%s"]}, "default_directive": "default"}
+					{"directives_map": {"default": ["%s"]}, "default_directives": "default"}
 				`, strings.TrimSpace(tt.rules))
 				opt := proxytest.
 					NewEmulatorOption().

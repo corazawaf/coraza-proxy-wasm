@@ -134,18 +134,21 @@ func Lint() error {
 
 // Test runs all unit tests.
 func Test() error {
-	return sh.RunV("go", "test", "./...")
+	return sh.RunV("go", "test", "-tags=coraza.rule.multiphase_evaluation", "./...")
 }
 
 // Coverage runs tests with coverage and race detector enabled.
 func Coverage() error {
 
-	// First build and test coraza-wasm filter without multiphase evaluation
-	os.Setenv("NO_MULTIPHASE_EVAL", "true")
-	Build()
+	// Test coraza-wasm filter without multiphase evaluation
 	if err := os.MkdirAll("build", 0755); err != nil {
 		return err
 	}
+
+	if _, err := os.Stat("build/mainraw_nomultiphase.wasm"); err != nil {
+		return errors.New("build/mainraw_nomultiphase.wasm not found, please run `NO_MULTIPHASE_EVAL=true go run mage.go build`")
+	}
+
 	if err := sh.RunV("go", "test", "-race", "-coverprofile=build/coverage.txt", "-covermode=atomic", "-coverpkg=./...", "./..."); err != nil {
 		return err
 	}
@@ -154,9 +157,11 @@ func Coverage() error {
 		return err
 	}
 
-	// Then build and test coraza-wasm filter with multiphase evaluation
-	os.Unsetenv("NO_MULTIPHASE_EVAL")
-	Build()
+	if _, err := os.Stat("build/mainraw.wasm"); err != nil {
+		return errors.New("build/mainraw.wasm not found, please run `go run mage.go build`")
+	}
+
+	// Test coraza-wasm filter with multiphase evaluation
 	if err := sh.RunV("go", "test", "-race", "-coverprofile=build/coverage_multi.txt", "-covermode=atomic", "-coverpkg=./...", "-tags=coraza.rule.multiphase_evaluation", "./..."); err != nil {
 		return err
 	}
@@ -206,15 +211,17 @@ func Build() error {
 	}
 
 	rawFileName := "mainraw.wasm"
+	fileName := "main.wasm"
 	if os.Getenv("NO_MULTIPHASE_EVAL") == "true" {
 		rawFileName = "mainraw_nomultiphase.wasm"
+		fileName = "main_nomultiphase.wasm"
 	}
 
 	if err := sh.RunV("tinygo", "build", "-gc=custom", "-opt=2", "-o", filepath.Join("build", rawFileName), "-scheduler=none", "-target=wasi", buildTagArg); err != nil {
 		return err
 	}
 
-	return patchWasm(filepath.Join("build", rawFileName), filepath.Join("build", "main.wasm"), initialPages)
+	return patchWasm(filepath.Join("build", rawFileName), filepath.Join("build", fileName), initialPages)
 }
 
 // E2e runs e2e tests with a built plugin against the example deployment. Requires docker-compose.

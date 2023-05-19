@@ -61,6 +61,9 @@ jobs:
       - name: Build WASM filter
         run: go run mage.go build
 
+      - name: Build WASM filter without multiphase
+        run: NO_MULTIPHASE_EVAL=true go run mage.go build              
+
       - name: Run unit tests
         run: go run mage.go coverage
 
