@@ -139,6 +139,10 @@ func Test() error {
 
 // Coverage runs tests with coverage and race detector enabled.
 func Coverage() error {
+
+	// First build and test coraza-wasm filter without multiphase evaluation
+	os.Setenv("NO_MULTIPHASE_EVAL", "true")
+	Build()
 	if err := os.MkdirAll("build", 0755); err != nil {
 		return err
 	}
@@ -146,7 +150,19 @@ func Coverage() error {
 		return err
 	}
 
-	return sh.RunV("go", "tool", "cover", "-html=build/coverage.txt", "-o", "build/coverage.html")
+	if err := sh.RunV("go", "tool", "cover", "-html=build/coverage.txt", "-o", "build/coverage.html"); err != nil {
+		return err
+	}
+
+	// Then build and test coraza-wasm filter with multiphase evaluation
+	os.Unsetenv("NO_MULTIPHASE_EVAL")
+	Build()
+	if err := sh.RunV("go", "test", "-race", "-coverprofile=build/coverage_multi.txt", "-covermode=atomic", "-coverpkg=./...", "-tags=coraza.rule.multiphase_evaluation", "./..."); err != nil {
+		return err
+	}
+
+	return sh.RunV("go", "tool", "cover", "-html=build/coverage_multi.txt", "-o", "build/coverage.html")
+
 }
 
 // Doc runs godoc, access at http://localhost:6060
@@ -165,7 +181,11 @@ func Build() error {
 		return err
 	}
 
-	buildTags := []string{"custommalloc", "no_fs_access", "coraza.rule.multiphase_evaluation"}
+	buildTags := []string{"custommalloc", "no_fs_access"}
+	// By defualt multiphase evaluation is enabled
+	if os.Getenv("NO_MULTIPHASE_EVAL") != "true" {
+		buildTags = append(buildTags, "coraza.rule.multiphase_evaluation")
+	}
 	if os.Getenv("TIMING") == "true" {
 		buildTags = append(buildTags, "timing", "proxywasm_timing")
 	}
@@ -185,11 +205,16 @@ func Build() error {
 		}
 	}
 
-	if err := sh.RunV("tinygo", "build", "-gc=custom", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", buildTagArg); err != nil {
+	rawFileName := "mainraw.wasm"
+	if os.Getenv("NO_MULTIPHASE_EVAL") == "true" {
+		rawFileName = "mainraw_nomultiphase.wasm"
+	}
+
+	if err := sh.RunV("tinygo", "build", "-gc=custom", "-opt=2", "-o", filepath.Join("build", rawFileName), "-scheduler=none", "-target=wasi", buildTagArg); err != nil {
 		return err
 	}
 
-	return patchWasm(filepath.Join("build", "mainraw.wasm"), filepath.Join("build", "main.wasm"), initialPages)
+	return patchWasm(filepath.Join("build", rawFileName), filepath.Join("build", "main.wasm"), initialPages)
 }
 
 // E2e runs e2e tests with a built plugin against the example deployment. Requires docker-compose.
