@@ -598,7 +598,7 @@ func (ctx *httpContext) OnHttpStreamDone() {
 			// phase that still need to be executed. If they haven't been executed yet, and there has not been a previous
 			// interruption, now is the time.
 			if !ctx.processedResponseBody {
-				ctx.logger.Warn().Msg("Running ProcessResponseBody in OnHttpStreamDone, triggered actions will not be enforced from now on")
+				ctx.logger.Info().Msg("Running ProcessResponseBody in OnHttpStreamDone, triggered actions will not be enforced. Further logs are for detection only purposes")
 				ctx.processedResponseBody = true
 				_, err := tx.ProcessResponseBody()
 				if err != nil {
