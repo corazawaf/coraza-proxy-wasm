@@ -26,6 +26,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        multiphase_eval: ["true","false"]
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -58,11 +61,11 @@ jobs:
       - name: Run code checks
         run: go run mage.go lint
 
+      - name: Set multiphase_eval variable
+        run: echo "MULTIPHASE_EVAL=${{ matrix.multiphase_eval }}" >> $GITHUB_ENV
+
       - name: Build WASM filter
         run: go run mage.go build
-
-      - name: Build WASM filter without multiphase
-        run: NO_MULTIPHASE_EVAL=true go run mage.go build              
 
       - name: Run unit tests
         run: go run mage.go coverage

@@ -14,6 +14,9 @@ env:
 jobs:
   test:
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        multiphase_eval: ["true","false"]
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -50,11 +53,11 @@ jobs:
       - name: Fetch last coraza version
         run: go get -u github.com/corazawaf/coraza/v3@${{ steps.coraza-latest-commit.outputs.value }} && go mod tidy
 
+      - name: Set multiphase_eval variable
+        run: echo "MULTIPHASE_EVAL=${{ matrix.multiphase_eval }}" >> $GITHUB_ENV
+
       - name: Build WASM filter
         run: go run mage.go build
-
-      - name: Build WASM filter without multiphase
-        run: NO_MULTIPHASE_EVAL=true go run mage.go build 
 
       - name: Run unit tests
         run: go run mage.go coverage

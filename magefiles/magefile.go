@@ -134,26 +134,16 @@ func Lint() error {
 
 // Test runs all unit tests.
 func Test() error {
+	// by default multiphase is enabled
+	if os.Getenv("MULTIPHASE_EVAL") == "false" {
+		return sh.RunV("go", "test", "./...")
+	}
 	return sh.RunV("go", "test", "-tags=coraza.rule.multiphase_evaluation", "./...")
 }
 
 // Coverage runs tests with coverage and race detector enabled.
 func Coverage() error {
-
-	// Test coraza-wasm filter without multiphase evaluation
 	if err := os.MkdirAll("build", 0755); err != nil {
-		return err
-	}
-
-	if _, err := os.Stat("build/mainraw_nomultiphase.wasm"); err != nil {
-		return errors.New("build/mainraw_nomultiphase.wasm not found, please run `NO_MULTIPHASE_EVAL=true go run mage.go build`")
-	}
-
-	if err := sh.RunV("go", "test", "-race", "-coverprofile=build/coverage.txt", "-covermode=atomic", "-coverpkg=./...", "./..."); err != nil {
-		return err
-	}
-
-	if err := sh.RunV("go", "tool", "cover", "-html=build/coverage.txt", "-o", "build/coverage.html"); err != nil {
 		return err
 	}
 
@@ -161,13 +151,20 @@ func Coverage() error {
 		return errors.New("build/mainraw.wasm not found, please run `go run mage.go build`")
 	}
 
-	// Test coraza-wasm filter with multiphase evaluation
-	if err := sh.RunV("go", "test", "-race", "-coverprofile=build/coverage_multi.txt", "-covermode=atomic", "-coverpkg=./...", "-tags=coraza.rule.multiphase_evaluation", "./..."); err != nil {
-		return err
+	if os.Getenv("MULTIPHASE_EVAL") == "false" {
+		// Test coraza-wasm filter without multiphase evaluation
+		if err := sh.RunV("go", "test", "-race", "-coverprofile=build/coverage.txt", "-covermode=atomic", "-coverpkg=./...", "./..."); err != nil {
+			return err
+		}
+		return sh.RunV("go", "tool", "cover", "-html=build/coverage.txt", "-o", "build/coverage.html")
+
+	} else {
+		// Test coraza-wasm filter with multiphase evaluation
+		if err := sh.RunV("go", "test", "-race", "-coverprofile=build/coverage_multi.txt", "-covermode=atomic", "-coverpkg=./...", "-tags=coraza.rule.multiphase_evaluation", "./..."); err != nil {
+			return err
+		}
+		return sh.RunV("go", "tool", "cover", "-html=build/coverage_multi.txt", "-o", "build/coverage.html")
 	}
-
-	return sh.RunV("go", "tool", "cover", "-html=build/coverage_multi.txt", "-o", "build/coverage.html")
-
 }
 
 // Doc runs godoc, access at http://localhost:6060
@@ -188,7 +185,7 @@ func Build() error {
 
 	buildTags := []string{"custommalloc", "no_fs_access"}
 	// By defualt multiphase evaluation is enabled
-	if os.Getenv("NO_MULTIPHASE_EVAL") != "true" {
+	if os.Getenv("MULTIPHASE_EVAL") != "false" {
 		buildTags = append(buildTags, "coraza.rule.multiphase_evaluation")
 	}
 	if os.Getenv("TIMING") == "true" {
@@ -210,18 +207,11 @@ func Build() error {
 		}
 	}
 
-	rawFileName := "mainraw.wasm"
-	fileName := "main.wasm"
-	if os.Getenv("NO_MULTIPHASE_EVAL") == "true" {
-		rawFileName = "mainraw_nomultiphase.wasm"
-		fileName = "main_nomultiphase.wasm"
-	}
-
-	if err := sh.RunV("tinygo", "build", "-gc=custom", "-opt=2", "-o", filepath.Join("build", rawFileName), "-scheduler=none", "-target=wasi", buildTagArg); err != nil {
+	if err := sh.RunV("tinygo", "build", "-gc=custom", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", buildTagArg); err != nil {
 		return err
 	}
 
-	return patchWasm(filepath.Join("build", rawFileName), filepath.Join("build", fileName), initialPages)
+	return patchWasm(filepath.Join("build", "mainraw.wasm"), filepath.Join("build", "main.wasm"), initialPages)
 }
 
 // E2e runs e2e tests with a built plugin against the example deployment. Requires docker-compose.
