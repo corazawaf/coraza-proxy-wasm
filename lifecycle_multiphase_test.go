@@ -4,6 +4,10 @@
 //go:build coraza.rule.multiphase_evaluation
 
 // Multiphase specific tests
+// Enabling the multiphase evaluation feature, it is expected to check rule variables at the earliest possible phase. These tests are meant
+// to check circumstances in which multiphase evaluation should anticipate some variables evaluation, leading to an earlier action enforcment and
+// therefore dropping the request at the earliest possible phase.
+// It notably permits to avoid coraza-proxy-wasm bypasses by analyzing received data as soon as possible, before streaming it upstream.
 
 package main
 
@@ -42,7 +46,98 @@ func TestLifecycleMultiMatch(t *testing.T) {
 		expectResponseRejectSinceFirstChunk bool
 	}{
 		{
-			name: "Deny anticipated at request headers phase from response headers phase",
+			name: "Deny anticipated at request headers phase from request body phase",
+			inlineRules: `
+			SecRuleEngine On\nSecRule REQUEST_URI \"@rx panda\" \"id:101,phase:2,t:lowercase,deny\"
+			`,
+			reqHdrs: [][2]string{
+				{":path", "/panda"},
+				{":method", "GET"},
+				{":authority", "localhost"},
+			},
+			reqBody:           []byte(``),
+			requestHdrsAction: types.ActionPause,
+			responded403:      true,
+		},
+		{
+			name: "Deny anticipated at request headers phase from response headers phase via splitting ARGS variable",
+			inlineRules: `
+			SecRuleEngine On\nSecRule ARGS \"@rx panda\" \"id:101,phase:3,t:lowercase,deny\"
+			`,
+			reqHdrs: [][2]string{
+				{":path", "/end?arg=panda"},
+				{":method", "GET"},
+				{":authority", "localhost"},
+			},
+			reqBody:           []byte(``),
+			requestHdrsAction: types.ActionPause,
+			responded403:      true,
+		},
+		{
+			name: "Deny anticipated at request headers phase from response body phase via splitting ARGS_NAMES variable",
+			inlineRules: `
+			SecRuleEngine On\nSecRule ARGS_NAMES \"@rx panda\" \"id:101,phase:4,t:lowercase,deny\"
+			`,
+			reqHdrs: [][2]string{
+				{":path", "/end?panda=aa"},
+				{":method", "GET"},
+				{":authority", "localhost"},
+			},
+			reqBody:           []byte(``),
+			requestHdrsAction: types.ActionPause,
+			responded403:      true,
+		},
+		{
+			name: "ARGS variable still checked at request body phase",
+			inlineRules: `
+			SecRuleEngine On\nSecRequestBodyAccess On\nSecRule ARGS \"@rx panda\" \"id:101,phase:2,t:lowercase,deny\"
+			`,
+			reqHdrs: [][2]string{
+				{":path", "/end"},
+				{":method", "POST"},
+				{":authority", "localhost"},
+				{"Content-Type", "application/x-www-form-urlencoded"},
+				{"Content-Length", "25"},
+			},
+			reqBody:           []byte(`animal=bear&animal2=apanda`),
+			requestHdrsAction: types.ActionContinue,
+			requestBodyAction: types.ActionPause,
+			responded403:      true,
+		},
+		{
+			name: "Deny anticipated at request body phase from response headers phase",
+			inlineRules: `
+			SecRuleEngine On\nSecRequestBodyAccess On\nSecRule REQUEST_BODY \"@rx panda\" \"id:101,phase:3,t:lowercase,deny\"
+			`,
+			reqHdrs: [][2]string{
+				{":path", "/end"},
+				{":method", "POST"},
+				{":authority", "localhost"},
+				{"Content-Type", "application/x-www-form-urlencoded"},
+				{"Content-Length", "5"},
+			},
+			reqBody:           []byte(`panda`),
+			requestHdrsAction: types.ActionContinue,
+			requestBodyAction: types.ActionPause,
+			responded403:      true,
+		},
+		{
+			name: "Deny anticipated at response headers phase from response body phase",
+			inlineRules: `
+			SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@rx gotest\" \"id:101,phase:4,t:lowercase,deny\"
+			`,
+			reqHdrs: [][2]string{
+				{":path", "/"},
+				{":method", "GET"},
+				{":authority", "localhost"},
+			},
+			requestHdrsAction:  types.ActionContinue,
+			requestBodyAction:  types.ActionContinue,
+			responseHdrsAction: types.ActionPause,
+			responded403:       true,
+		},
+		{
+			name: "944150 - Deny anticipated at request headers phase from response headers phase",
 			inlineRules: `
 			Include @demo-conf\nInclude @crs-setup-demo-conf\nInclude @owasp_crs/*.conf
 			`,
@@ -57,14 +152,15 @@ func TestLifecycleMultiMatch(t *testing.T) {
 			responded403:      true,
 		},
 		{
-			name: "Deny anticipated at request headers phase from request body phase",
+			name: "943120 - Deny anticipated at request headers phase from response headers phase",
 			inlineRules: `
-			SecRuleEngine On\nSecRule REQUEST_URI \"@rx panda\" \"id:101,phase:2,t:lowercase,deny\"
+			Include @demo-conf\nInclude @crs-setup-demo-conf\nInclude @owasp_crs/*.conf
 			`,
 			reqHdrs: [][2]string{
-				{":path", "/panda"},
+				{":path", "/login.php?jsessionid=74B0CB414BD77D17B5680A6386EF1666"},
 				{":method", "GET"},
 				{":authority", "localhost"},
+				{"User-Agent", "gotest"},
 			},
 			reqBody:           []byte(``),
 			requestHdrsAction: types.ActionPause,
@@ -106,23 +202,27 @@ func TestLifecycleMultiMatch(t *testing.T) {
 				// Stream bodies in chunks of 5
 
 				if requestHdrsAction == types.ActionContinue {
-					for i := 0; i < len(tt.reqBody); i += 5 {
-						eos := i+5 >= len(tt.reqBody)
-						var body []byte
-						if eos {
-							body = tt.reqBody[i:]
-						} else {
-							body = tt.reqBody[i : i+5]
-						}
-						requestBodyAction = host.CallOnRequestBody(id, body, eos)
-						requestBodyAccess := strings.Contains(tt.inlineRules, "SecRequestBodyAccess On")
-						switch {
-						case eos:
-							requireEqualAction(t, tt.requestBodyAction, requestBodyAction, "unexpected body action, want %q, have %q on end of stream")
-						case requestBodyAccess:
-							requireEqualAction(t, types.ActionPause, requestBodyAction, "unexpected request body action, want %q, have %q")
-						default:
-							requireEqualAction(t, types.ActionContinue, requestBodyAction, "unexpected request body action, want %q, have %q")
+					if len(tt.reqBody) == 0 {
+						requestBodyAction = host.CallOnRequestBody(id, []byte(``), true)
+					} else {
+						for i := 0; i < len(tt.reqBody); i += 5 {
+							eos := i+5 >= len(tt.reqBody)
+							var body []byte
+							if eos {
+								body = tt.reqBody[i:]
+							} else {
+								body = tt.reqBody[i : i+5]
+							}
+							requestBodyAction = host.CallOnRequestBody(id, body, eos)
+							requestBodyAccess := strings.Contains(tt.inlineRules, "SecRequestBodyAccess On")
+							switch {
+							case eos:
+								requireEqualAction(t, tt.requestBodyAction, requestBodyAction, "unexpected body action, want %q, have %q on end of stream")
+							case requestBodyAccess:
+								requireEqualAction(t, types.ActionPause, requestBodyAction, "unexpected request body action, want %q, have %q")
+							default:
+								requireEqualAction(t, types.ActionContinue, requestBodyAction, "unexpected request body action, want %q, have %q")
+							}
 						}
 					}
 				}

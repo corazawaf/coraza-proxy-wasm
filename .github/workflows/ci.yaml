@@ -14,11 +14,12 @@ on:
 env:
   GO_VERSION: 1.19
   TINYGO_VERSION: 0.27.0
-  # Test against latest two releases and latest dev
+  # Test e2e tests against latest two releases and latest dev
   ENVOY_IMAGES: >
     envoyproxy/envoy:v1.26-latest
     envoyproxy/envoy:v1.25-latest
     envoyproxy/envoy-dev:latest
+  
 
 jobs:
   build:
@@ -29,6 +30,8 @@ jobs:
     strategy:
       matrix:
         multiphase_eval: ["true","false"]
+    env:
+      MULTIPHASE_EVAL: ${{ matrix.multiphase_eval }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -60,9 +63,6 @@ jobs:
 
       - name: Run code checks
         run: go run mage.go lint
-
-      - name: Set multiphase_eval variable
-        run: echo "MULTIPHASE_EVAL=${{ matrix.multiphase_eval }}" >> $GITHUB_ENV
 
       - name: Build WASM filter
         run: go run mage.go build
