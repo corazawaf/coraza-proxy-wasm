@@ -487,18 +487,19 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	if !tx.IsResponseBodyAccessible() {
 		ctx.logger.Debug().Msg("Skipping response body inspection, SecResponseBodyAccess is off.")
 		// ProcessResponseBody is performed for phase 4 rules, checking already populated variables
-		ctx.processedResponseBody = true
-		interruption, err := tx.ProcessResponseBody()
-		if err != nil {
-			ctx.logger.Error().Err(err).Msg("Failed to process response body")
-			return types.ActionContinue
-		}
-
-		if interruption != nil {
-			// Proxy-wasm can not anymore deny the response. The best interruption is emptying the body
-			// Coraza Multiphase evaluation will help here avoiding late interruptions
-			ctx.bodyReadIndex = bodySize // hacky: bodyReadIndex stores the body size that has to be replaced
-			return ctx.handleInterruption(interruptionPhaseHttpResponseBody, interruption)
+		if !ctx.processedResponseBody {
+			interruption, err := tx.ProcessResponseBody()
+			if err != nil {
+				ctx.logger.Error().Err(err).Msg("Failed to process response body")
+				return types.ActionContinue
+			}
+			ctx.processedResponseBody = true
+			if interruption != nil {
+				// Proxy-wasm can not anymore deny the response. The best interruption is emptying the body
+				// Coraza Multiphase evaluation will help here avoiding late interruptions
+				ctx.bodyReadIndex = bodySize // hacky: bodyReadIndex stores the body size that has to be replaced
+				return ctx.handleInterruption(interruptionPhaseHttpResponseBody, interruption)
+			}
 		}
 		return types.ActionContinue
 	}
@@ -559,6 +560,7 @@ func (ctx *httpContext) OnHttpStreamDone() {
 			// phase that still need to be executed. If they haven't been executed yet, and there has not been a previous
 			// interruption, now is the time.
 			if !ctx.processedResponseBody {
+				ctx.logger.Info().Msg("Running ProcessResponseBody in OnHttpStreamDone, triggered actions will not be enforced. Further logs are for detection only purposes")
 				ctx.processedResponseBody = true
 				_, err := tx.ProcessResponseBody()
 				if err != nil {
