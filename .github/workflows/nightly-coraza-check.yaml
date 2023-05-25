@@ -13,6 +13,7 @@ env:
 
 jobs:
   test:
+    name: "Test (multiphase evaluation: ${{ matrix.multiphase_eval }})"
     runs-on: ubuntu-22.04
     strategy:
       matrix:

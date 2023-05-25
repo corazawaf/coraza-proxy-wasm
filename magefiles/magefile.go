@@ -184,7 +184,7 @@ func Build() error {
 	}
 
 	buildTags := []string{"custommalloc", "no_fs_access"}
-	// By defualt multiphase evaluation is enabled
+	// By default multiphase evaluation is enabled
 	if os.Getenv("MULTIPHASE_EVAL") != "false" {
 		buildTags = append(buildTags, "coraza.rule.multiphase_evaluation")
 	}

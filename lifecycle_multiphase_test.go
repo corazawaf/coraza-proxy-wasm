@@ -22,7 +22,7 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 )
 
-func TestLifecycleMultiMatch(t *testing.T) {
+func TestLifecycleMultiPhase(t *testing.T) {
 	reqProtocol := "HTTP/1.1"
 	respHdrs := [][2]string{
 		{":status", "200"},

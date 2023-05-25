@@ -19,10 +19,10 @@ env:
     envoyproxy/envoy:v1.26-latest
     envoyproxy/envoy:v1.25-latest
     envoyproxy/envoy-dev:latest
-  
 
 jobs:
   build:
+    name: "Build (multiphase evaluation: ${{ matrix.multiphase_eval }})"
     runs-on: ubuntu-22.04
     permissions:
       contents: read
