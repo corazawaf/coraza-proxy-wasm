@@ -246,32 +246,36 @@ func TestParsePluginConfiguration(t *testing.T) {
 func TestWAFMap(t *testing.T) {
 	w, _ := coraza.NewWAF(coraza.NewWAFConfig())
 
-	wm := newWAFMap(1)
-	err := wm.put("foo", w)
+	wm := newWAFConfig(1)
+	err := wm.putWAF("foo", w)
 	require.NoError(t, err)
 
 	t.Run("set unexisting default key", func(t *testing.T) {
-		err = wm.setDefaultKey("bar")
+		err = wm.setdefaultWAFName("bar")
 		require.Error(t, err)
 	})
 
 	t.Run("get unexisting WAF with no default", func(t *testing.T) {
-		_, _, err := wm.getWAFOrDefault("bar")
+		_, _, err := wm.getWAFOrDefault("bar.example.com")
 		require.Error(t, err)
 	})
 
-	err = wm.setDefaultKey("foo")
+	err = wm.setdefaultWAFName("foo")
 	require.NoError(t, err)
 
+	wm.setAuthorityWAFNameMap(map[string]string{
+		"foo.example.com": "foo",
+	})
+
 	t.Run("get existing WAF", func(t *testing.T) {
-		expecteWAF, isDefault, err := wm.getWAFOrDefault("foo")
+		expecteWAF, isDefault, err := wm.getWAFOrDefault("foo.example.com")
 		require.NotNil(t, expecteWAF)
 		require.False(t, isDefault)
 		require.NoError(t, err)
 	})
 
 	t.Run("get unexisting WAF", func(t *testing.T) {
-		expecteWAF, isDefault, err := wm.getWAFOrDefault("bar")
+		expecteWAF, isDefault, err := wm.getWAFOrDefault("bar.example.com")
 		require.NotNil(t, expecteWAF)
 		require.True(t, isDefault)
 		require.NoError(t, err)
