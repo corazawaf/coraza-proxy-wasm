@@ -661,6 +661,85 @@ func TestBadResponse(t *testing.T) {
 	})
 }
 
+func TestPerAuthorityDirectives(t *testing.T) {
+	tests := []struct {
+		name         string
+		reqHdrs      [][2]string
+		conf         string
+		responded403 bool
+	}{
+		{
+			name: "authority exist on per_authority_directives",
+			reqHdrs: [][2]string{
+				{":path", "/rs1"},
+				{":method", "GET"},
+				{":authority", "foo.example.com"},
+			},
+			conf:         `{"directives_map": {"default": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""], "rs1": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /rs1\" \"id:101,phase:1,t:lowercase,deny\""]}, "default_directives": "default", "per_authority_directives":{"foo.example.com":"rs1"}}`,
+			responded403: true,
+		},
+		{
+			name: "authority exist on per_authority_directives but calling allowed path",
+			reqHdrs: [][2]string{
+				{":path", "/admin"},
+				{":method", "GET"},
+				{":authority", "foo.example.com"},
+			},
+			conf:         `{"directives_map": {"default": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""], "rs1": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /rs1\" \"id:101,phase:1,t:lowercase,deny\""]}, "default_directives": "default", "per_authority_directives":{"foo.example.com":"rs1"}}`,
+			responded403: false,
+		},
+		{
+			name: "authority not exist on per_authority_directives",
+			reqHdrs: [][2]string{
+				{":path", "/admin"},
+				{":method", "GET"},
+				{":authority", "bar.example.com"},
+			},
+			conf:         `{"directives_map": {"default": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""], "rs1": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /rs1\" \"id:101,phase:1,t:lowercase,deny\""]}, "default_directives": "default", "per_authority_directives":{"foo.example.com":"rs1"}}`,
+			responded403: true,
+		},
+		{
+			name: "authority not exist on per_authority_directives but calling allowed value",
+			reqHdrs: [][2]string{
+				{":path", "/rs1"},
+				{":method", "GET"},
+				{":authority", "bar.example.com"},
+			},
+			conf:         `{"directives_map": {"default": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""], "rs1": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /rs1\" \"id:101,phase:1,t:lowercase,deny\""]}, "default_directives": "default", "per_authority_directives":{"foo.example.com":"rs1"}}`,
+			responded403: false,
+		},
+	}
+
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+		for _, tc := range tests {
+			tt := tc
+			t.Run(tt.name, func(t *testing.T) {
+				opt := proxytest.
+					NewEmulatorOption().
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte(tt.conf))
+
+				host, reset := proxytest.NewHostEmulator(opt)
+				defer reset()
+
+				require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+
+				id := host.InitializeHttpContext()
+
+				host.CallOnRequestHeaders(id, tt.reqHdrs, false)
+				host.CompleteHttpContext(id)
+
+				pluginResp := host.GetSentLocalResponse(id)
+				if tt.responded403 {
+					require.EqualValues(t, 403, pluginResp.StatusCode)
+				} else {
+					require.Nil(t, pluginResp)
+				}
+			})
+		}
+	})
+}
+
 func TestEmptyBody(t *testing.T) {
 	vmTest(t, func(t *testing.T, vm types.VMContext) {
 		opt := proxytest.
