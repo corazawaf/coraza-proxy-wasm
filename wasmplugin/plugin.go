@@ -34,58 +34,65 @@ func (*vmContext) NewPluginContext(contextID uint32) types.PluginContext {
 	return &corazaPlugin{}
 }
 
-type wafMap struct {
-	kv         map[string]coraza.WAF
-	defaultKey string
+type wafConfig struct {
+	wafMap              map[string]coraza.WAF
+	defaultWAFName      string
+	authorityWAFNameMap map[string]string
 }
 
-func newWAFMap(capacity int) wafMap {
-	return wafMap{
-		kv: make(map[string]coraza.WAF, capacity),
+func newWAFConfig(capacity int) wafConfig {
+	return wafConfig{
+		wafMap: make(map[string]coraza.WAF, capacity),
 	}
 }
 
-func (m *wafMap) put(key string, waf coraza.WAF) error {
+func (m *wafConfig) putWAF(key string, waf coraza.WAF) error {
 	if len(key) == 0 {
 		return errors.New("empty WAF key")
 	}
 
-	m.kv[key] = waf
+	m.wafMap[key] = waf
 	return nil
 }
 
-func (m *wafMap) setDefaultKey(key string) error {
+func (m *wafConfig) setdefaultWAFName(key string) error {
 	if len(key) == 0 {
 		return errors.New("empty default WAF key")
 	}
 
-	if _, ok := m.kv[key]; ok {
-		m.defaultKey = key
+	if _, ok := m.wafMap[key]; ok {
+		m.defaultWAFName = key
 		return nil
 	}
 
 	return fmt.Errorf("unknown default WAF key %q", key)
 }
 
-func (m *wafMap) getWAFOrDefault(key string) (coraza.WAF, bool, error) {
-	if w, ok := m.kv[key]; ok {
-		return w, false, nil
+func (m *wafConfig) setAuthorityWAFNameMap(authorityWAFNameMap map[string]string) {
+	m.authorityWAFNameMap = authorityWAFNameMap
+}
+
+func (m *wafConfig) getWAFOrDefault(authority string) (coraza.WAF, bool, error) {
+	if wafKey, ok := m.authorityWAFNameMap[authority]; ok {
+		if waf, ok := m.wafMap[wafKey]; ok {
+			return waf, false, nil
+		}
 	}
 
-	if len(m.defaultKey) == 0 {
-		return nil, false, errors.New("no default WAF key")
+	if len(m.defaultWAFName) == 0 {
+		return nil, false, errors.New("no default WAF name was set")
 	}
 
-	return m.kv[m.defaultKey], true, nil
+	return m.wafMap[m.defaultWAFName], true, nil
 }
 
 type corazaPlugin struct {
 	// Embed the default plugin context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultPluginContext
-	perAuthorityWAFs wafMap
-	metricLabelsKV   []string
-	metrics          *wafMetrics
+	wafConfig      wafConfig
+	metricLabelsKV []string
+	metrics        *wafMetrics
 }
 
 func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
@@ -100,7 +107,9 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		return types.OnPluginStartStatusFailed
 	}
 
-	perAuthorityWAFs := newWAFMap(len(config.directivesMap))
+	wafConfig := newWAFConfig(len(config.directivesMap))
+	wafConfig.setAuthorityWAFNameMap(config.perAuthorityDirectives)
+
 	for name, directives := range config.directivesMap {
 		// First we initialize our waf and our seclang parser
 		conf := coraza.NewWAFConfig().
@@ -119,7 +128,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 			return types.OnPluginStartStatusFailed
 		}
 
-		err = perAuthorityWAFs.put(name, waf)
+		err = wafConfig.putWAF(name, waf)
 		if err != nil {
 			proxywasm.LogCriticalf("Failed to register authority WAF: %v", err)
 			return types.OnPluginStartStatusFailed
@@ -127,13 +136,13 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	}
 
 	if len(config.defaultDirectives) > 0 {
-		if err := perAuthorityWAFs.setDefaultKey(config.defaultDirectives); err != nil {
+		if err := wafConfig.setdefaultWAFName(config.defaultDirectives); err != nil {
 			proxywasm.LogCriticalf("Failed to set the default directives: %v", err)
 			return types.OnPluginStartStatusFailed
 		}
 	}
 
-	ctx.perAuthorityWAFs = perAuthorityWAFs
+	ctx.wafConfig = wafConfig
 	for k, v := range config.metricLabels {
 		ctx.metricLabelsKV = append(ctx.metricLabelsKV, k, v)
 	}
@@ -144,10 +153,10 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 	return &httpContext{
-		contextID:        contextID,
-		metrics:          ctx.metrics,
-		metricLabelsKV:   ctx.metricLabelsKV,
-		perAuthorityWAFs: ctx.perAuthorityWAFs,
+		contextID:      contextID,
+		metrics:        ctx.metrics,
+		metricLabelsKV: ctx.metricLabelsKV,
+		wafConfig:      ctx.wafConfig,
 	}
 }
 
@@ -185,7 +194,7 @@ type httpContext struct {
 	// so that we don't need to reimplement all the methods.
 	types.DefaultHttpContext
 	contextID             uint32
-	perAuthorityWAFs      wafMap
+	wafConfig             wafConfig
 	tx                    ctypes.Transaction
 	httpProtocol          string
 	processedRequestBody  bool
@@ -204,22 +213,19 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	authority, err := proxywasm.GetHttpRequestHeader(":authority")
 	if err == nil {
-		if waf, isDefault, resolveWAFErr := ctx.perAuthorityWAFs.getWAFOrDefault(authority); resolveWAFErr == nil {
+		if waf, isDefault, resolveWAFErr := ctx.wafConfig.getWAFOrDefault(authority); resolveWAFErr == nil {
 			ctx.tx = waf.NewTransaction()
 
 			logFields := []debuglog.ContextField{debuglog.Uint("context_id", uint(ctx.contextID))}
 			if !isDefault {
 				logFields = append(logFields, debuglog.Str("authority", authority))
+				ctx.metricLabelsKV = append(ctx.metricLabelsKV, "authority", authority)
 			}
 			ctx.logger = ctx.tx.DebugLogger().With(logFields...)
 
 			// CRS rules tend to expect Host even with HTTP/2
 			ctx.tx.AddRequestHeader("Host", authority)
 			ctx.tx.SetServerName(parseServerName(ctx.logger, authority))
-
-			if !isDefault {
-				ctx.metricLabelsKV = append(ctx.metricLabelsKV, "authority", authority)
-			}
 		} else {
 			proxywasm.LogWarnf("Failed to resolve WAF for authority %q: %v", authority, resolveWAFErr)
 			return types.ActionContinue
