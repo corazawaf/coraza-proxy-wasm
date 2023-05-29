@@ -1,5 +1,6 @@
 ---
 logfile: '/home/envoy/logs/ftw.log'
+maxmarkerretries: 10
 testoverride:
   input:
     dest_addr: envoy
@@ -55,3 +56,4 @@ testoverride:
     '934120-25': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
     '934120-26': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
     '934120-39': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
+    '932200-13': 'Unfortunate match inside logs against a different rule log. wip'
