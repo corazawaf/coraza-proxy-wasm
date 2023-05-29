@@ -24,6 +24,13 @@ Targets:
 * default target
 ```
 
+### Building requirements
+Building the filter requires:
+- [Go](https://go.dev/doc/install) 
+- [TinyGo](https://tinygo.org/getting-started/install/)
+
+Up to date required versions can be found looking at [`minGoVersion` and `tinygoMinorVersion` variables](./magefiles/magefile.go).
+
 ### Building the filter
 
 ```bash
