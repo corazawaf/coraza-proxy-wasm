@@ -250,8 +250,8 @@ func TestWAFMap(t *testing.T) {
 	err := wm.put("foo", w)
 	require.NoError(t, err)
 
-	t.Run("set unexisting default key", func(t *testing.T) {
-		err = wm.setDefaultKey("bar")
+	t.Run("set nil default waf", func(t *testing.T) {
+		err = wm.setDefaultWAF(nil)
 		require.Error(t, err)
 	})
 
@@ -260,7 +260,7 @@ func TestWAFMap(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	err = wm.setDefaultKey("foo")
+	err = wm.setDefaultWAF(w)
 	require.NoError(t, err)
 
 	t.Run("get existing WAF", func(t *testing.T) {
