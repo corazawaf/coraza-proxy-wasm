@@ -663,10 +663,11 @@ func TestBadResponse(t *testing.T) {
 
 func TestPerAuthorityDirectives(t *testing.T) {
 	tests := []struct {
-		name         string
-		reqHdrs      [][2]string
-		conf         string
-		responded403 bool
+		name                    string
+		reqHdrs                 [][2]string
+		conf                    string
+		localResponseIsNil      bool
+		localResponseStatusCode int
 	}{
 		{
 			name: "authority exist on per_authority_directives",
@@ -675,8 +676,8 @@ func TestPerAuthorityDirectives(t *testing.T) {
 				{":method", "GET"},
 				{":authority", "foo.example.com"},
 			},
-			conf:         `{"directives_map": {"default": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""], "rs1": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /rs1\" \"id:101,phase:1,t:lowercase,deny\""]}, "default_directives": "default", "per_authority_directives":{"foo.example.com":"rs1"}}`,
-			responded403: true,
+			conf:                    `{"directives_map": {"default": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""], "rs1": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /rs1\" \"id:101,phase:1,t:lowercase,deny\""]}, "default_directives": "default", "per_authority_directives":{"foo.example.com":"rs1"}}`,
+			localResponseStatusCode: 403,
 		},
 		{
 			name: "authority exist on per_authority_directives but calling allowed path",
@@ -685,8 +686,8 @@ func TestPerAuthorityDirectives(t *testing.T) {
 				{":method", "GET"},
 				{":authority", "foo.example.com"},
 			},
-			conf:         `{"directives_map": {"default": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""], "rs1": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /rs1\" \"id:101,phase:1,t:lowercase,deny\""]}, "default_directives": "default", "per_authority_directives":{"foo.example.com":"rs1"}}`,
-			responded403: false,
+			conf:               `{"directives_map": {"default": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""], "rs1": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /rs1\" \"id:101,phase:1,t:lowercase,deny\""]}, "default_directives": "default", "per_authority_directives":{"foo.example.com":"rs1"}}`,
+			localResponseIsNil: true,
 		},
 		{
 			name: "authority not exist on per_authority_directives",
@@ -695,8 +696,18 @@ func TestPerAuthorityDirectives(t *testing.T) {
 				{":method", "GET"},
 				{":authority", "bar.example.com"},
 			},
-			conf:         `{"directives_map": {"default": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""], "rs1": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /rs1\" \"id:101,phase:1,t:lowercase,deny\""]}, "default_directives": "default", "per_authority_directives":{"foo.example.com":"rs1"}}`,
-			responded403: true,
+			conf:                    `{"directives_map": {"default": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""], "rs1": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /rs1\" \"id:101,phase:1,t:lowercase,deny\""]}, "default_directives": "default", "per_authority_directives":{"foo.example.com":"rs1"}}`,
+			localResponseStatusCode: 403,
+		},
+		{
+			name: "authority not exist on per_authority_directives and no default",
+			reqHdrs: [][2]string{
+				{":path", "/admin"},
+				{":method", "GET"},
+				{":authority", "bar.example.com"},
+			},
+			conf:               `{"directives_map": {"rs1": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /rs1\" \"id:101,phase:1,t:lowercase,deny\""]}, "per_authority_directives":{"foo.example.com":"rs1"}}`,
+			localResponseIsNil: true,
 		},
 		{
 			name: "authority not exist on per_authority_directives but calling allowed value",
@@ -705,8 +716,8 @@ func TestPerAuthorityDirectives(t *testing.T) {
 				{":method", "GET"},
 				{":authority", "bar.example.com"},
 			},
-			conf:         `{"directives_map": {"default": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""], "rs1": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /rs1\" \"id:101,phase:1,t:lowercase,deny\""]}, "default_directives": "default", "per_authority_directives":{"foo.example.com":"rs1"}}`,
-			responded403: false,
+			conf:               `{"directives_map": {"default": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""], "rs1": ["SecRuleEngine On","SecRule REQUEST_URI \"@streq /rs1\" \"id:101,phase:1,t:lowercase,deny\""]}, "default_directives": "default", "per_authority_directives":{"foo.example.com":"rs1"}}`,
+			localResponseIsNil: true,
 		},
 	}
 
@@ -730,11 +741,14 @@ func TestPerAuthorityDirectives(t *testing.T) {
 				host.CompleteHttpContext(id)
 
 				pluginResp := host.GetSentLocalResponse(id)
-				if tt.responded403 {
-					require.EqualValues(t, 403, pluginResp.StatusCode)
-				} else {
+
+				if tt.localResponseIsNil {
 					require.Nil(t, pluginResp)
+					return
 				}
+
+				require.NotNil(t, pluginResp)
+				require.EqualValues(t, tt.localResponseStatusCode, pluginResp.StatusCode)
 			})
 		}
 	})
