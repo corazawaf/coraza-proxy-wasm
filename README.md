@@ -39,6 +39,12 @@ go run mage.go build
 
 You will find the WASM plugin under `./build/main.wasm`.
 
+### Multiphase
+
+By default, coraza-proxy-wasm runs with multiphase evaluation enabled (See [coraza.rule.multiphase_evaluation](.magefiles/magefile.go) build tag). It enables the evaluation of rule variables in the phases that they are ready for, potentially anticipating the phase the rule is defined for. This feature suits coraza-proxy-wasm, and specifically Envoy request lifecycle, aiming to inspect data that has been received so far as soon as possible. It leads to enforce actions the earliest possible, avoiding WAF bypasses. This functionality, in conjunction with the [early blocking CRS feature](#recommendations-using-crs-with-proxy-wasm), permits to effectively raise the anomaly score and eventually drop the request at the earliest possible phase.
+
+If you want to disable it, set the `MULTIPHASE_EVAL` environment variable to `false` before building the filter.
+
 ### Running the filter in an Envoy process
 
 In order to run the coraza-proxy-wasm we need to spin up an envoy configuration including this as the filter config

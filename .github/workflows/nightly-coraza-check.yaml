@@ -13,7 +13,13 @@ env:
 
 jobs:
   test:
+    name: "Test (multiphase evaluation: ${{ matrix.multiphase_eval }})"
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        multiphase_eval: ["true","false"]
+    env:
+      MULTIPHASE_EVAL: ${{ matrix.multiphase_eval }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3

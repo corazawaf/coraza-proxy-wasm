@@ -814,16 +814,17 @@ func TestBodyRulesWithoutBody(t *testing.T) {
 		{"Content-Type", "text/plain"},
 	}
 	tests := []struct {
-		name               string
-		rules              string
-		responseHdrsAction types.Action
-		responded403       bool
+		name                  string
+		rules                 string
+		responseHdrsAction    types.Action
+		responded403          bool
+		disableWithMultiphase bool
 	}{
 		{
 			name: "url accepted in request body phase",
 			rules: `
-SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:2,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:2,t:lowercase,deny\"
+		`,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
 		},
@@ -832,30 +833,37 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:2,t:lower
 			rules: `
 SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:2,t:lowercase,deny\"
 `,
-			responseHdrsAction: types.ActionPause,
-			responded403:       true,
+			responseHdrsAction:    types.ActionPause,
+			responded403:          true,
+			disableWithMultiphase: true,
 		},
 		{
 			name: "url accepted in response body phase",
 			rules: `
-SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:4,t:lowercase,deny\"
-`,
+		SecRuleEngine On\nSecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:4,t:lowercase,deny\"
+		`,
 			responseHdrsAction: types.ActionContinue,
 			responded403:       false,
 		},
 		{
 			name: "url denied in response body phase",
 			rules: `
-SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:4,t:lowercase,deny\"
-`,
-			responseHdrsAction: types.ActionContinue,
-			responded403:       false,
+		SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:4,t:lowercase,deny\"
+		`,
+			responseHdrsAction:    types.ActionContinue,
+			responded403:          false,
+			disableWithMultiphase: true,
 		},
 	}
 
 	vmTest(t, func(t *testing.T, vm types.VMContext) {
 		for _, tc := range tests {
 			tt := tc
+
+			if tt.disableWithMultiphase && multiphaseEvaluation {
+				// Skipping test, not compatible with multiphaseEvaluation
+				return
+			}
 
 			t.Run(tt.name, func(t *testing.T) {
 				conf := fmt.Sprintf(`
@@ -1066,7 +1074,7 @@ func vmTest(t *testing.T, f func(*testing.T, types.VMContext)) {
 		buildPath := filepath.Join("build", "mainraw.wasm")
 		wasm, err := os.ReadFile(buildPath)
 		if err != nil {
-			t.Skip("wasm not found")
+			t.Fatal("wasm not found")
 		}
 		v, err := proxytest.NewWasmVMContext(wasm)
 		require.NoError(t, err)
