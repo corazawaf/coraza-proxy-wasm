@@ -54,12 +54,11 @@ func (m *wafMap) put(key string, waf coraza.WAF) error {
 	return nil
 }
 
-func (m *wafMap) setDefaultWAF(w coraza.WAF) error {
+func (m *wafMap) setDefaultWAF(w coraza.WAF) {
 	if w == nil {
-		return errors.New("nil WAF set as default")
+		panic("nil WAF set as default")
 	}
 	m.defaultWAF = w
-	return nil
 }
 
 func (m *wafMap) getWAFOrDefault(key string) (coraza.WAF, bool, error) {
@@ -97,21 +96,17 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 	directivesAuthoritiesMap := map[string][]string{}
 	for authority, directivesName := range config.perAuthorityDirectives {
-		if _, ok := directivesAuthoritiesMap[directivesName]; !ok {
-			directivesAuthoritiesMap[directivesName] = []string{}
-		}
-
 		directivesAuthoritiesMap[directivesName] = append(directivesAuthoritiesMap[directivesName], authority)
 	}
 
 	perAuthorityWAFs := newWAFMap(len(config.directivesMap))
 	for name, directives := range config.directivesMap {
 		var (
-			authorities   []string
-			setDefaultWAF bool
+			authorities         []string
+			shouldSetDefaultWAF bool
 		)
 		if name == config.defaultDirectives {
-			setDefaultWAF = true
+			shouldSetDefaultWAF = true
 		} else {
 			var directivesFound bool
 			authorities, directivesFound = directivesAuthoritiesMap[name]
@@ -140,11 +135,8 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 			return types.OnPluginStartStatusFailed
 		}
 
-		if setDefaultWAF {
-			if err := perAuthorityWAFs.setDefaultWAF(waf); err != nil {
-				proxywasm.LogCriticalf("Failed to set default WAF: %v", err)
-				return types.OnPluginStartStatusFailed
-			}
+		if shouldSetDefaultWAF {
+			perAuthorityWAFs.setDefaultWAF(waf)
 		} else {
 			for _, authority := range authorities {
 				err = perAuthorityWAFs.put(authority, waf)
