@@ -94,6 +94,9 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		return types.OnPluginStartStatusFailed
 	}
 
+	// directivesAuthoritesMap is a map of directives name to the list of
+	// authorities that reference those directives. This is used to
+	// initialize the WAFs only for the directives that are referenced
 	directivesAuthoritiesMap := map[string][]string{}
 	for authority, directivesName := range config.perAuthorityDirectives {
 		directivesAuthoritiesMap[directivesName] = append(directivesAuthoritiesMap[directivesName], authority)
@@ -106,6 +109,10 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 			isTheDefaultWAF bool
 		)
 
+		// if the name of the directives is the default directives, we
+		// initialize the WAF despite the fact that it is not associated
+		// to any authority. This is because we need to initialize the
+		// default WAF for requests that don't belong to any authority.
 		if name == config.defaultDirectives {
 			isTheDefaultWAF = true
 		} else {
@@ -153,7 +160,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 	if len(directivesAuthoritiesMap) > 0 {
 		// if there are directives remaining in the directivesAuthoritiesMap, means
-		// those directives weren't part of the directivesMap and hence no declared.
+		// those directives weren't part of the directivesMap and hence not declared.
 		for unknownDirective := range directivesAuthoritiesMap {
 			proxywasm.LogCriticalf("Unknown directives %q", unknownDirective)
 		}
