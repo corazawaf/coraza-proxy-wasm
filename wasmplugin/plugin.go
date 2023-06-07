@@ -102,11 +102,12 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	perAuthorityWAFs := newWAFMap(len(config.directivesMap))
 	for name, directives := range config.directivesMap {
 		var (
-			authorities         []string
-			shouldSetDefaultWAF bool
+			authorities     []string
+			isTheDefaultWAF bool
 		)
+
 		if name == config.defaultDirectives {
-			shouldSetDefaultWAF = true
+			isTheDefaultWAF = true
 		} else {
 			var directivesFound bool
 			authorities, directivesFound = directivesAuthoritiesMap[name]
@@ -135,15 +136,15 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 			return types.OnPluginStartStatusFailed
 		}
 
-		if shouldSetDefaultWAF {
+		if isTheDefaultWAF {
 			perAuthorityWAFs.setDefaultWAF(waf)
-		} else {
-			for _, authority := range authorities {
-				err = perAuthorityWAFs.put(authority, waf)
-				if err != nil {
-					proxywasm.LogCriticalf("Failed to register authority WAF: %v", err)
-					return types.OnPluginStartStatusFailed
-				}
+		}
+
+		for _, authority := range authorities {
+			err = perAuthorityWAFs.put(authority, waf)
+			if err != nil {
+				proxywasm.LogCriticalf("Failed to register authority WAF: %v", err)
+				return types.OnPluginStartStatusFailed
 			}
 		}
 
