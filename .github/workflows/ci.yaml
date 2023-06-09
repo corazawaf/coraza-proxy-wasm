@@ -25,7 +25,7 @@ jobs:
     name: "Build (multiphase evaluation: ${{ matrix.multiphase_eval }})"
     runs-on: ubuntu-22.04
     permissions:
-      contents: read
+      contents: write
       packages: write
     strategy:
       matrix:
