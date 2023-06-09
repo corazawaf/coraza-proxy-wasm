@@ -104,18 +104,13 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 	perAuthorityWAFs := newWAFMap(len(config.directivesMap))
 	for name, directives := range config.directivesMap {
-		var (
-			authorities     []string
-			isTheDefaultWAF bool
-		)
+		var authorities []string
 
 		// if the name of the directives is the default directives, we
 		// initialize the WAF despite the fact that it is not associated
 		// to any authority. This is because we need to initialize the
 		// default WAF for requests that don't belong to any authority.
-		if name == config.defaultDirectives {
-			isTheDefaultWAF = true
-		} else {
+		if name != config.defaultDirectives {
 			var directivesFound bool
 			authorities, directivesFound = directivesAuthoritiesMap[name]
 			if !directivesFound {
@@ -143,7 +138,10 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 			return types.OnPluginStartStatusFailed
 		}
 
-		if isTheDefaultWAF {
+		if len(authorities) == 0 {
+			// if no authorities are associated directly with this WAF
+			// but we still initialize it, it means this is the default
+			// one.
 			perAuthorityWAFs.setDefaultWAF(waf)
 		}
 
