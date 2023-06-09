@@ -36,7 +36,7 @@ func (*vmContext) NewPluginContext(contextID uint32) types.PluginContext {
 
 type wafMap struct {
 	kv         map[string]coraza.WAF
-	defaultKey string
+	defaultWAF coraza.WAF
 }
 
 func newWAFMap(capacity int) wafMap {
@@ -54,17 +54,11 @@ func (m *wafMap) put(key string, waf coraza.WAF) error {
 	return nil
 }
 
-func (m *wafMap) setDefaultKey(key string) error {
-	if len(key) == 0 {
-		return errors.New("empty default WAF key")
+func (m *wafMap) setDefaultWAF(w coraza.WAF) {
+	if w == nil {
+		panic("nil WAF set as default")
 	}
-
-	if _, ok := m.kv[key]; ok {
-		m.defaultKey = key
-		return nil
-	}
-
-	return fmt.Errorf("unknown default WAF key %q", key)
+	m.defaultWAF = w
 }
 
 func (m *wafMap) getWAFOrDefault(key string) (coraza.WAF, bool, error) {
@@ -72,11 +66,11 @@ func (m *wafMap) getWAFOrDefault(key string) (coraza.WAF, bool, error) {
 		return w, false, nil
 	}
 
-	if len(m.defaultKey) == 0 {
-		return nil, false, errors.New("no default WAF key")
+	if m.defaultWAF == nil {
+		return nil, false, errors.New("no default WAF")
 	}
 
-	return m.kv[m.defaultKey], true, nil
+	return m.defaultWAF, true, nil
 }
 
 type corazaPlugin struct {
@@ -100,8 +94,33 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		return types.OnPluginStartStatusFailed
 	}
 
+	// directivesAuthoritesMap is a map of directives name to the list of
+	// authorities that reference those directives. This is used to
+	// initialize the WAFs only for the directives that are referenced
+	directivesAuthoritiesMap := map[string][]string{}
+	for authority, directivesName := range config.perAuthorityDirectives {
+		directivesAuthoritiesMap[directivesName] = append(directivesAuthoritiesMap[directivesName], authority)
+	}
+
 	perAuthorityWAFs := newWAFMap(len(config.directivesMap))
 	for name, directives := range config.directivesMap {
+		var authorities []string
+
+		// if the name of the directives is the default directives, we
+		// initialize the WAF despite the fact that it is not associated
+		// to any authority. This is because we need to initialize the
+		// default WAF for requests that don't belong to any authority.
+		if name != config.defaultDirectives {
+			var directivesFound bool
+			authorities, directivesFound = directivesAuthoritiesMap[name]
+			if !directivesFound {
+				// if no directives found as key, no authority references
+				// these directives and hence we won't initialize them as
+				// it will be a waste of resources.
+				continue
+			}
+		}
+
 		// First we initialize our waf and our seclang parser
 		conf := coraza.NewWAFConfig().
 			WithErrorCallback(logError).
@@ -119,18 +138,32 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 			return types.OnPluginStartStatusFailed
 		}
 
-		err = perAuthorityWAFs.put(name, waf)
-		if err != nil {
-			proxywasm.LogCriticalf("Failed to register authority WAF: %v", err)
-			return types.OnPluginStartStatusFailed
+		if len(authorities) == 0 {
+			// if no authorities are associated directly with this WAF
+			// but we still initialize it, it means this is the default
+			// one.
+			perAuthorityWAFs.setDefaultWAF(waf)
 		}
+
+		for _, authority := range authorities {
+			err = perAuthorityWAFs.put(authority, waf)
+			if err != nil {
+				proxywasm.LogCriticalf("Failed to register authority WAF: %v", err)
+				return types.OnPluginStartStatusFailed
+			}
+		}
+
+		delete(directivesAuthoritiesMap, name)
 	}
 
-	if len(config.defaultDirectives) > 0 {
-		if err := perAuthorityWAFs.setDefaultKey(config.defaultDirectives); err != nil {
-			proxywasm.LogCriticalf("Failed to set the default directives: %v", err)
-			return types.OnPluginStartStatusFailed
+	if len(directivesAuthoritiesMap) > 0 {
+		// if there are directives remaining in the directivesAuthoritiesMap, means
+		// those directives weren't part of the directivesMap and hence not declared.
+		for unknownDirective := range directivesAuthoritiesMap {
+			proxywasm.LogCriticalf("Unknown directives %q", unknownDirective)
 		}
+
+		return types.OnPluginStartStatusFailed
 	}
 
 	ctx.perAuthorityWAFs = perAuthorityWAFs
