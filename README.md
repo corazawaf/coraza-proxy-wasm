@@ -122,9 +122,9 @@ configuration:
     {
         "directives_map": {
             "default": [
+                "Include @demo-conf",
                 "SecDebugLogLevel 9",
                 "SecRuleEngine On",
-                "Include @demo-conf",
                 "Include @crs-setup-demo-conf",
                 "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf"
             ]
