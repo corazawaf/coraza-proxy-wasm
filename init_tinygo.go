@@ -5,13 +5,27 @@
 
 package main
 
-import _ "github.com/wasilibs/nottinygc"
+import (
+	_ "github.com/wasilibs/nottinygc"
+	"unsafe"
+)
 
-// Compiled by nottinygc for delayed free but Envoy doesn't stub it yet,
-// luckily nottinygc doesn't actually call the function, so it's fine to
-// stub it out.
+// Some host functions that are not implemented by Envoy end up getting imported anyways
+// by code that gets compiled but not executed at runtime. Because we know they are not
+// executed, we can stub them out to allow functioning on Envoy. Note, these match the
+// names and signatures of libc, not WASI ABI.
 
 //export sched_yield
 func sched_yield() int32 {
 	return 0
+}
+
+//export fdopendir
+func fdopendir(fd int32) unsafe.Pointer {
+	return nil
+}
+
+//export readdir
+func readdir(unsafe.Pointer) unsafe.Pointer {
+	return nil
 }
