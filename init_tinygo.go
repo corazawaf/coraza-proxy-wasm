@@ -6,8 +6,9 @@
 package main
 
 import (
-	_ "github.com/wasilibs/nottinygc"
 	"unsafe"
+
+	_ "github.com/wasilibs/nottinygc"
 )
 
 // Some host functions that are not implemented by Envoy end up getting imported anyways
