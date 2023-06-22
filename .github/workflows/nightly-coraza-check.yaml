@@ -9,7 +9,7 @@ on:
 
 env:
   GO_VERSION: 1.19
-  TINYGO_VERSION: 0.27.0
+  TINYGO_VERSION: 0.28.1
 
 jobs:
   test:

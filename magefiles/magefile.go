@@ -20,7 +20,7 @@ import (
 )
 
 var minGoVersion = "1.19"
-var tinygoMinorVersion = "0.27"
+var tinygoMinorVersion = "0.28"
 var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
 var golangCILintVer = "v1.48.0"                                    // https://github.com/golangci/golangci-lint/releases
 var gosImportsVer = "v0.3.1"                                       // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
