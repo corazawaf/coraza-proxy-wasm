@@ -23,12 +23,14 @@ func sched_yield() int32 {
 }
 
 // fdopendir is re-exported to avoid TinyGo 0.28's import of wasi_snapshot_preview1.fd_readdir.
+//
 //export fdopendir
 func fdopendir(fd int32) unsafe.Pointer {
 	return nil
 }
 
 // readdir is re-exported to avoid TinyGo 0.28's import of wasi_snapshot_preview1.fd_readdir.
+//
 //export readdir
 func readdir(unsafe.Pointer) unsafe.Pointer {
 	return nil
