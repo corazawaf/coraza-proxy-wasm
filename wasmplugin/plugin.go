@@ -236,6 +236,14 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	ctx.metrics.CountTX()
 
 	authority, err := proxywasm.GetHttpRequestHeader(":authority")
+	if authority == "" {
+		propHostRaw, propHostErr := proxywasm.GetProperty([]string{"request", "host"})
+		if propHostErr != nil {
+			proxywasm.LogWarnf("Failed to get the property of host of the request: %v", propHostErr)
+			return types.ActionContinue
+		}
+		authority = string(propHostRaw)
+	}
 	if err == nil {
 		if waf, isDefault, resolveWAFErr := ctx.perAuthorityWAFs.getWAFOrDefault(authority); resolveWAFErr == nil {
 			ctx.tx = waf.NewTransaction()
@@ -286,6 +294,16 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 			Msg("Failed to get :path")
 		return types.ActionContinue
 	}
+	if uri == "" {
+		propPathRaw, propPathErr := proxywasm.GetProperty([]string{"request", "path"})
+		if propPathErr != nil {
+			ctx.logger.Error().
+				Err(propPathErr).
+				Msg("Failed to get property of path of the request")
+			return types.ActionContinue
+		}
+		uri = string(propPathRaw)
+	}
 
 	method, err := proxywasm.GetHttpRequestHeader(":method")
 	if err != nil {
@@ -293,6 +311,16 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 			Err(err).
 			Msg("Failed to get :method")
 		return types.ActionContinue
+	}
+	if method == "" {
+		propMethodRaw, propMethodErr := proxywasm.GetProperty([]string{"request", "method"})
+		if propMethodErr != nil {
+			ctx.logger.Error().
+				Err(propMethodErr).
+				Msg("Failed to get property of method of the request")
+			return types.ActionContinue
+		}
+		method = string(propMethodRaw)
 	}
 
 	protocol, err := proxywasm.GetProperty([]string{"request", "protocol"})
@@ -464,6 +492,16 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 			Err(err).
 			Msg("Failed to get :status")
 		return types.ActionContinue
+	}
+	if status == "" {
+		propCodeRaw, propCodeErr := proxywasm.GetProperty([]string{"response", "code"})
+		if propCodeErr != nil {
+			ctx.logger.Error().
+				Err(propCodeErr).
+				Msg("Failed to get property of code of the response")
+			return types.ActionContinue
+		}
+		status = string(propCodeRaw)
 	}
 	code, err := strconv.Atoi(status)
 	if err != nil {
