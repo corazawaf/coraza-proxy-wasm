@@ -236,6 +236,10 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	ctx.metrics.CountTX()
 
 	authority, err := proxywasm.GetHttpRequestHeader(":authority")
+	if err != nil {
+		proxywasm.LogWarnf("Failed to get the :authority pseudo-header: %v", err)
+		return types.ActionContinue
+  }
 	if authority == "" {
 		propHostRaw, propHostErr := proxywasm.GetProperty([]string{"request", "host"})
 		if propHostErr != nil {
@@ -244,29 +248,24 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		}
 		authority = string(propHostRaw)
 	}
-	if err == nil {
-		if waf, isDefault, resolveWAFErr := ctx.perAuthorityWAFs.getWAFOrDefault(authority); resolveWAFErr == nil {
-			ctx.tx = waf.NewTransaction()
+	if waf, isDefault, resolveWAFErr := ctx.perAuthorityWAFs.getWAFOrDefault(authority); resolveWAFErr == nil {
+		ctx.tx = waf.NewTransaction()
 
-			logFields := []debuglog.ContextField{debuglog.Uint("context_id", uint(ctx.contextID))}
-			if !isDefault {
-				logFields = append(logFields, debuglog.Str("authority", authority))
-			}
-			ctx.logger = ctx.tx.DebugLogger().With(logFields...)
+		logFields := []debuglog.ContextField{debuglog.Uint("context_id", uint(ctx.contextID))}
+		if !isDefault {
+			logFields = append(logFields, debuglog.Str("authority", authority))
+		}
+		ctx.logger = ctx.tx.DebugLogger().With(logFields...)
 
-			// CRS rules tend to expect Host even with HTTP/2
-			ctx.tx.AddRequestHeader("Host", authority)
-			ctx.tx.SetServerName(parseServerName(ctx.logger, authority))
+		// CRS rules tend to expect Host even with HTTP/2
+		ctx.tx.AddRequestHeader("Host", authority)
+		ctx.tx.SetServerName(parseServerName(ctx.logger, authority))
 
-			if !isDefault {
-				ctx.metricLabelsKV = append(ctx.metricLabelsKV, "authority", authority)
-			}
-		} else {
-			proxywasm.LogWarnf("Failed to resolve WAF for authority %q: %v", authority, resolveWAFErr)
-			return types.ActionContinue
+		if !isDefault {
+			ctx.metricLabelsKV = append(ctx.metricLabelsKV, "authority", authority)
 		}
 	} else {
-		proxywasm.LogWarnf("Failed to get the :authority pseudo-header: %v", err)
+		proxywasm.LogWarnf("Failed to resolve WAF for authority %q: %v", authority, resolveWAFErr)
 		return types.ActionContinue
 	}
 
