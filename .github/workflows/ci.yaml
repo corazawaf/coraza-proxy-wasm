@@ -57,9 +57,9 @@ jobs:
         with:
           path: |
             ~/.cache/tinygo
-          key: ${{ runner.os }}-tinygo-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-tinygo-${{ env.TINYGO_VERSION }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-tinygo-
+            ${{ runner.os }}-tinygo-${{ env.TINYGO_VERSION }}-
 
       - name: Run code checks
         run: go run mage.go lint
