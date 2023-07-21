@@ -237,10 +237,10 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	authority, err := proxywasm.GetHttpRequestHeader(":authority")
 	if err != nil {
-		proxywasm.LogWarnf("Failed to get the :authority pseudo-header: %v", err)
+		proxywasm.LogDebugf("Failed to get the :authority pseudo-header: %v", err)
 		propHostRaw, propHostErr := proxywasm.GetProperty([]string{"request", "host"})
 		if propHostErr != nil {
-			proxywasm.LogWarnf("Failed to get the property of host of the request: %v", propHostErr)
+			proxywasm.LogWarnf("Failed to get the :authority pseudo-header or property of host of the request: %v", propHostErr)
 			return types.ActionContinue
 		}
 		authority = string(propHostRaw)
