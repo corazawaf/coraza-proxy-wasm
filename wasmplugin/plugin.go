@@ -238,9 +238,6 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	authority, err := proxywasm.GetHttpRequestHeader(":authority")
 	if err != nil {
 		proxywasm.LogWarnf("Failed to get the :authority pseudo-header: %v", err)
-		return types.ActionContinue
-	}
-	if authority == "" {
 		propHostRaw, propHostErr := proxywasm.GetProperty([]string{"request", "host"})
 		if propHostErr != nil {
 			proxywasm.LogWarnf("Failed to get the property of host of the request: %v", propHostErr)
@@ -291,9 +288,6 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		ctx.logger.Error().
 			Err(err).
 			Msg("Failed to get :path")
-		return types.ActionContinue
-	}
-	if uri == "" {
 		propPathRaw, propPathErr := proxywasm.GetProperty([]string{"request", "path"})
 		if propPathErr != nil {
 			ctx.logger.Error().
@@ -309,9 +303,6 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		ctx.logger.Error().
 			Err(err).
 			Msg("Failed to get :method")
-		return types.ActionContinue
-	}
-	if method == "" {
 		propMethodRaw, propMethodErr := proxywasm.GetProperty([]string{"request", "method"})
 		if propMethodErr != nil {
 			ctx.logger.Error().
@@ -490,9 +481,6 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 		ctx.logger.Error().
 			Err(err).
 			Msg("Failed to get :status")
-		return types.ActionContinue
-	}
-	if status == "" {
 		propCodeRaw, propCodeErr := proxywasm.GetProperty([]string{"response", "code"})
 		if propCodeErr != nil {
 			ctx.logger.Error().
