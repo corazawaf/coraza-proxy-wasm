@@ -1027,9 +1027,7 @@ func TestResponseProperties(t *testing.T) {
 
 		for _, tc := range testCases {
 			tt := tc
-			inlineRules := fmt.Sprintf(`
-			SecRuleEngine On\nSecRule RESPONSE_STATUS \"500\" \"id:1234,phase:3,deny\"
-			`)
+			inlineRules := `SecRuleEngine On\nSecRule RESPONSE_STATUS \"500\" \"id:1234,phase:3,deny\"`
 
 			conf := `{}`
 			if inlineRules := strings.TrimSpace(inlineRules); inlineRules != "" {
@@ -1109,9 +1107,7 @@ func TestRequestProperties(t *testing.T) {
 
 		for _, tc := range testCases {
 			tt := tc
-			inlineRules := fmt.Sprintf(`
-			SecRuleEngine On\nSecRule REQUEST_URI \"@contains header\" \"id:1234,phase:1,deny\"\nSecRule REQUEST_METHOD \"@streq HEAD\" \"id:1235,phase:1,deny\"\nSecRule SERVER_NAME \"@contains test\" \"id:1236,phase:1,deny\"
-			`)
+			inlineRules := `SecRuleEngine On\nSecRule REQUEST_URI \"@contains header\" \"id:1234,phase:1,deny\"\nSecRule REQUEST_METHOD \"@streq HEAD\" \"id:1235,phase:1,deny\"\nSecRule SERVER_NAME \"@contains test\" \"id:1236,phase:1,deny\"`
 
 			conf := `{}`
 			if inlineRules := strings.TrimSpace(inlineRules); inlineRules != "" {
