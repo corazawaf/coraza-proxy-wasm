@@ -995,6 +995,147 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:2,t:lower
 	})
 }
 
+func TestResponseProperties(t *testing.T) {
+	reqHdrs := [][2]string{
+		{"Host", "test.com"},
+		{"User-Agent", "curl"},
+		{"Accept", "*/*"},
+	}
+	respHdrs := [][2]string{
+		{"Server", "gotest"},
+		{"Content-Length", "12"},
+		{"Content-Type", "text/plain"},
+	}
+	testCases := []struct {
+		name              string
+		status            string
+		requestHdrsAction types.Action
+	}{
+		{
+			name:              "Test Response Properties: Pass",
+			status:            "200",
+			requestHdrsAction: types.ActionContinue,
+		},
+		{
+			name:              "Test Response Properties: Deny due to status",
+			status:            "500",
+			requestHdrsAction: types.ActionPause,
+		},
+	}
+
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+
+		for _, tc := range testCases {
+			tt := tc
+			inlineRules := `SecRuleEngine On\nSecRule RESPONSE_STATUS \"500\" \"id:1234,phase:3,deny\"`
+
+			conf := `{}`
+			if inlineRules := strings.TrimSpace(inlineRules); inlineRules != "" {
+				conf = fmt.Sprintf(`{"directives_map": {"default": ["%s"]}, "default_directives": "default"}`, inlineRules)
+			}
+			t.Run(tt.name, func(t *testing.T) {
+				opt := proxytest.
+					NewEmulatorOption().
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte(conf))
+
+				host, reset := proxytest.NewHostEmulator(opt)
+				defer reset()
+
+				require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+				id := host.InitializeHttpContext()
+
+				require.NoError(t, host.SetProperty([]string{"request", "host"}, []byte("test.com")))
+				require.NoError(t, host.SetProperty([]string{"request", "path"}, []byte("/headers")))
+				require.NoError(t, host.SetProperty([]string{"request", "method"}, []byte("GET")))
+
+				host.CallOnRequestHeaders(id, reqHdrs, false)
+
+				require.NoError(t, host.SetProperty([]string{"response", "code"}, []byte(tt.status)))
+
+				action := host.CallOnResponseHeaders(id, respHdrs, false)
+				require.Equal(t, tt.requestHdrsAction, action)
+			})
+		}
+	})
+}
+
+func TestRequestProperties(t *testing.T) {
+	reqHdrs := [][2]string{
+		{"Host", "test.com"},
+		{"User-Agent", "curl"},
+		{"Accept", "*/*"},
+	}
+	testCases := []struct {
+		name              string
+		host              string
+		path              string
+		method            string
+		requestHdrsAction types.Action
+	}{
+		{
+			name:              "Test Request Properties: Pass",
+			host:              "example.com",
+			path:              "/",
+			method:            "GET",
+			requestHdrsAction: types.ActionContinue,
+		},
+		{
+			name:              "Test Request Properties: Deny due to path",
+			host:              "example.com",
+			path:              "/headers",
+			method:            "GET",
+			requestHdrsAction: types.ActionPause,
+		},
+		{
+			name:              "Test Request Properties: Deny due to method",
+			host:              "example.com",
+			path:              "/",
+			method:            "HEAD",
+			requestHdrsAction: types.ActionPause,
+		},
+		{
+			name:              "Test Request Properties: Deny due to host",
+			host:              "test.com",
+			path:              "/",
+			method:            "GET",
+			requestHdrsAction: types.ActionPause,
+		},
+	}
+
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+
+		for _, tc := range testCases {
+			tt := tc
+			inlineRules := `SecRuleEngine On\nSecRule REQUEST_URI \"@contains header\" \"id:1234,phase:1,deny\"\nSecRule REQUEST_METHOD \"@streq HEAD\" \"id:1235,phase:1,deny\"\nSecRule SERVER_NAME \"@contains test\" \"id:1236,phase:1,deny\"`
+
+			conf := `{}`
+			if inlineRules := strings.TrimSpace(inlineRules); inlineRules != "" {
+				conf = fmt.Sprintf(`{"directives_map": {"default": ["%s"]}, "default_directives": "default"}`, inlineRules)
+			}
+			t.Run(tt.name, func(t *testing.T) {
+				opt := proxytest.
+					NewEmulatorOption().
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte(conf))
+
+				host, reset := proxytest.NewHostEmulator(opt)
+				defer reset()
+
+				require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+				id := host.InitializeHttpContext()
+
+				require.NoError(t, host.SetProperty([]string{"request", "host"}, []byte(tt.host)))
+				require.NoError(t, host.SetProperty([]string{"request", "path"}, []byte(tt.path)))
+				require.NoError(t, host.SetProperty([]string{"request", "method"}, []byte(tt.method)))
+
+				action := host.CallOnRequestHeaders(id, reqHdrs, false)
+				require.Equal(t, tt.requestHdrsAction, action)
+			})
+		}
+	})
+}
+
 func TestRetrieveAddressInfo(t *testing.T) {
 	var unsetPort = -1
 	reqHdrs := [][2]string{
