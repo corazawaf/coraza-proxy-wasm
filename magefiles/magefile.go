@@ -193,6 +193,9 @@ func Build() error {
 	if os.Getenv("MEMSTATS") == "true" {
 		buildTags = append(buildTags, "memstats")
 	}
+	if os.Getenv("MEMOIZE_BUILDERS") != "false" {
+		buildTags = append(buildTags, "memoize_builders")
+	}
 
 	buildTagArg := fmt.Sprintf("-tags='%s'", strings.Join(buildTags, " "))
 
