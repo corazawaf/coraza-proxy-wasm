@@ -30,6 +30,10 @@ services:
       - --log-format [%Y-%m-%d %T.%f][%t][%l][%n] [%g:%#] %v
       - --log-path
       - /home/envoy/logs/envoy.log
+      - --service-cluster # required to export metrics
+      - envoy
+      - --service-node # required to export metrics
+      - envoy
     volumes:
       - ../../build:/build
       - .:/conf
@@ -60,6 +64,31 @@ services:
       - tail -c +0 -f /home/envoy/logs/envoy.log | grep --line-buffered "[critical][wasm]"
     volumes:
       - logs:/home/envoy/logs:ro
+
+  # Monitoring
+  statsd_exporter:
+    image: prom/statsd-exporter:latest
+    ports:
+    - "9125:9125"
+    - "9102:9102"
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus.yaml
+    ports:
+    - "9090:9090"
+    command: "--config.file=/etc/prometheus.yaml"
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - ./grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/dashboard.yaml
+      - ./grafana/dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json
+    ports:
+    - "3000:3000"
 
 volumes:
   logs:

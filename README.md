@@ -20,6 +20,7 @@ Targets:
   ftw                     runs ftw tests with a built plugin and Envoy.
   lint                    verifies code quality.
   runEnvoyExample         spins up the test environment, access at http://localhost:8080.
+  runEnvoyExampleD        spins up the test environment in detached mode, access at http://localhost:8080.
   teardownEnvoyExample    tears down the test environment.
   ReloadEnvoyExample      reloads the test environment.
   test                    runs all unit tests.
@@ -28,8 +29,10 @@ Targets:
 ```
 
 ### Building requirements
+
 Building the filter requires:
-- [Go](https://go.dev/doc/install) 
+
+- [Go](https://go.dev/doc/install)
 - [TinyGo](https://tinygo.org/getting-started/install/)
 
 Up to date required versions can be found looking at [`minGoVersion` and `tinygoMinorVersion` variables](./magefiles/magefile.go).
@@ -163,10 +166,10 @@ Envoy with the coraza-wasm filter will be reachable at `localhost:8080`.
 The filter is configured with the CRS loaded working in Anomaly Scoring mode. 
 For details and locally tweaking the configuration refer to [@recommended-conf](./wasmplugin/rules/coraza.conf-recommended.conf) and [@crs-setup-conf](./wasmplugin/rules/crs-setup.conf.example).
 
-In order to monitor envoy logs while performing requests you can run:
+In order to individually monitor envoy logs while performing requests, in another terminal you can run:
 
-- Envoy logs: `docker-compose -f ./example/docker-compose.yml logs -f envoy-logs`.
-- Critical wasm (audit) logs: `docker-compose -f ./example/docker-compose.yml logs -f wasm-logs`
+- Envoy logs: `docker-compose -f ./example/envoy/docker-compose.yml logs -f envoy-logs`.
+- Critical wasm (audit) logs: `docker-compose -f ./example/envoy/docker-compose.yml logs -f wasm-logs`
 
 ### Manual requests
 

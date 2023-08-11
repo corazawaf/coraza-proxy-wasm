@@ -30,7 +30,7 @@ static_resources:
                   # A custom response header is added for e2e testing purposes. A local response, triggered by an interruption,
                   # has to allow custom added headers like this. See https://github.com/corazawaf/coraza-proxy-wasm/pull/172
                   response_headers_to_add:
-                    - header: 
+                    - header:
                         key: "custom_header"
                         value: "custom_value"
                   virtual_hosts:
@@ -109,6 +109,26 @@ static_resources:
                     socket_address:
                       address: httpbin
                       port_value: 8080
+    - name: "statsd-exporter"
+      connect_timeout: "0.25s"
+      type: STRICT_DNS
+      lb_policy: "ROUND_ROBIN"
+      load_assignment:
+        cluster_name: "statsd-exporter"
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: "statsd_exporter"
+                      port_value: 9125
+
+stats_sinks:
+  - name: "envoy.statsd"
+    typed_config:
+      "@type": "type.googleapis.com/envoy.config.metrics.v3.StatsdSink"
+      tcp_cluster_name: "statsd-exporter"
+      prefix: envoy
 
 admin:
   access_log_path: "/dev/null"
