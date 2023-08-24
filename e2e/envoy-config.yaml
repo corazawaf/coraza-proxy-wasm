@@ -51,6 +51,7 @@ static_resources:
                         root_id: ""
                         configuration:
                           "@type": "type.googleapis.com/google.protobuf.StringValue"
+                          # See https://github.com/corazawaf/coraza/blob/main/http/e2e/cmd/httpe2e/main.go#L22 for e2e Coraza directives
                           value: |
                             {
                               "directives_map": {
