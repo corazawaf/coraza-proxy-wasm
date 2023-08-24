@@ -1,6 +1,6 @@
 module github.com/corazawaf/coraza-proxy-wasm
 
-go 1.19
+go 1.20
 
 require (
 	github.com/corazawaf/coraza-wasilibs v0.0.0-20230620081031-05a5097dbea3

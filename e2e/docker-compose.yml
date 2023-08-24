@@ -1,19 +1,18 @@
 services:
   httpbin:
-    image: mccutchen/go-httpbin:v2.5.0
+    image: mccutchen/go-httpbin:v2.9.0
+    command: [ "/bin/go-httpbin", "-port", "8081" ]
+    ports:
+      - 8081:8081
   envoy:
     depends_on:
       - httpbin
-    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.23-latest}
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.27-latest}
     command:
       - -c
       - /conf/envoy-config.yaml
     volumes:
       - ../build:/build
-      - ../example:/conf # relying on envoy-config file from /example/
-  tests:
-    depends_on:
-      - envoy
-    build:
-      context: .
-      dockerfile: ./Dockerfile.curl
+      - .:/conf
+    ports:
+    - 8080:8080

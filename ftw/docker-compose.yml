@@ -1,6 +1,6 @@
 services:
   httpbin:
-    image: mccutchen/go-httpbin:v2.5.0
+    image: mccutchen/go-httpbin:v2.9.0
   chown:
     image: alpine:3.16
     command:
@@ -14,7 +14,7 @@ services:
     depends_on:
       - chown
       - httpbin
-    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.23-latest}
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.27-latest}
     command:
       - -c
       - ${ENVOY_CONFIG:-/conf/envoy-config.yaml}
