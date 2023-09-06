@@ -163,7 +163,7 @@ In order to monitor envoy logs while performing requests you can run:
 
 ### Manual requests
 
-Run `./e2e/e2e-example.sh` in order to run the following requests against the just set up test environment, otherwise manually execute and tweak them to grasp the behaviour of the filter:
+List of requests that can be manually executed and tweaked to grasp the behaviour of the filter:
 
 ```bash
 # True positive requests:

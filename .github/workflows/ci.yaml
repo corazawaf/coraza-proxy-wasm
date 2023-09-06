@@ -12,12 +12,12 @@ on:
   workflow_dispatch:
 
 env:
-  GO_VERSION: 1.19
+  GO_VERSION: '1.20'
   TINYGO_VERSION: 0.28.1
   # Run e2e tests against latest two releases and latest dev
   ENVOY_IMAGES: >
+    envoyproxy/envoy:v1.27-latest
     envoyproxy/envoy:v1.26-latest
-    envoyproxy/envoy:v1.25-latest
     envoyproxy/envoy-dev:latest
 
 jobs:
@@ -70,13 +70,8 @@ jobs:
       - name: Run unit tests
         run: go run mage.go coverage
 
-      - name: Run e2e tests against the example
-        shell: bash
-        run: >
-          for image in $ENVOY_IMAGES; do
-              echo "Running e2e with Envoy image $image"
-              ENVOY_IMAGE=$image go run mage.go e2e
-          done
+      - name: Run e2e tests
+        run: go run mage.go e2e
 
       - name: Run regression tests (ftw)
         run: go run mage.go ftw

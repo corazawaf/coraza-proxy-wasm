@@ -1,0 +1,109 @@
+stats_config:
+  stats_tags:
+    # Envoy extracts the first matching group as a value.
+    # See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#config-metrics-v3-statsconfig.
+    - tag_name: phase
+      regex: "(_phase=([a-z_]+))"
+    - tag_name: rule_id
+      regex: "(_ruleid=([0-9]+))"
+    - tag_name: identifier
+      regex: "(_identifier=([0-9a-z.:]+))"
+    - tag_name: owner
+      regex: "(_owner=([0-9a-z.:]+))"
+    - tag_name: authority
+      regex: "(_authority=([0-9a-z.:]+))"
+
+static_resources:
+  listeners:
+    - address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 8080
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                codec_type: auto
+                route_config:
+                  # A custom response header is added for e2e testing purposes. A local response, triggered by an interruption,
+                  # has to allow custom added headers like this. See https://github.com/corazawaf/coraza-proxy-wasm/pull/172
+                  response_headers_to_add:
+                    - header: 
+                        key: "custom_header"
+                        value: "custom_value"
+                  virtual_hosts:
+                    - name: local_route
+                      domains:
+                        - "*"
+                      routes:
+                        - match:
+                            prefix: "/"
+                          route:
+                            cluster: local_server
+                http_filters:
+                  - name: envoy.filters.http.wasm
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+                      config:
+                        name: "coraza-filter"
+                        root_id: ""
+                        configuration:
+                          "@type": "type.googleapis.com/google.protobuf.StringValue"
+                          # See https://github.com/corazawaf/coraza/blob/main/http/e2e/cmd/httpe2e/main.go#L22 for e2e Coraza directives
+                          value: |
+                            {
+                              "directives_map": {
+                                  "rs1": [
+                                    "SecRuleEngine On",
+                                    "SecRequestBodyAccess On",
+                                    "SecResponseBodyAccess On",
+                                    "SecResponseBodyMimeType application/json",
+                                    "SecRule &REQUEST_HEADERS:coraza-e2e \"@eq 0\" \"id:100,phase:1,deny,status:424,log,msg:'Coraza E2E - Missing header'\"",
+                                    "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,log,deny,status:403\"",
+                                    "SecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,log,deny,status:403\"",
+                                    "SecRule RESPONSE_HEADERS:pass \"@rx leak\" \"id:103,phase:3,t:lowercase,log,deny,status:403\"",
+                                    "SecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,log,deny,status:403\"",
+                                    "SecRule ARGS_NAMES|ARGS \"@detectXSS\" \"id:9411,phase:2,t:none,t:utf8toUnicode,t:urlDecodeUni,t:htmlEntityDecode,t:jsDecode,t:cssDecode,t:removeNulls,log,deny,status:403\"",
+                                    "SecRule ARGS_NAMES|ARGS \"@detectSQLi\" \"id:9421,phase:2,t:none,t:utf8toUnicode,t:urlDecodeUni,t:removeNulls,multiMatch,log,deny,status:403\"",
+                                    "SecRule REQUEST_HEADERS:User-Agent \"@pm grabber masscan\" \"id:9131,phase:1,t:none,log,deny,status:403\""
+                                  ]
+                              },
+                              "default_directives": "rs1",
+                              "metric_labels": {
+                                "owner": "coraza",
+                                "identifier": "global"
+                              }
+                            }
+                        vm_config:
+                          runtime: "envoy.wasm.runtime.v8"
+                          vm_id: "my_vm_id"
+                          code:
+                            local:
+                              filename: "build/main.wasm"
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+  clusters:
+    - name: local_server
+      connect_timeout: 6000s
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: local_server
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: httpbin
+                      port_value: 8081
+
+admin:
+  access_log_path: "/dev/null"
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 8082

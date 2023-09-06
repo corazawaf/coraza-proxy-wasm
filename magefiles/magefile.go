@@ -19,14 +19,13 @@ import (
 	"github.com/tetratelabs/wabin/wasm"
 )
 
-var minGoVersion = "1.19"
+var minGoVersion = "1.20"
 var tinygoMinorVersion = "0.28"
 var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
-var golangCILintVer = "v1.48.0"                                    // https://github.com/golangci/golangci-lint/releases
+var golangCILintVer = "v1.54.2"                                    // https://github.com/golangci/golangci-lint/releases
 var gosImportsVer = "v0.3.1"                                       // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
 
 var errCommitFormatting = errors.New("files not formatted, please commit formatting changes")
-var errNoGitDir = errors.New("no .git directory found")
 
 func init() {
 	for _, check := range []func() error{
@@ -216,10 +215,29 @@ func Build() error {
 
 // E2e runs e2e tests with a built plugin against the example deployment. Requires docker-compose.
 func E2e() error {
-	if err := sh.RunV("docker-compose", "--file", "e2e/docker-compose.yml", "build", "--pull"); err != nil {
+	var err error
+	if err = sh.RunV("docker-compose", "--file", "e2e/docker-compose.yml", "up", "-d", "envoy"); err != nil {
 		return err
 	}
-	return sh.RunV("docker-compose", "-f", "e2e/docker-compose.yml", "up", "--abort-on-container-exit", "tests")
+	defer func() {
+		_ = sh.RunV("docker-compose", "--file", "e2e/docker-compose.yml", "down", "-v")
+	}()
+
+	envoyHost := os.Getenv("ENVOY_HOST")
+	if envoyHost == "" {
+		envoyHost = "localhost:8080"
+	}
+	httpbinHost := os.Getenv("HTTPBIN_HOST")
+	if httpbinHost == "" {
+		httpbinHost = "localhost:8081"
+	}
+
+	// --nulled-body is needed because coraza-proxy-wasm returns a 200 OK with a nulled body when if the interruption happens after phase 3
+	if err = sh.RunV("go", "run", "github.com/corazawaf/coraza/v3/http/e2e/cmd/httpe2e@main", "--proxy-hostport",
+		"http://"+envoyHost, "--httpbin-hostport", "http://"+httpbinHost, "--nulled-body"); err != nil {
+		sh.RunV("docker-compose", "-f", "e2e/docker-compose.yml", "logs", "envoy")
+	}
+	return err
 }
 
 // Ftw runs ftw tests with a built plugin and Envoy. Requires docker-compose.
