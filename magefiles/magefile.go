@@ -223,7 +223,7 @@ func E2e() error {
 		_ = sh.RunV("docker-compose", "--file", "e2e/docker-compose.yml", "down", "-v")
 	}()
 
-	envoyHost := os.Getenv("CADDY_HOST")
+	envoyHost := os.Getenv("ENVOY_HOST")
 	if envoyHost == "" {
 		envoyHost = "localhost:8080"
 	}
