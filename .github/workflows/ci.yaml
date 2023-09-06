@@ -71,7 +71,12 @@ jobs:
         run: go run mage.go coverage
 
       - name: Run e2e tests
-        run: go run mage.go e2e
+        shell: bash
+        run: >
+          for image in $ENVOY_IMAGES; do
+              echo "Running e2e with Envoy image $image"
+              ENVOY_IMAGE=$image go run mage.go e2e
+          done
 
       - name: Run regression tests (ftw)
         run: go run mage.go ftw
