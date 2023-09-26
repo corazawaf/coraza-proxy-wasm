@@ -182,7 +182,11 @@ func Build() error {
 		return err
 	}
 
-	buildTags := []string{"custommalloc", "no_fs_access"}
+	buildTags := []string{
+		"custommalloc",     // https://github.com/wasilibs/nottinygc#usage
+		"no_fs_access",     // https://github.com/corazawaf/coraza#build-tags
+		"memoize_builders", // https://github.com/corazawaf/coraza#build-tags
+	}
 	// By default multiphase evaluation is enabled
 	if os.Getenv("MULTIPHASE_EVAL") != "false" {
 		buildTags = append(buildTags, "coraza.rule.multiphase_evaluation")
