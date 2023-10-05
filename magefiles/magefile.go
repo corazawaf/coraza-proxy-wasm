@@ -20,7 +20,7 @@ import (
 )
 
 var minGoVersion = "1.20"
-var tinygoMinorVersion = "0.30"
+var minTinygoVersion = "0.30"
 var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
 var golangCILintVer = "v1.54.2"                                    // https://github.com/golangci/golangci-lint/releases
 var gosImportsVer = "v0.3.1"                                       // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
@@ -28,38 +28,63 @@ var gosImportsVer = "v0.3.1"                                       // https://gi
 var errCommitFormatting = errors.New("files not formatted, please commit formatting changes")
 
 func init() {
-	for _, check := range []func() error{
-		checkTinygoVersion,
-		checkGoVersion,
+	for _, check := range []struct {
+		lang       string
+		minVersion string
+	}{
+		{"tinygo", minTinygoVersion},
+		{"go", minGoVersion},
 	} {
-		if err := check(); err != nil {
+		if err := checkVersion(check.lang, check.minVersion); err != nil {
 			fmt.Printf("Error: %v\n", err)
 			os.Exit(1)
 		}
 	}
 }
 
-// checkGoVersion checks the minimum version of Go is supported.
-func checkGoVersion() error {
-	v, err := sh.Output("go", "version")
-	if err != nil {
-		return fmt.Errorf("unexpected go error: %v", err)
+// checkVersion checks the minimum version of the specified language is supported.
+// Note: While it is likely, there are no guarantees that a newer version of the language will work
+func checkVersion(lang string, minVersion string) error {
+	var compare []string
+
+	switch lang {
+	case "go":
+		// Version can/cannot include patch version e.g.
+		// - go version go1.19 darwin/arm64
+		// - go version go1.19.2 darwin/amd64
+		goVersionRegex := regexp.MustCompile("go([0-9]+).([0-9]+).?([0-9]+)?")
+		v, err := sh.Output("go", "version")
+		if err != nil {
+			return fmt.Errorf("unexpected go error: %v", err)
+		}
+		compare = goVersionRegex.FindStringSubmatch(v)
+		if len(compare) != 4 {
+			return fmt.Errorf("unexpected go semver: %q", v)
+		}
+	case "tinygo":
+		tinygoVersionRegex := regexp.MustCompile("tinygo version ([0-9]+).([0-9]+).?([0-9]+)?")
+		v, err := sh.Output("tinygo", "version")
+		if err != nil {
+			return fmt.Errorf("unexpected tinygo error: %v", err)
+		}
+		// Assume a dev build is valid.
+		if strings.Contains(v, "-dev") {
+			return nil
+		}
+		compare = tinygoVersionRegex.FindStringSubmatch(v)
+		if len(compare) != 4 {
+			return fmt.Errorf("unexpected tinygo semver: %q", v)
+		}
+	default:
+		return fmt.Errorf("unexpected language: %s", lang)
 	}
 
-	// Version can/cannot include patch version e.g.
-	// - go version go1.19 darwin/arm64
-	// - go version go1.19.2 darwin/amd64
-	versionRegex := regexp.MustCompile("go([0-9]+).([0-9]+).?([0-9]+)?")
-	compare := versionRegex.FindStringSubmatch(v)
-	if len(compare) != 4 {
-		return fmt.Errorf("unexpected go semver: %q", v)
-	}
 	compare = compare[1:]
 	if compare[2] == "" {
 		compare[2] = "0"
 	}
 
-	base := strings.SplitN(minGoVersion, ".", 3)
+	base := strings.SplitN(minVersion, ".", 3)
 	if len(base) == 2 {
 		base = append(base, "0")
 	}
@@ -67,29 +92,9 @@ func checkGoVersion() error {
 		baseN, _ := strconv.Atoi(base[i])
 		compareN, _ := strconv.Atoi(compare[i])
 		if baseN > compareN {
-			return fmt.Errorf("unexpected go version, minimum want %q, have %q", minGoVersion, strings.Join(compare, "."))
+			return fmt.Errorf("unexpected %s version, minimum want %q, have %q", lang, minVersion, strings.Join(compare, "."))
 		}
 	}
-	return nil
-}
-
-// checkTinygoVersion checks that exactly the right tinygo version is supported because
-// tinygo isn't stable yet.
-func checkTinygoVersion() error {
-	v, err := sh.Output("tinygo", "version")
-	if err != nil {
-		return fmt.Errorf("unexpected tinygo error: %v", err)
-	}
-
-	// Assume a dev build is valid.
-	if strings.Contains(v, "-dev") {
-		return nil
-	}
-
-	if !strings.HasPrefix(v, fmt.Sprintf("tinygo version %s", tinygoMinorVersion)) {
-		return fmt.Errorf("unexpected tinygo version, wanted %s", tinygoMinorVersion)
-	}
-
 	return nil
 }
 
