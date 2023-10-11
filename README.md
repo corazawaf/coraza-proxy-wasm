@@ -19,7 +19,7 @@ Targets:
   lint                    verifies code quality.
   runEnvoyExample         spins up the test environment, access at http://localhost:8080.
   teardownEnvoyExample    tears down the test environment.
-  ReloadEnovyExample      reloads the test environment.
+  ReloadEnvoyExample      reloads the test environment.
   test                    runs all unit tests.
 
 * default target

@@ -272,18 +272,18 @@ func Ftw() error {
 	return sh.RunWithV(env, "docker-compose", "--file", "ftw/docker-compose.yml", "run", "--rm", task)
 }
 
-// RunEnovyExample spins up the test environment of envoy, access at http://localhost:8080. Requires docker-compose.
-func RunEnovyExample() error {
+// RunEnvoyExample spins up the test environment of envoy, access at http://localhost:8080. Requires docker-compose.
+func RunEnvoyExample() error {
 	return sh.RunWithV(map[string]string{"ENVOY_IMAGE": os.Getenv("ENVOY_IMAGE")}, "docker-compose", "--file", "example/envoy/docker-compose.yml", "up", "-d", "envoy-logs")
 }
 
-// TeardownEnovyExample tears down the test environment of envoy. Requires docker-compose.
-func TeardownEnovyExample() error {
+// TeardownEnvoyExample tears down the test environment of envoy. Requires docker-compose.
+func TeardownEnvoyExample() error {
 	return sh.RunV("docker-compose", "--file", "example/envoy/docker-compose.yml", "down")
 }
 
-// ReloadEnovyExample reload the test environment (container) of envoy in case of envoy or wasm update. Requires docker-compose
-func ReloadEnovyExample() error {
+// ReloadEnvoyExample reload the test environment (container) of envoy in case of envoy or wasm update. Requires docker-compose
+func ReloadEnvoyExample() error {
 	return sh.RunV("docker-compose", "--file", "example/envoy/docker-compose.yml", "restart")
 }
 
