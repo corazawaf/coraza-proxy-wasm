@@ -10,10 +10,8 @@ intricate interactions between user-provided WasmPlugins and Istio's built-in fi
 Given a multitude of possible Istio setups, we will only cover the most common one with the following assumptions:
 
 - Istio is installed in the `istio-system` namespace
-- The mesh has a singular entrypoint served by the `istio-ingressgateway` service
-- The mesh has an egress gateway served by the `istio-egressgateway` service
-- Traffic is routed to kubernetes namespaces via Istio's `VirtualService` and `DestinationRule` resources
-- Services served by a `VirtualService` have an `istio-proxy` sidecar
+- The mesh has an entrypoint served by a `istio-ingressgateway` service
+- Services served by Istio have an `istio-proxy` sidecar
 
 ## Getting started
 
@@ -24,7 +22,7 @@ The coraza proxy wasm can filter traffic inside the mesh at multiple locations.
 The envoy pod of the ingress-gateway can be configured to use the coraza proxy wasm as a filter, thus 
 filtering all incoming traffic.
 
-The following example shows how to configure embedded [Rule Sets](https://github.com/coreruleset/coreruleset)
+The following example shows how to configure embedded [Core Rule Set](https://github.com/coreruleset/coreruleset)
 at the ingress gateway and use the coraza proxy wasm as a filter.
 
 It utilizes the 
@@ -48,7 +46,7 @@ spec:
       - SecDebugLogLevel 9
       - SecRuleEngine On
       - Include @crs-setup-demo-conf
-      - Include @owasp_crs/REQUEST-941-APPLICATION-ATTACK-XSS.conf
+      - Include @owasp_crs/*.conf
   selector:
     matchLabels:
       app: istio-ingressgateway
@@ -59,9 +57,8 @@ spec:
 The `selector` needs to match labels attached to the pods of the ingress gateway.
 The `url` points to the OCI image of the coraza proxy wasm, which is provided by the project.
 
-All traffic entering the mesh via the ingress gateway will now be filtered by the coraza proxy wasm using the 
-rule for request application attack xss and violations will be logged to the istio-proxy's log
-and a `403 Forbidden` response will be returned to the client.
+All traffic entering the mesh via the ingress gateway will now be filtered by the coraza proxy wasm 
+and violations will be logged to the istio-proxy's log and a `403 Forbidden` response will be returned to the client.
 
 ### At each namespace individually
 
@@ -100,7 +97,7 @@ All traffic entering the namespace  will now be filtered by the coraza proxy was
 entire [Core Rule Set](https://github.com/coreruleset/coreruleset) and 
 violations will be logged to the istio-proxy's log and a `403 Forbidden` response will be returned to the client.
 
-Traffic which has already been filtered by the ingress gateway will not reach the namespace will only be 
+Traffic which has already been filtered by the ingress gateway will not reach the namespace and will only be 
 logged to the istio-proxy's log in the namespace of the ingress-gateway.
 
 ## Testing and Logs
