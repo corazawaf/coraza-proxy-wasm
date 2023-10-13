@@ -8,7 +8,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/tetratelabs/proxy-wasm-go-sdk v0.22.0
 	github.com/tidwall/gjson v1.17.0
-	github.com/wasilibs/nottinygc v0.4.0
+	github.com/wasilibs/nottinygc v0.5.1
 )
 
 require (

@@ -42,8 +42,8 @@ github.com/wasilibs/go-libinjection v0.4.0 h1:dr1Y/kM/gmoA7eSfdf+CvCcmzwsz2jVYjN
 github.com/wasilibs/go-libinjection v0.4.0/go.mod h1:zD7fNXKSaTKoSTmrfuP9Gc16alNEgwkZaHIeDDk3WWM=
 github.com/wasilibs/go-re2 v1.4.0 h1:Jp6BM8G/zajgY1BCQUm3i7oGMdR1gA5EBv87wGd2ysc=
 github.com/wasilibs/go-re2 v1.4.0/go.mod h1:hLzlKjEgON+17hWjikLx8hJBkikyjQH/lsqCy9t6tIY=
-github.com/wasilibs/nottinygc v0.4.0 h1:h1TJMihMC4neN6Zq+WKpLxgd9xCFMw7O9ETLwY2exJQ=
-github.com/wasilibs/nottinygc v0.4.0/go.mod h1:oDcIotskuYNMpqMF23l7Z8uzD4TC0WXHK8jetlB3HIo=
+github.com/wasilibs/nottinygc v0.5.1 h1:Hh3/tcBuR1nWDdSvOesIQwi8l6RyVGlwMcNfDzxh3uI=
+github.com/wasilibs/nottinygc v0.5.1/go.mod h1:oDcIotskuYNMpqMF23l7Z8uzD4TC0WXHK8jetlB3HIo=
 golang.org/x/mod v0.8.0 h1:LUYupSeNrTNCGzR/hVBk2NHZO4hXcVaW1k4Qx7rjPx8=
 golang.org/x/net v0.15.0 h1:ugBLEUaxABaB5AJqW9enI0ACdci2RUd4eP51NTBvuJ8=
 golang.org/x/net v0.15.0/go.mod h1:idbUs1IY1+zTqbi8yxTbhexhEEk5ur9LInksu6HrEpk=
