@@ -9,17 +9,18 @@ Web Application Firewall WASM filter built on top of [Coraza](https://github.com
 ```bash
 ▶ go run mage.go -l
 Targets:
-  build*             builds the Coraza wasm plugin.
-  check              runs lint and tests.
-  coverage           runs tests with coverage and race detector enabled.
-  doc                runs godoc, access at http://localhost:6060
-  e2e                runs e2e tests with a built plugin against the example deployment.
-  format             formats code in this repository.
-  ftw                runs ftw tests with a built plugin and Envoy.
-  lint               verifies code quality.
-  runExample         spins up the test environment, access at http://localhost:8080.
-  teardownExample    tears down the test environment.
-  test               runs all unit tests.
+  build*                  builds the Coraza wasm plugin.
+  check                   runs lint and tests.
+  coverage                runs tests with coverage and race detector enabled.
+  doc                     runs godoc, access at http://localhost:6060
+  e2e                     runs e2e tests with a built plugin against the example deployment.
+  format                  formats code in this repository.
+  ftw                     runs ftw tests with a built plugin and Envoy.
+  lint                    verifies code quality.
+  runEnvoyExample         spins up the test environment, access at http://localhost:8080.
+  teardownEnvoyExample    tears down the test environment.
+  ReloadEnvoyExample      reloads the test environment.
+  test                    runs all unit tests.
 
 * default target
 ```
@@ -155,7 +156,11 @@ FTW_INCLUDE=920410 go run mage.go ftw
 
 ## Example: Spinning up the coraza-wasm-filter for manual tests
 
-Once the filter is built, via the commands `mage runExample`, `mage reloadExample`, and `mage teardownExample` you can spin up, test, and tear down the test environment. Envoy with the coraza-wasm filter will be reachable at `localhost:8080`. The filter is configured with the CRS loaded working in Anomaly Scoring mode. For details and locally tweaking the configuration refer to [@demo-conf](./wasmplugin/rules/coraza-demo.conf) and [@crs-setup-demo-conf](./wasmplugin/rules/crs-setup-demo.conf).
+Once the filter is built, via the commands `mage runEnvoyExample`, `mage reloadEnvoyExample`, and `mage teardownEnvoyExample` you can spin up, test, and tear down the test environment. 
+Envoy with the coraza-wasm filter will be reachable at `localhost:8080`. 
+The filter is configured with the CRS loaded working in Anomaly Scoring mode. 
+For details and locally tweaking the configuration refer to [@demo-conf](./wasmplugin/rules/coraza-demo.conf) and [@crs-setup-demo-conf](./wasmplugin/rules/crs-setup-demo.conf).
+
 In order to monitor envoy logs while performing requests you can run:
 
 - Envoy logs: `docker-compose -f ./example/docker-compose.yml logs -f envoy-logs`.
