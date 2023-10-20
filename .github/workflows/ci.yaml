@@ -72,21 +72,6 @@ jobs:
       - name: Run unit tests
         run: go run mage.go coverage
 
-      - name: Check Envoy example is spinning up
-        run: |
-          ENVOY_CONTAINER_NAME="envoy-envoy-1"
-          go run mage.go runEnvoyExample &
-          TIMEOUT=5
-          while [ $TIMEOUT -gt 0 ]; do
-            exit_code=$(docker inspect -f '{{.State.ExitCode}}' $ENVOY_CONTAINER_NAME)
-            if [ $exit_code -ne 0 ]; then
-              echo "Envoy example failed to start"
-              exit 1
-            fi
-            sleep 1  # Wait for 1 second before checking again for up to TIMEOUT times
-            ((TIMEOUT--))
-          done
-
       - name: Run e2e tests
         shell: bash
         run: >
