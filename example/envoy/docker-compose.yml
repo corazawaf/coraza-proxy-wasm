@@ -31,7 +31,7 @@ services:
       - --log-path
       - /home/envoy/logs/envoy.log
     volumes:
-      - ../build:/build
+      - ../../build:/build
       - .:/conf
       - logs:/home/envoy/logs:rw
     ports:
