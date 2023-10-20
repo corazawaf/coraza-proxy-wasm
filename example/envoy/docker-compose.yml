@@ -40,7 +40,7 @@ services:
       - logs:/home/envoy/logs:rw
     ports:
       - 8080:8080
-      - 8082:8082
+      - 8082:8082 # admin port (also for metrics)
 
   envoy-logs:
     depends_on:
@@ -65,17 +65,10 @@ services:
     volumes:
       - logs:/home/envoy/logs:ro
 
-  # Monitoring
-  statsd_exporter:
-    image: prom/statsd-exporter:latest
-    ports:
-    - "9125:9125"
-    - "9102:9102"
-
   prometheus:
     image: prom/prometheus
     volumes:
-      - ./prometheus.yaml:/etc/prometheus.yaml
+      - ../prometheus.yaml:/etc/prometheus.yaml
     ports:
     - "9090:9090"
     command: "--config.file=/etc/prometheus.yaml"
@@ -83,10 +76,10 @@ services:
   grafana:
     image: grafana/grafana
     volumes:
-      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
-      - ./grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
-      - ./grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/dashboard.yaml
-      - ./grafana/dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json
+      - ../grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ../grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - ../grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/dashboard.yaml
+      - ../grafana/dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json
     ports:
     - "3000:3000"
 
