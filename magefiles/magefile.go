@@ -274,7 +274,7 @@ func Ftw() error {
 
 // RunEnvoyExample spins up the test environment of envoy, access at http://localhost:8080. Requires docker-compose.
 func RunEnvoyExample() error {
-	return sh.RunWithV(map[string]string{"ENVOY_IMAGE": os.Getenv("ENVOY_IMAGE")}, "docker-compose", "--file", "example/envoy/docker-compose.yml", "up", "-d", "envoy-logs")
+	return sh.RunWithV(map[string]string{"ENVOY_IMAGE": os.Getenv("ENVOY_IMAGE")}, "docker-compose", "--file", "example/envoy/docker-compose.yml", "up")
 }
 
 // TeardownEnvoyExample tears down the test environment of envoy. Requires docker-compose.

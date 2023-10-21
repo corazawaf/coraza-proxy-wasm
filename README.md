@@ -156,7 +156,7 @@ FTW_INCLUDE=920410 go run mage.go ftw
 
 ## Example: Spinning up the coraza-wasm-filter for manual tests
 
-Once the filter is built, via the commands `mage runEnvoyExample`, `mage reloadEnvoyExample`, and `mage teardownEnvoyExample` you can spin up, test, and tear down the test environment. 
+Once the filter is built, via the commands `go run mage.go runEnvoyExample`, `go run mage.go reloadEnvoyExample`, and `go run mage.go teardownEnvoyExample` you can spin up, test, and tear down the test environment. 
 Envoy with the coraza-wasm filter will be reachable at `localhost:8080`. 
 The filter is configured with the CRS loaded working in Anomaly Scoring mode. 
 For details and locally tweaking the configuration refer to [@demo-conf](./wasmplugin/rules/coraza-demo.conf) and [@crs-setup-demo-conf](./wasmplugin/rules/crs-setup-demo.conf).
