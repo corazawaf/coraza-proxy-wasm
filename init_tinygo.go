@@ -17,11 +17,6 @@ import (
 // names and signatures of wasi-libc, used by TinyGo, not WASI ABI. Review these exports when either
 // the minimum supported version of Envoy changes or the maximum version of TinyGo.
 
-//export sched_yield
-func sched_yield() int32 {
-	return 0
-}
-
 // fdopendir is re-exported to avoid TinyGo 0.28's import of wasi_snapshot_preview1.fd_readdir.
 //
 //export fdopendir
