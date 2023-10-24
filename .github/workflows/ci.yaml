@@ -154,6 +154,19 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Create draft release
+        # Triggered only on tag creation and if release does not exist
+        if: matrix.multiphase_eval=='true' && github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+        run: |
+          set +e
+          if ! gh release view ${tag}; then
+            ./.github/workflows/release_notes.sh ${tag} > release-notes.txt
+            gh release create ${tag} --draft --notes-file release-notes.txt --title ${GITHUB_REF#refs/tags/}
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
+
+      - name: Push build artifact to release
         # Triggered only on tag creation
         if: matrix.multiphase_eval=='true' && github.event_name == 'push' && contains(github.ref, 'refs/tags/')
         run: |
@@ -161,7 +174,6 @@ jobs:
           mv build/main.wasm build/coraza-proxy-wasm.wasm
           tag="${GITHUB_REF#refs/tags/}"
           zip -j build/coraza-proxy-wasm-${tag}.zip build/coraza-proxy-wasm.wasm
-          ./.github/workflows/release_notes.sh ${tag} > release-notes.txt
-          gh release create ${tag} --draft --notes-file release-notes.txt --title ${GITHUB_REF#refs/tags/} ./build/coraza-proxy-wasm-${tag}.zip
+          gh release upload ${tag} ./build/coraza-proxy-wasm-${tag}.zip --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
