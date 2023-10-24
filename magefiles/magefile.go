@@ -189,6 +189,7 @@ func Build() error {
 
 	buildTags := []string{
 		"custommalloc",     // https://github.com/wasilibs/nottinygc#usage
+		"nottinygc_envoy",  // https://github.com/wasilibs/nottinygc#using-with-envoy
 		"no_fs_access",     // https://github.com/corazawaf/coraza#build-tags
 		"memoize_builders", // https://github.com/corazawaf/coraza#build-tags
 	}
