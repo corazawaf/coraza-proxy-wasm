@@ -20,7 +20,6 @@ Targets:
   ftw                     runs ftw tests with a built plugin and Envoy.
   lint                    verifies code quality.
   runEnvoyExample         spins up the test environment, access at http://localhost:8080.
-  runEnvoyExampleD        spins up the test environment in detached mode, access at http://localhost:8080.
   teardownEnvoyExample    tears down the test environment.
   ReloadEnvoyExample      reloads the test environment.
   test                    runs all unit tests.
