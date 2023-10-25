@@ -106,7 +106,7 @@ configuration:
                 "Include @demo-conf",
                 "SecDebugLogLevel 9",
                 "SecRuleEngine On",
-                "Include @crs-setup-demo-conf",
+                "Include @crs-setup-conf",
                 "Include @owasp_crs/*.conf"
             ]
         },
@@ -126,7 +126,7 @@ configuration:
                 "Include @demo-conf",
                 "SecDebugLogLevel 9",
                 "SecRuleEngine On",
-                "Include @crs-setup-demo-conf",
+                "Include @crs-setup-conf",
                 "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf"
             ]
         },
@@ -159,7 +159,7 @@ FTW_INCLUDE=920410 go run mage.go ftw
 Once the filter is built, via the commands `go run mage.go runEnvoyExample`, `go run mage.go reloadEnvoyExample`, and `go run mage.go teardownEnvoyExample` you can spin up, test, and tear down the test environment. 
 Envoy with the coraza-wasm filter will be reachable at `localhost:8080`. 
 The filter is configured with the CRS loaded working in Anomaly Scoring mode. 
-For details and locally tweaking the configuration refer to [@demo-conf](./wasmplugin/rules/coraza-demo.conf) and [@crs-setup-demo-conf](./wasmplugin/rules/crs-setup-demo.conf).
+For details and locally tweaking the configuration refer to [@recommended-conf](./wasmplugin/rules/coraza.conf-recommended.conf) and [@crs-setup-conf](./wasmplugin/rules/crs-setup.conf.example).
 
 In order to monitor envoy logs while performing requests you can run:
 

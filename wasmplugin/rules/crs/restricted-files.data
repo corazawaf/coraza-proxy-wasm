@@ -23,6 +23,7 @@
 .gitattributes
 .gitconfig
 .gnupg/
+.google_authenticator
 .hplip/hplip.conf
 .htaccess
 .htdigest
@@ -79,6 +80,8 @@
 /.hg/
 /.hgignore
 /.svn/
+# October CMS credentials file
+/auth.json
 # Wordpress
 wp-config.php
 wp-config.bak
@@ -99,8 +102,11 @@ wp-config.txt
 /sites/default/default.settings.php
 /sites/default/settings.php
 /sites/default/settings.local.php
-# Prestashop configuration file
+# NextCloud
+/config/config.php
+# PrestaShop configuration files
 /config/settings.inc.php
+/app/config/parameters.php
 # Magento
 /app/etc/local.xml
 # Sublime Text
@@ -158,7 +164,7 @@ soapConfig.xml
 # Common names for local PHP error logs
 php_error.log
 php_errors.log
-# Java directory for non-pubic application data
+# Java directory for non-public application data
 WEB-INF/
 # Fortinet SSL VPN session file
 sslvpn_websession

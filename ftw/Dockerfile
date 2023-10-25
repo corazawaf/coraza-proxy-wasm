@@ -7,9 +7,9 @@ RUN apk update && apk add curl
 
 WORKDIR /workspace
 
-# TODO update when new CRS version is tagged: https://github.com/coreruleset/coreruleset/archive/refs/tags/v4.0.0-rc1.tar.gz
-ADD https://github.com/coreruleset/coreruleset/tarball/477d8c3431d042294af2651f08d63d10b6f3fd60 /workspace/coreruleset/
-RUN cd coreruleset && tar -xf 477d8c3431d042294af2651f08d63d10b6f3fd60 --strip-components 1
+# TODO update when new CRS version is tagged: https://github.com/coreruleset/coreruleset/archive/refs/tags/v4.0.0-rc2.tar.gz
+ADD https://github.com/coreruleset/coreruleset/tarball/2b92d53ea708babbca8da06cd13decffbc9e31b5 /workspace/coreruleset/
+RUN cd coreruleset && tar -xf 2b92d53ea708babbca8da06cd13decffbc9e31b5 --strip-components 1
 
 COPY ftw.yml /workspace/ftw.yml
 COPY tests.sh /workspace/tests.sh

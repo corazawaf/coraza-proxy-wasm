@@ -45,7 +45,7 @@ spec:
       - Include @demo-conf
       - SecDebugLogLevel 9
       - SecRuleEngine On
-      - Include @crs-setup-demo-conf
+      - Include @crs-setup-conf
       - Include @owasp_crs/*.conf
   selector:
     matchLabels:
@@ -82,7 +82,7 @@ spec:
       - Include @demo-conf
       - SecDebugLogLevel 9
       - SecRuleEngine On
-      - Include @crs-setup-demo-conf
+      - Include @crs-setup-conf
       - Include @owasp_crs/*.conf
   selector:
     matchLabels:
