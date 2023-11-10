@@ -1,19 +1,19 @@
 // Copyright The OWASP Coraza contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build geoip-country && !geoip-city
+//go:build geoip_country && !geoip_city
 
 package main
 
 import (
 	_ "embed"
 
-	geo "github.com/woehrl01/coraza-geoip"
+	geo "github.com/corazawaf/coraza-geoip"
 )
 
 //go:embed geoip.mmdb
 var geoDatabase []byte
 
 func init() {
-	geo.RegisterGeoDatabase(geoDatabase, "country")
+	_ = geo.RegisterGeoDatabase(geoDatabase, "country")
 }

@@ -203,10 +203,10 @@ func Build() error {
 		buildTags = append(buildTags, "memstats")
 	}
 	if os.Getenv("GEOIP") == "CITY" {
-		buildTags = append(buildTags, "geoip-city")
+		buildTags = append(buildTags, "geoip_city")
 	}
 	if os.Getenv("GEOIP") == "COUNTRY" {
-		buildTags = append(buildTags, "geoip-country")
+		buildTags = append(buildTags, "geoip_country")
 	}
 
 	buildTagArg := fmt.Sprintf("-tags='%s'", strings.Join(buildTags, " "))

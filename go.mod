@@ -16,8 +16,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
-	github.com/oschwald/geoip2-golang v1.9.0 // indirect
-	github.com/oschwald/maxminddb-golang v1.12.0 // indirect
 	github.com/petar-dambovaliev/aho-corasick v0.0.0-20230725210150-fb29fc3c913e // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/tetratelabs/wazero v1.5.0 // indirect
@@ -26,10 +24,8 @@ require (
 	github.com/wasilibs/go-aho-corasick v0.5.0 // indirect
 	github.com/wasilibs/go-libinjection v0.4.0 // indirect
 	github.com/wasilibs/go-re2 v1.4.0 // indirect
-	github.com/woehrl01/coraza-geoip v0.0.0-20231013163509-ac171898a7c5 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sync v0.4.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	rsc.io/binaryregexp v0.2.0 // indirect
