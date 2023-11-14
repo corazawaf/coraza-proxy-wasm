@@ -56,7 +56,7 @@ In order to run the coraza-proxy-wasm we need to spin up an envoy configuration 
     filter_chains:
     - filters:
         - name: envoy.filters.network.http_connection_manager
-            typed_config:
+          typed_config:
             "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
             stat_prefix: ingress_http
             codec_type: auto
