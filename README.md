@@ -26,8 +26,10 @@ Targets:
 ```
 
 ### Building requirements
+
 Building the filter requires:
-- [Go](https://go.dev/doc/install) 
+
+- [Go](https://go.dev/doc/install)
 - [TinyGo](https://tinygo.org/getting-started/install/)
 
 Up to date required versions can be found looking at [`minGoVersion` and `tinygoMinorVersion` variables](./magefiles/magefile.go).
@@ -39,6 +41,22 @@ go run mage.go build
 ```
 
 You will find the WASM plugin under `./build/main.wasm`.
+
+### Building with `geoipLookup` Support
+
+1. **Provide Database File**: Ensure you have a GeoIP2 ([oschwald/geoip2-golang](https://github.com/oschwald/geoip2-golang)) compatible database. Place this file with the name `geoip.mmdb` in the project's root folder.
+
+2. **Choose Database Preference:** Depending on the type of the database you desire, set the `GEOIP` environment variable to either of the following:
+
+   - For city-level database: `GEOIP=CITY`
+   - For country-level database: `GEOIP=COUNTRY`
+
+3. **Build the Project:** With the appropriate `GEOIP` variable set, proceed to build the project.
+
+   ```bash
+   export GEOIP=CITY
+   go run mage.go build
+   ```
 
 ### Multiphase
 
