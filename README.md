@@ -2,6 +2,8 @@
 
 Web Application Firewall WASM filter built on top of [Coraza](https://github.com/corazawaf/coraza) and implementing the [proxy-wasm ABI](https://github.com/proxy-wasm/spec). It can be loaded directly from Envoy or also used as an Istio plugin.
 
+Mind that a WAF is not a plug-and-play security solution. It requires a configuration and tuning tailored to the environment and traffic the WAF is meant to protect to be effective. For production usage, it is strongly recommended to be fully aware of the deployed configurations (See [@recommended-conf](./wasmplugin/rules/coraza.conf-recommended.conf) and [@crs-setup-conf](./wasmplugin/rules/crs-setup.conf.example)) and to perform a tuning phase of the rule set used. For more information on tuning the OWASP Core Rule Set (CRS), please refer to the [False Positives and Tuning](https://coreruleset.org/docs/concepts/false_positives_tuning/) guide.
+
 ## Getting started
 
 `go run mage.go -l` lists all the available commands:
@@ -134,7 +136,7 @@ configuration:
     }
 ```
 
-#### Recommendations using CRS with proxy-wasm
+#### Recommendations using CRS with coraza-proxy-wasm
 
 - In order to mitigate as much as possible malicious requests (or connections open) sent upstream, it is recommended to keep the [CRS Early Blocking](https://coreruleset.org/20220302/the-case-for-early-blocking/) feature enabled (SecAction [`900120`](./wasmplugin/rules/crs-setup.conf.example)).
 
