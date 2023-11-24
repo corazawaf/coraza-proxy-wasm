@@ -13,7 +13,7 @@
 # Data comes from multiple places of which some doesn't work anymore. Few are
 # listed below:
 # - https://github.com/JohnTroony/php-webshells/tree/master/Collection
-# - https://www.localroot.net/shell/
+# - https://www.localroot.net/
 # - Google search (keywords like webshells, php backdoor and similar)
 
 # 1n73ction web shell
@@ -22,11 +22,11 @@
 >Ajax/PHP Command Shell<
 # AK-74 Security Team Web-shell
 .:: :[ AK-74 Security Team Web-shell ]: ::.
-# ALFA-SHELL web shell (https://github.com/solevisible)
+# ALFA-SHELL web shell (deprecated, https://github.com/solevisible)
 ~ ALFA TEaM Shell -
 # Andela Yuwono Priv8 Shell web shell
 <title>--==[[ Andela Yuwono Priv8 Shell ]]==--</title>
-# Ani-Shell web shell (http://ani-shell.sourceforge.net/)
+# Ani-Shell web shell (https://ani-shell.sourceforge.net/)
 <title>Ani-Shell | India</title>
 # AnonymousFox PHP web shell
 <input type='submit' value='file' /></form>AnonymousFox
@@ -72,6 +72,19 @@ color=DeepSkyBlue   size=6>    ## ex0 shell
 <title>IndoXploit</title>
 # KA_uShell web shell
 <KAdot Universal Shell>     |
+## Laudanum PHP Web Shells (http://sourceforge.net/projects/laudanum)
+# Laudanum dns.php
+<title>Laudanum PHP DNS Access</title>
+# Laudanum file.php
+<title>Laudanum PHP File Browser</title>
+# Laudanum host.php
+<title>Laudanum PHP Hostname by IP Lookup</title>
+# Laudanum proxy.php
+<title>Laudanum PHP Proxy</title>
+# Laudanum shell.php
+<title>Laudanum PHP Shell Access</title>
+## Laudanum WordPress Plugin settings.php
+<h2>Laudanum Tools</h2>
 # Lifka Shell web shell
 >LIFKA SHELL</span></big></big></big></a>
 # Loader'z web shell

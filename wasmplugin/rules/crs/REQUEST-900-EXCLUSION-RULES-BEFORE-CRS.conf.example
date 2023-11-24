@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------
-# OWASP ModSecurity Core Rule Set ver.4.0.0-rc1
+# OWASP ModSecurity Core Rule Set ver.4.0.0-rc2
 # Copyright (c) 2006-2020 Trustwave and contributors. All rights reserved.
-# Copyright (c) 2021-2022 Core Rule Set project. All rights reserved.
+# Copyright (c) 2021-2023 Core Rule Set project. All rights reserved.
 #
 # The OWASP ModSecurity Core Rule Set is distributed under
 # Apache Software License (ASL) version 2
@@ -150,6 +150,10 @@
 # This rule illustrates that we can remove a rule range via a ctl action.
 # This uses the fact, that rules are grouped by topic in rule files covering
 # a certain id range.
+# IMPORTANT: ModSecurity v3, aka libModSecurity, does not currently support the
+# use of rule ranges in a ruleRemoveById ctl action (this feature has been
+# planned for v3.1). Consider using ruleRemoveByTag as a workaround, if
+# appropriate.
 #
 # ModSecurity Rule Exclusion: Disable all SQLi and XSS rules
 # SecRule REQUEST_FILENAME "@beginsWith /admin" \
@@ -176,7 +180,7 @@
 # conditions will not be matched against the following rules:
 #
 # - id: 911100 (allowed methods)
-# - id: 913100,913110,913120,913101,913102 (scan detection)
+# - id: 913100 (scan detection)
 # - id: 920280 (missing/empty host header)
 # - id: 920350 (IP address in host header)
 # - tag: attack-disclosure (all RESPONSE-*-DATA-LEAKAGES rules)
@@ -191,10 +195,6 @@
 #       SecRule REQUEST_HEADERS:User-Agent "@pm ELB-HealthChecker" \
 #           "ctl:ruleRemoveById=911100,\
 #           ctl:ruleRemoveById=913100,\
-#           ctl:ruleRemoveById=913110,\
-#           ctl:ruleRemoveById=913120,\
-#           ctl:ruleRemoveById=913101,\
-#           ctl:ruleRemoveById=913102,\
 #           ctl:ruleRemoveById=920280,\
 #           ctl:ruleRemoveById=920350,\
 #           ctl:ruleRemoveByTag=attack-disclosure"

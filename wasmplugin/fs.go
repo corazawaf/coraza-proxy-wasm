@@ -23,7 +23,7 @@ func init() {
 		map[string]string{
 			"@recommended-conf":    "coraza.conf-recommended.conf",
 			"@demo-conf":           "coraza-demo.conf",
-			"@crs-setup-demo-conf": "crs-setup-demo.conf",
+			"@crs-setup-demo-conf": "crs-setup.conf.example", // Deprecated, points to @crs-setup-conf
 			"@ftw-conf":            "ftw-config.conf",
 			"@crs-setup-conf":      "crs-setup.conf.example",
 		},

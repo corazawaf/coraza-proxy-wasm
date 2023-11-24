@@ -139,7 +139,7 @@ func TestLifecycleMultiPhase(t *testing.T) {
 		{
 			name: "944150 - Deny anticipated at request headers phase from response headers phase",
 			inlineRules: `
-			Include @demo-conf\nInclude @crs-setup-demo-conf\nInclude @owasp_crs/*.conf
+			Include @demo-conf\nInclude @crs-setup-conf\nInclude @owasp_crs/*.conf
 			`,
 			reqHdrs: [][2]string{
 				{":path", "/"},
@@ -154,7 +154,7 @@ func TestLifecycleMultiPhase(t *testing.T) {
 		{
 			name: "943120 - Deny anticipated at request headers phase from response headers phase",
 			inlineRules: `
-			Include @demo-conf\nInclude @crs-setup-demo-conf\nInclude @owasp_crs/*.conf
+			Include @demo-conf\nInclude @crs-setup-conf\nInclude @owasp_crs/*.conf
 			`,
 			reqHdrs: [][2]string{
 				{":path", "/login.php?jsessionid=74B0CB414BD77D17B5680A6386EF1666"},
