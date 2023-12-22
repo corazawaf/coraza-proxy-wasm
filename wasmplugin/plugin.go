@@ -537,6 +537,10 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		return replaceResponseBodyWhenInterrupted(ctx.logger, bodySize)
 	}
 
+	if ctx.processedResponseBody {
+		return types.ActionContinue
+	}
+
 	if ctx.tx == nil {
 		return types.ActionContinue
 	}
