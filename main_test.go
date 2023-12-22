@@ -231,8 +231,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "request body accepted, no request body access",
 			inlineRules: `
-		SecRuleEngine On\nSecRequestBodyAccess Off\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
-		`,
+			SecRuleEngine On\nSecRequestBodyAccess Off\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -242,8 +242,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "request body accepted, payload above process partial",
 			inlineRules: `
-		SecRuleEngine On\nSecRequestBodyAccess On\nSecRequestBodyLimit 2\nSecRequestBodyLimitAction ProcessPartial\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
-		`,
+			SecRuleEngine On\nSecRequestBodyAccess On\nSecRequestBodyLimit 2\nSecRequestBodyLimitAction ProcessPartial\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -253,8 +253,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "request body denied, above limits",
 			inlineRules: `
-				SecRuleEngine On\nSecRequestBodyAccess On\nSecRequestBodyLimit 2\nSecRequestBodyLimitAction Reject\nSecRule REQUEST_BODY \"name=yogi\" \"id:101,phase:2,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecRequestBodyAccess On\nSecRequestBodyLimit 2\nSecRequestBodyLimitAction Reject\nSecRule REQUEST_BODY \"name=yogi\" \"id:101,phase:2,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionPause,
 			responseHdrsAction: types.ActionContinue,
@@ -264,8 +264,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "status accepted",
 			inlineRules: `
-				SecRuleEngine On\nSecRule RESPONSE_STATUS \"500\" \"id:101,phase:3,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecRule RESPONSE_STATUS \"500\" \"id:101,phase:3,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -275,8 +275,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "status denied",
 			inlineRules: `
-				SecRuleEngine On\nSecRule RESPONSE_STATUS \"200\" \"id:101,phase:3,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecRule RESPONSE_STATUS \"200\" \"id:101,phase:3,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionPause,
@@ -286,8 +286,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "status accepted rx",
 			inlineRules: `
-				SecRuleEngine On\nSecRule RESPONSE_STATUS \"@rx [^\\d]+\" \"id:101,phase:3,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecRule RESPONSE_STATUS \"@rx [^\\d]+\" \"id:101,phase:3,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -297,8 +297,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "status denied rx",
 			inlineRules: `
-				SecRuleEngine On\nSecRule RESPONSE_STATUS \"@rx [\\d]+\" \"id:101,phase:3,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecRule RESPONSE_STATUS \"@rx [\\d]+\" \"id:101,phase:3,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionPause,
@@ -308,8 +308,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response header name accepted",
 			inlineRules: `
-				SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq transfer-encoding\" \"id:101,phase:3,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq transfer-encoding\" \"id:101,phase:3,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -319,8 +319,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response header name denied",
 			inlineRules: `
-				SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq server\" \"id:101,phase:3,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecRule RESPONSE_HEADERS_NAMES \"@streq server\" \"id:101,phase:3,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionPause,
@@ -330,8 +330,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response header value accepted",
 			inlineRules: `
-				SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq rusttest\" \"id:101,phase:3,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq rusttest\" \"id:101,phase:3,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -341,8 +341,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response header value denied",
 			inlineRules: `
-				SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq gotest\" \"id:101,phase:3,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecRule RESPONSE_HEADERS:server \"@streq gotest\" \"id:101,phase:3,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionPause,
@@ -352,8 +352,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response body accepted",
 			inlineRules: `
-				SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains pooh\" \"id:101,phase:4,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains pooh\" \"id:101,phase:4,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -363,8 +363,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response body denied, end of body",
 			inlineRules: `
-				SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyMimeType text/plain\nSecRule RESPONSE_BODY \"@contains yogi\" \"id:101,phase:4,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyMimeType text/plain\nSecRule RESPONSE_BODY \"@contains yogi\" \"id:101,phase:4,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -374,8 +374,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response body denied, start of body",
 			inlineRules: `
-				SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyMimeType text/plain\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyMimeType text/plain\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -385,8 +385,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response body accepted, no response body access",
 			inlineRules: `
-				SecRuleEngine On\nSecResponseBodyAccess Off\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecResponseBodyAccess Off\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -396,8 +396,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response body accepted, payload above process partial",
 			inlineRules: `
-				SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyLimit 2\nSecResponseBodyLimitAction ProcessPartial\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyLimit 2\nSecResponseBodyLimitAction ProcessPartial\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -407,8 +407,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response body denied, above limits",
 			inlineRules: `
-				SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyLimit 2\nSecResponseBodyLimitAction Reject\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
-				`,
+			SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyLimit 2\nSecResponseBodyLimitAction Reject\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
+			`,
 			requestHdrsAction:                   types.ActionContinue,
 			requestBodyAction:                   types.ActionContinue,
 			responseHdrsAction:                  types.ActionContinue,
