@@ -6,7 +6,7 @@ require (
 	github.com/corazawaf/coraza-wasilibs v0.1.0
 	github.com/corazawaf/coraza/v3 v3.0.4
 	github.com/stretchr/testify v1.8.2
-	github.com/tetratelabs/proxy-wasm-go-sdk v0.0.0-00010101000000-000000000000
+	github.com/tetratelabs/proxy-wasm-go-sdk v0.22.1-0.20231223200341-9c1dd2ba6bf1
 	github.com/tidwall/gjson v1.17.0
 	github.com/wasilibs/nottinygc v0.7.0
 )
@@ -30,5 +30,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	rsc.io/binaryregexp v0.2.0 // indirect
 )
-
-replace github.com/tetratelabs/proxy-wasm-go-sdk => github.com/M4tteoP/proxy-wasm-go-sdk v0.20.1-0.20231222184143-d9e391b5f4b3
