@@ -23,10 +23,7 @@
     "liveNow": false,
     "panels": [
       {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "P1809F7CD0C75ACF3"
-        },
+        "datasource": "$datasource",
         "description": "Current amount of allocated memory in bytes. Total of both new and old Envoy processes on hot restart.",
         "fieldConfig": {
           "defaults": {
@@ -88,7 +85,7 @@
                 }
               ]
             },
-            "unit": "decbytes"
+            "unit": "bytes"
           },
           "overrides": []
         },
@@ -116,10 +113,7 @@
         "pluginVersion": "10.1.5",
         "targets": [
           {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "P1809F7CD0C75ACF3"
-            },
+            "datasource": "$datasource",
             "editorMode": "code",
             "expr": "envoy_server_memory_allocated",
             "format": "time_series",
@@ -133,10 +127,7 @@
         "type": "timeseries"
       },
       {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "P1809F7CD0C75ACF3"
-        },
+        "datasource": "$datasource",
         "description": "Current reserved heap size. New Envoy process heap size on hot restart.",
         "fieldConfig": {
           "defaults": {
@@ -201,7 +192,7 @@
                 }
               ]
             },
-            "unit": "decbytes"
+            "unit": "bytes"
           },
           "overrides": []
         },
@@ -229,10 +220,7 @@
         "pluginVersion": "10.1.5",
         "targets": [
           {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "P1809F7CD0C75ACF3"
-            },
+            "datasource": "$datasource",
             "editorMode": "code",
             "expr": "envoy_server_memory_heap_size",
             "format": "time_series",
@@ -246,10 +234,7 @@
         "type": "timeseries"
       },
       {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "P1809F7CD0C75ACF3"
-        },
+        "datasource": "$datasource",
         "description": "",
         "fieldConfig": {
           "defaults": {
@@ -280,7 +265,7 @@
                 }
               ]
             },
-            "unit": "decbytes"
+            "unit": "bytes"
           },
           "overrides": []
         },
@@ -310,10 +295,7 @@
         "pluginVersion": "10.1.5",
         "targets": [
           {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "P1809F7CD0C75ACF3"
-            },
+            "datasource": "$datasource",
             "editorMode": "code",
             "expr": "max_over_time(envoy_server_memory_allocated[$__range])",
             "format": "time_series",
@@ -327,10 +309,7 @@
         "type": "stat"
       },
       {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "P1809F7CD0C75ACF3"
-        },
+        "datasource": "$datasource",
         "description": "",
         "fieldConfig": {
           "defaults": {
@@ -361,7 +340,7 @@
                 }
               ]
             },
-            "unit": "decbytes"
+            "unit": "bytes"
           },
           "overrides": []
         },
@@ -391,10 +370,7 @@
         "pluginVersion": "10.1.5",
         "targets": [
           {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "P1809F7CD0C75ACF3"
-            },
+            "datasource": "$datasource",
             "editorMode": "code",
             "expr": "max_over_time(envoy_server_memory_heap_size[$__range])",
             "format": "time_series",
@@ -413,7 +389,27 @@
     "style": "dark",
     "tags": [],
     "templating": {
-      "list": []
+      "list": [
+        {
+          "current": {
+            "selected": true,
+            "text": "default",
+            "value": "default"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "label": null,
+          "multi": false,
+          "name": "datasource",
+          "options": [],
+          "query": "prometheus",
+          "queryValue": "",
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "type": "datasource"
+        }
+      ]
     },
     "time": {
       "from": "now-15m",
@@ -444,7 +440,7 @@
         "30d"
       ]
     },
-    "timezone": "utc",
+    "timezone": "browser",
     "title": "Example dashboard",
     "uid": "c5934944-4bb1-425b-b7b1-e2e4f56668a9",
     "version": 2,

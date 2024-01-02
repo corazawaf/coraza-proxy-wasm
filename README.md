@@ -170,6 +170,8 @@ In order to individually monitor envoy logs while performing requests, in anothe
 - Envoy logs: `docker-compose -f ./example/envoy/docker-compose.yml logs -f envoy-logs`.
 - Critical wasm (audit) logs: `docker-compose -f ./example/envoy/docker-compose.yml logs -f wasm-logs`
 
+The Envoy example comes also with a Grafana dashboard that can be accessed at `localhost:3000` (admin/admin) in order to monitor the memory consumption.
+
 ### Manual requests
 
 List of requests that can be manually executed and tweaked to grasp the behaviour of the filter:
