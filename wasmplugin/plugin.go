@@ -384,36 +384,42 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		return types.ActionContinue
 	}
 
-	if bodySize > 0 {
-		b, err := proxywasm.GetHttpRequestBody(ctx.bodyReadIndex, bodySize)
-		if err == nil {
-			interruption, _, err := tx.WriteRequestBody(b)
-			if err != nil {
-				ctx.logger.Error().Err(err).Msg("Failed to write request body")
-				return types.ActionContinue
-			}
-
-			if interruption != nil {
-				return ctx.handleInterruption(interruptionPhaseHttpRequestBody, interruption)
-			}
-
-			ctx.bodyReadIndex += bodySize
-		} else if err != types.ErrorStatusNotFound {
-			// When using FWT sometimes (it is inconsistent) we receive calls where ctx.bodyReadIndex == bodySize
-			// meaning that the incoming size in the body is the same as the already read body.
-			// When that happens, this code fails to retrieve the body through proxywasm.GetHttpRequestBody
-			// as the total body is from 0 up to X bytes and since the last bodySize = X it attempts to read
-			// from X up to X bytes and it returns a types.ErrorStatusNotFound. This could happen despite
-			// endOfStream being true or false.
-			// The tests in 920410 show this problem.
-			// TODO(jcchavezs): Verify if this is a FTW problem.
-			ctx.logger.Error().
-				Err(err).
-				Int("body_read_index", ctx.bodyReadIndex).
+	// bodySize is the size of the whole body received so far, not the size of the current chunk
+	chunkSize := bodySize - ctx.bodyReadIndex
+	// OnHttpRequestBody might be called more than once with the same data, we check if there is new data available to be read
+	if chunkSize > 0 {
+		bodyChunk, err := proxywasm.GetHttpRequestBody(ctx.bodyReadIndex, chunkSize)
+		if err != nil {
+			ctx.logger.Error().Err(err).
 				Int("body_size", bodySize).
+				Int("body_read_index", ctx.bodyReadIndex).
+				Int("chunk_size", chunkSize).
 				Msg("Failed to read request body")
 			return types.ActionContinue
 		}
+		readchunkSize := len(bodyChunk)
+		if readchunkSize != chunkSize {
+			ctx.logger.Warn().Int("read_chunk_size", readchunkSize).Int("chunk_size", chunkSize).Msg("Request chunk size read is different from the computed one")
+		}
+		interruption, writtenBytes, err := tx.WriteRequestBody(bodyChunk)
+		if err != nil {
+			ctx.logger.Error().Err(err).Msg("Failed to write request body")
+			return types.ActionContinue
+		}
+		if interruption != nil {
+			return ctx.handleInterruption(interruptionPhaseHttpRequestBody, interruption)
+		}
+
+		// If not the whole chunk has been written, it implicitly means that we reached the waf request body limit.
+		// Internally ProcessRequestBody has been called and it did not raise any interruption (just checked in the condition above).
+		if writtenBytes < readchunkSize {
+			// No further body data will be processed
+			// Setting processedRequestBody avoid to call more than once ProcessRequestBody
+			ctx.processedRequestBody = true
+			return types.ActionContinue
+		}
+
+		ctx.bodyReadIndex += readchunkSize
 	}
 
 	if endOfStream {
@@ -531,6 +537,10 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		return replaceResponseBodyWhenInterrupted(ctx.logger, bodySize)
 	}
 
+	if ctx.processedResponseBody {
+		return types.ActionContinue
+	}
+
 	if ctx.tx == nil {
 		return types.ActionContinue
 	}
@@ -562,33 +572,46 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		return types.ActionContinue
 	}
 
-	if bodySize > 0 {
-		body, err := proxywasm.GetHttpResponseBody(ctx.bodyReadIndex, bodySize)
-		if err == nil {
-			interruption, _, err := tx.WriteResponseBody(body)
-			if err != nil {
-				ctx.logger.Error().Err(err).Msg("Failed to write response body")
-				return types.ActionContinue
-			}
-			// bodyReadIndex has to be updated before evaluating the interruption
-			// it is internally needed to replace the full body if the tx is interrupted
-			ctx.bodyReadIndex += bodySize
-			if interruption != nil {
-				return ctx.handleInterruption(interruptionPhaseHttpResponseBody, interruption)
-			}
-		} else if err != types.ErrorStatusNotFound {
+	chunkSize := bodySize - ctx.bodyReadIndex
+	if chunkSize > 0 {
+		bodyChunk, err := proxywasm.GetHttpResponseBody(ctx.bodyReadIndex, chunkSize)
+		if err != nil {
 			ctx.logger.Error().
-				Int("body_read_index", ctx.bodyReadIndex).
 				Int("body_size", bodySize).
+				Int("body_read_index", ctx.bodyReadIndex).
+				Int("chunk_size", chunkSize).
 				Err(err).
 				Msg("Failed to read response body")
+			return types.ActionContinue
+		}
+
+		readchunkSize := len(bodyChunk)
+		if readchunkSize != chunkSize {
+			ctx.logger.Warn().Int("read_chunk_size", readchunkSize).Int("chunk_size", chunkSize).Msg("Response chunk size read is different from the computed one")
+		}
+		interruption, writtenBytes, err := tx.WriteResponseBody(bodyChunk)
+		if err != nil {
+			ctx.logger.Error().Err(err).Msg("Failed to write response body")
+			return types.ActionContinue
+		}
+		// bodyReadIndex has to be updated before evaluating the interruption
+		// it is internally needed to replace the full body if the transaction is interrupted
+		ctx.bodyReadIndex += readchunkSize
+		if interruption != nil {
+			return ctx.handleInterruption(interruptionPhaseHttpResponseBody, interruption)
+		}
+		// If not the whole chunk has been written, it implicitly means that we reached the waf response body limit,
+		// internally ProcessResponseBody has been called and it did not raise any interruption (just checked in the condition above).
+		if writtenBytes < readchunkSize {
+			// no further body data will be processed
+			ctx.processedResponseBody = true
 			return types.ActionContinue
 		}
 	}
 
 	if endOfStream {
 		// We have already sent response headers, an unauthorized response can not be sent anymore,
-		// but we can still drop the response to prevent leaking sensitive content.
+		// but we can still drop the response body to prevent leaking sensitive content.
 		// The error will also be logged by Coraza.
 		ctx.processedResponseBody = true
 		interruption, err := tx.ProcessResponseBody()
@@ -604,7 +627,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		return types.ActionContinue
 	}
 	// Wait until we see the entire body. It has to be buffered in order to check that it is fully legit
-	// before sending it downstream
+	// before sending it downstream (to the client)
 	return types.ActionPause
 }
 

@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -229,8 +231,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "request body accepted, no request body access",
 			inlineRules: `
-		SecRuleEngine On\nSecRequestBodyAccess Off\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
-		`,
+			SecRuleEngine On\nSecRequestBodyAccess Off\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -240,8 +242,8 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "request body accepted, payload above process partial",
 			inlineRules: `
-		SecRuleEngine On\nSecRequestBodyAccess On\nSecRequestBodyLimit 2\nSecRequestBodyLimitAction ProcessPartial\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
-		`,
+			SecRuleEngine On\nSecRequestBodyAccess On\nSecRequestBodyLimit 2\nSecRequestBodyLimitAction ProcessPartial\nSecRule REQUEST_BODY \"animal=bear\" \"id:101,phase:2,t:lowercase,deny\"
+			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
 			responseHdrsAction: types.ActionContinue,
@@ -450,6 +452,16 @@ func TestLifecycle(t *testing.T) {
 				// Stream bodies in chunks of 5
 
 				if requestHdrsAction == types.ActionContinue {
+					totalBodysent := 0
+					requestBodyAccess := strings.Contains(tt.inlineRules, "SecRequestBodyAccess On")
+					requestBodyProcessPartial := strings.Contains(tt.inlineRules, "SecRequestBodyLimitAction ProcessPartial")
+					var requestBodyLimit int
+					matches := regexp.MustCompile(`SecRequestBodyLimit (\d+)`).FindStringSubmatch(tt.inlineRules)
+					if len(matches) > 1 {
+						var err error
+						requestBodyLimit, err = strconv.Atoi(matches[1])
+						require.NoError(t, err)
+					}
 					for i := 0; i < len(reqBody); i += 5 {
 						eos := i+5 >= len(reqBody)
 						var body []byte
@@ -458,13 +470,20 @@ func TestLifecycle(t *testing.T) {
 						} else {
 							body = reqBody[i : i+5]
 						}
+						totalBodysent += len(body)
 						requestBodyAction = host.CallOnRequestBody(id, body, eos)
-						requestBodyAccess := strings.Contains(tt.inlineRules, "SecRequestBodyAccess On")
 						switch {
 						case eos:
 							requireEqualAction(t, tt.requestBodyAction, requestBodyAction, "unexpected body action, want %q, have %q on end of stream")
-						case requestBodyAccess:
+						// Reject: We expect pause in all cases with action Reject: being the limit reached or not
+						case requestBodyAccess && !requestBodyProcessPartial:
 							requireEqualAction(t, types.ActionPause, requestBodyAction, "unexpected request body action, want %q, have %q")
+						// ProcessPartial: we expect pause until the limit is reached
+						case requestBodyAccess && requestBodyProcessPartial && totalBodysent < requestBodyLimit:
+							requireEqualAction(t, types.ActionPause, requestBodyAction, "unexpected request body action, want %q, have %q")
+						// ProcessPartial: we expect tt.requestBodyAction when the limit is reached
+						case requestBodyAccess && requestBodyProcessPartial && totalBodysent >= requestBodyLimit:
+							requireEqualAction(t, tt.requestBodyAction, requestBodyAction, "unexpected request body action, want %q, have %q")
 						default:
 							requireEqualAction(t, types.ActionContinue, requestBodyAction, "unexpected request body action, want %q, have %q")
 						}
@@ -478,6 +497,15 @@ func TestLifecycle(t *testing.T) {
 
 				if responseHdrsAction == types.ActionContinue {
 					responseBodyAccess := strings.Contains(tt.inlineRules, "SecResponseBodyAccess On")
+					responseBodyProcessPartial := strings.Contains(tt.inlineRules, "SecResponseBodyLimitAction ProcessPartial")
+					var responseBodyLimit int
+					matches := regexp.MustCompile(`SecResponseBodyLimit (\d+)`).FindStringSubmatch(tt.inlineRules)
+					if len(matches) > 1 {
+						var err error
+						responseBodyLimit, err = strconv.Atoi(matches[1])
+						require.NoError(t, err)
+					}
+					totalBodysent := 0
 					for i := 0; i < len(respBody); i += 5 {
 						eos := i+5 >= len(respBody)
 						var body []byte
@@ -486,6 +514,7 @@ func TestLifecycle(t *testing.T) {
 						} else {
 							body = respBody[i : i+5]
 						}
+						totalBodysent += len(body)
 						responseBodyAction := host.CallOnResponseBody(id, body, eos)
 						switch {
 						// expectResponseRejectLimitActionSinceFirstChunk: writing the first chunk (len(respBody) bytes), it is expected to reach
@@ -493,8 +522,13 @@ func TestLifecycle(t *testing.T) {
 						// with the interruption enforced replacing the body with null bytes (checked with tt.respondedNullBody)
 						case eos, tt.expectResponseRejectSinceFirstChunk:
 							requireEqualAction(t, types.ActionContinue, responseBodyAction, "unexpected response body action, want %q, have %q on end of stream")
-						case responseBodyAccess:
-							requireEqualAction(t, types.ActionPause, responseBodyAction, "unexpected response body action, want %q, have %q")
+						// Reject: We expect pause in all cases with action Reject: being the limit reached or not
+						// It would either be paused because we are callectin the body or because the limit was reached and we triggered the action
+						case responseBodyAccess && !responseBodyProcessPartial:
+							requireEqualAction(t, types.ActionPause, responseBodyAction, "unexpected request body action, want %q, have %q")
+						// ProcessPartial: we expect pause until the limit is reached
+						case responseBodyAccess && responseBodyProcessPartial && totalBodysent < responseBodyLimit:
+							requireEqualAction(t, types.ActionPause, responseBodyAction, "unexpected request body action, want %q, have %q")
 						default:
 							requireEqualAction(t, types.ActionContinue, responseBodyAction, "unexpected response body action, want %q, have %q")
 						}
