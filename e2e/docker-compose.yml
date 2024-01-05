@@ -15,6 +15,10 @@ services:
     command:
       - -c
       - /conf/envoy-config.yaml
+      - --service-cluster # required to export metrics
+      - envoy
+      - --service-node # required to export metrics
+      - envoy
     volumes:
       - ../build:/build
       - .:/conf

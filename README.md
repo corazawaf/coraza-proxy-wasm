@@ -28,8 +28,10 @@ Targets:
 ```
 
 ### Building requirements
+
 Building the filter requires:
-- [Go](https://go.dev/doc/install) 
+
+- [Go](https://go.dev/doc/install)
 - [TinyGo](https://tinygo.org/getting-started/install/)
 
 Up to date required versions can be found looking at [`minGoVersion` and `tinygoMinorVersion` variables](./magefiles/magefile.go).
@@ -163,10 +165,12 @@ Envoy with the coraza-wasm filter will be reachable at `localhost:8080`.
 The filter is configured with the CRS loaded working in Anomaly Scoring mode. 
 For details and locally tweaking the configuration refer to [@recommended-conf](./wasmplugin/rules/coraza.conf-recommended.conf) and [@crs-setup-conf](./wasmplugin/rules/crs-setup.conf.example).
 
-In order to monitor envoy logs while performing requests you can run:
+In order to individually monitor envoy logs while performing requests, in another terminal you can run:
 
-- Envoy logs: `docker-compose -f ./example/docker-compose.yml logs -f envoy-logs`.
-- Critical wasm (audit) logs: `docker-compose -f ./example/docker-compose.yml logs -f wasm-logs`
+- Envoy logs: `docker-compose -f ./example/envoy/docker-compose.yml logs -f envoy-logs`.
+- Critical wasm (audit) logs: `docker-compose -f ./example/envoy/docker-compose.yml logs -f wasm-logs`
+
+The Envoy example comes also with a Grafana dashboard that can be accessed at `localhost:3000` (admin/admin) in order to monitor the memory consumption.
 
 ### Manual requests
 
