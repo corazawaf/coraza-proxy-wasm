@@ -2,7 +2,6 @@ package wasmplugin
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 
 	ctypes "github.com/corazawaf/coraza/v3/types"
@@ -16,15 +15,16 @@ type TxnContext struct {
 
 // Logger that includes context from the request in the audit logs and owns the final formatting
 type ContextualAuditLogger struct {
-	txnContextMap map[string]*TxnContext
-	lock          sync.Mutex
+	IncludeRequestContext bool
+	txnContextMap         map[string]*TxnContext
+	lock                  sync.Mutex
 }
 
 // Get the global audit logger that can be used across all requests
-func NewAppAuditLogger() *ContextualAuditLogger {
+func NewAppAuditLogger(includeRequestContext bool) *ContextualAuditLogger {
 	return &ContextualAuditLogger{
-		txnContextMap: make(map[string]*TxnContext),
-		lock:          sync.Mutex{},
+		txnContextMap:         make(map[string]*TxnContext),
+		IncludeRequestContext: includeRequestContext,
 	}
 }
 
@@ -51,18 +51,19 @@ func (cal *ContextualAuditLogger) AuditLog(rule ctypes.MatchedRule) {
 
 	txnId := rule.TransactionID()
 
-	var log *strings.Builder
+	logPrefix := ""
 	if ctx, ok := cal.txnContextMap[txnId]; ok {
-		// If we have context, add it to the log
-		fmt.Fprintf(log, "[request-id %q] ", ctx.envoyRequestId)
+		if cal.IncludeRequestContext {
+			// If we have context, add it to the log
+			logPrefix = fmt.Sprintf("[request-id %q] ", ctx.envoyRequestId)
+		}
 	}
 
-	logError(rule, log)
+	logError(rule, logPrefix)
 }
 
-func logError(error ctypes.MatchedRule, log *strings.Builder) {
-	msg := error.ErrorLog()
-	fmt.Fprint(log, msg)
+func logError(error ctypes.MatchedRule, logPrefix string) {
+	msg := logPrefix + error.ErrorLog()
 	switch error.Rule().Severity() {
 	case ctypes.RuleSeverityEmergency:
 		proxywasm.LogCritical(msg)
@@ -91,7 +92,7 @@ const (
 // A convenience method to register the request information with the audit logger if available
 // on the request (else ignores). Must be called in the request context.
 func registerRequestContextWithLogger(auditLogger *ContextualAuditLogger, txnId string) {
-	if id, err := proxywasm.GetHttpRequestHeader(envoyRequestIdHeader); err != nil {
+	if id, err := proxywasm.GetHttpRequestHeader(envoyRequestIdHeader); err == nil {
 		auditLogger.Register(txnId, &TxnContext{
 			envoyRequestId: id,
 		})

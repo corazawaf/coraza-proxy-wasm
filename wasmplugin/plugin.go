@@ -31,7 +31,7 @@ func NewVMContext() types.VMContext {
 }
 
 func (vc *vmContext) NewPluginContext(contextID uint32) types.PluginContext {
-	return &corazaPlugin{auditLogger: NewAppAuditLogger()}
+	return &corazaPlugin{}
 }
 
 type wafMap struct {
@@ -94,6 +94,8 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		proxywasm.LogCriticalf("Failed to parse plugin configuration: %v", err)
 		return types.OnPluginStartStatusFailed
 	}
+
+	ctx.auditLogger = NewAppAuditLogger(config.includeRequestIdInAuditLogs)
 
 	// directivesAuthoritesMap is a map of directives name to the list of
 	// authorities that reference those directives. This is used to
@@ -238,9 +240,6 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	ctx.metrics.CountTX()
 
-	// Register context with audit logging context
-	registerRequestContextWithLogger(ctx.auditLogger, ctx.tx.ID())
-
 	authority, err := proxywasm.GetHttpRequestHeader(":authority")
 	if err != nil {
 		proxywasm.LogDebugf("Failed to get the :authority pseudo-header: %v", err)
@@ -251,6 +250,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 		}
 		authority = string(propHostRaw)
 	}
+
 	if waf, isDefault, resolveWAFErr := ctx.perAuthorityWAFs.getWAFOrDefault(authority); resolveWAFErr == nil {
 		ctx.tx = waf.NewTransaction()
 
@@ -273,6 +273,9 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	}
 
 	tx := ctx.tx
+
+	// Register context with audit logging context
+	registerRequestContextWithLogger(ctx.auditLogger, ctx.tx.ID())
 
 	// This currently relies on Envoy's behavior of mapping all requests to HTTP/2 semantics
 	// and its request properties, but they may not be true of other proxies implementing
