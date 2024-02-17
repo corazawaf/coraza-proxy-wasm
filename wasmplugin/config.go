@@ -12,10 +12,11 @@ import (
 
 // pluginConfiguration is a type to represent an example configuration for this wasm plugin.
 type pluginConfiguration struct {
-	directivesMap          DirectivesMap
-	metricLabels           map[string]string
-	defaultDirectives      string
-	perAuthorityDirectives map[string]string
+	directivesMap               DirectivesMap
+	metricLabels                map[string]string
+	defaultDirectives           string
+	perAuthorityDirectives      map[string]string
+	includeRequestIdInAuditLogs bool
 }
 
 type DirectivesMap map[string][]string
@@ -33,6 +34,11 @@ func parsePluginConfiguration(data []byte, infoLogger func(string)) (pluginConfi
 	}
 
 	jsonData := gjson.ParseBytes(data)
+	includeReqId := jsonData.Get("include_request_id_in_audit_logs")
+	if includeReqId.Exists() && includeReqId.IsBool() && includeReqId.Bool() {
+		config.includeRequestIdInAuditLogs = true
+	}
+
 	config.directivesMap = make(DirectivesMap)
 	jsonData.Get("directives_map").ForEach(func(key, value gjson.Result) bool {
 		directiveName := key.String()

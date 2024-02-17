@@ -30,8 +30,8 @@ func NewVMContext() types.VMContext {
 	return &vmContext{}
 }
 
-func (*vmContext) NewPluginContext(contextID uint32) types.PluginContext {
-	return &corazaPlugin{}
+func (vc *vmContext) NewPluginContext(contextID uint32) types.PluginContext {
+	return &corazaPlugin{auditLogger: NewAppAuditLogger()}
 }
 
 type wafMap struct {
@@ -80,6 +80,7 @@ type corazaPlugin struct {
 	perAuthorityWAFs wafMap
 	metricLabelsKV   []string
 	metrics          *wafMetrics
+	auditLogger      *ContextualAuditLogger
 }
 
 func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
@@ -123,7 +124,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 		// First we initialize our waf and our seclang parser
 		conf := coraza.NewWAFConfig().
-			WithErrorCallback(logError).
+			WithErrorCallback(ctx.auditLogger.AuditLog).
 			WithDebugLogger(debuglog.DefaultWithPrinterFactory(logPrinterFactory)).
 			// TODO(anuraaga): Make this configurable in plugin configuration.
 			// WithRequestBodyLimit(1024 * 1024 * 1024).
@@ -181,6 +182,7 @@ func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 		metrics:          ctx.metrics,
 		metricLabelsKV:   ctx.metricLabelsKV,
 		perAuthorityWAFs: ctx.perAuthorityWAFs,
+		auditLogger:      ctx.auditLogger,
 	}
 }
 
@@ -228,12 +230,16 @@ type httpContext struct {
 	interruptedAt         interruptionPhase
 	logger                debuglog.Logger
 	metricLabelsKV        []string
+	auditLogger           *ContextualAuditLogger
 }
 
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
 	defer logTime("OnHttpRequestHeaders", currentTime())
 
 	ctx.metrics.CountTX()
+
+	// Register context with audit logging context
+	registerRequestContextWithLogger(ctx.auditLogger, ctx.tx.ID())
 
 	authority, err := proxywasm.GetHttpRequestHeader(":authority")
 	if err != nil {
@@ -632,6 +638,8 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 }
 
 func (ctx *httpContext) OnHttpStreamDone() {
+	// Cleanup transaction ID from the audit logging context
+	defer removeRequestContextFromLogger(ctx.auditLogger, ctx.tx.ID())
 	defer logTime("OnHttpStreamDone", currentTime())
 	tx := ctx.tx
 
@@ -693,28 +701,6 @@ func (ctx *httpContext) handleInterruption(phase interruptionPhase, interruption
 
 	// SendHttpResponse must be followed by ActionPause in order to stop malicious content
 	return types.ActionPause
-}
-
-func logError(error ctypes.MatchedRule) {
-	msg := error.ErrorLog()
-	switch error.Rule().Severity() {
-	case ctypes.RuleSeverityEmergency:
-		proxywasm.LogCritical(msg)
-	case ctypes.RuleSeverityAlert:
-		proxywasm.LogCritical(msg)
-	case ctypes.RuleSeverityCritical:
-		proxywasm.LogCritical(msg)
-	case ctypes.RuleSeverityError:
-		proxywasm.LogError(msg)
-	case ctypes.RuleSeverityWarning:
-		proxywasm.LogWarn(msg)
-	case ctypes.RuleSeverityNotice:
-		proxywasm.LogInfo(msg)
-	case ctypes.RuleSeverityInfo:
-		proxywasm.LogInfo(msg)
-	case ctypes.RuleSeverityDebug:
-		proxywasm.LogDebug(msg)
-	}
 }
 
 // retrieveAddressInfo retrieves address properties from the proxy
