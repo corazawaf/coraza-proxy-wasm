@@ -24,6 +24,7 @@ type ContextualAuditLogger struct {
 func NewAppAuditLogger() *ContextualAuditLogger {
 	return &ContextualAuditLogger{
 		txnContextMap: make(map[string]*TxnContext),
+		lock:          sync.Mutex{},
 	}
 }
 
