@@ -40,6 +40,7 @@
 .mysql_history
 .nano_history
 .node_repl_history
+.npmrc
 .nsconfig
 .nsr
 .oh-my-
@@ -57,22 +58,29 @@
 .rediscli_history
 .rhistory
 .rhosts
+.selected_editor
 .sh_history
 .sqlite_history
+.snap/
 .ssh/
 .subversion/
 .tconn/
 .tcshrc
+.tmux.conf
 .tor/
+.vagrant.d/
 .vidalia/
 .vim/
 .viminfo
 .vimrc
+.vscode
 .www_acl
 .wwwacl
-.xauthority
+.Xauthority
+.yarnrc
 .zhistory
 .zsh_history
+.zshenv
 .zshrc
 # Version control
 /.git/
@@ -127,8 +135,6 @@ wp-config.txt
 /composer.json
 /composer.lock
 /packages.json
-# dotenv
-/.env
 # OSX
 /.DS_Store
 # WS FTP
@@ -168,6 +174,8 @@ php_errors.log
 WEB-INF/
 # Fortinet SSL VPN session file
 sslvpn_websession
+# BlockCypher log file used in code examples
+BlockCypher.log
 
 # /proc entries (keep in sync with lfi-os-files.data)
 # grep -E "^proc/" lfi-os-files.data
