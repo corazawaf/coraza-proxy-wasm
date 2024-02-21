@@ -19,7 +19,7 @@ services:
     depends_on:
       - chown
       - httpbin
-    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.27-latest}
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.28-latest}
     command:
       - -c
       - /conf/envoy-config.yaml
