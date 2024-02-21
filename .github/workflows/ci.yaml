@@ -84,6 +84,7 @@ jobs:
         run: go run mage.go ftw
 
       - name: Debugging with ssh
+        if: failure()
         uses: lhotari/action-upterm@v1
 
       - uses: actions/upload-artifact@v3
