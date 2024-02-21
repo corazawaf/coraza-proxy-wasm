@@ -7,7 +7,7 @@ services:
   envoy:
     depends_on:
       - httpbin
-    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.27-latest}
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.28-latest}
     # Entryoint is explicited in order to make the ENVOY_IMAGE compatible also with istio/proxyv2 images
     # The latter has as default entrypoint pilot-agent instead of envoy
     # See https://github.com/tetratelabs/proxy-wasm-go-sdk/blob/main/.github/workflows/workflow.yaml#L104
