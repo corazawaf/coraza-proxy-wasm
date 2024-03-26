@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/corazawaf/coraza-wasilibs v0.1.0
-	github.com/corazawaf/coraza/v3 v3.1.0
-	github.com/stretchr/testify v1.8.4
+	github.com/corazawaf/coraza/v3 v3.1.1-0.20240325115853-522eae6347bf
+	github.com/stretchr/testify v1.9.0
 	github.com/tetratelabs/proxy-wasm-go-sdk v0.23.0
 	github.com/tidwall/gjson v1.17.1
 	github.com/wasilibs/nottinygc v0.7.1
@@ -24,7 +24,7 @@ require (
 	github.com/wasilibs/go-aho-corasick v0.5.0 // indirect
 	github.com/wasilibs/go-libinjection v0.4.0 // indirect
 	github.com/wasilibs/go-re2 v1.4.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
