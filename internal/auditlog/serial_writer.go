@@ -13,10 +13,10 @@ import (
 
 // Coraza does not come with a built-in audit log writer for Wasm
 // See https://github.com/corazawaf/coraza/blob/main/internal/auditlog/init_tinygo.go
-// This function registers a new audit log writer for Wasm named "wasmserial" that prints
-// audit logs to the proxy-wasm log as info messages.
+// This function overrides the default "Serial" audit log writer in order to print audit logs
+// to the proxy-wasm log as info messages.
 func RegisterWasmSerialWriter() {
-	plugins.RegisterAuditLogWriter("wasmserial", func() plugintypes.AuditLogWriter {
+	plugins.RegisterAuditLogWriter("serialNotUsed", func() plugintypes.AuditLogWriter {
 		return &wasmSerial{}
 	})
 }
