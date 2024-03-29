@@ -19,8 +19,8 @@ env:
     envoyproxy/envoy:v1.29-latest
     envoyproxy/envoy:v1.28-latest
     envoyproxy/envoy-dev:latest
-    istio/proxyv2:1.20.1
-    istio/proxyv2:1.19.5
+    istio/proxyv2:1.21.0
+    istio/proxyv2:1.20.4
 
 jobs:
   build:
@@ -136,6 +136,7 @@ jobs:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta-busybox.outputs.tags }}
+          platforms: linux/amd64,linux/arm64
           labels: ${{ steps.meta-busybox.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
