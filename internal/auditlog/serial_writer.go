@@ -11,12 +11,10 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 )
 
-// Coraza does not come with a built-in audit log writer for Wasm
-// See https://github.com/corazawaf/coraza/blob/main/internal/auditlog/init_tinygo.go
-// This function overrides the default "Serial" audit log writer in order to print audit logs
-// to the proxy-wasm log as info messages.
+// This function overrides the default "Serial" audit log writer (see https://github.com/corazawaf/coraza/blob/main/internal/auditlog/init_tinygo.go)
+// in order to print audit logs to the proxy-wasm log as info messages with a prefix to differentiate them from other logs.
 func RegisterWasmSerialWriter() {
-	plugins.RegisterAuditLogWriter("serialNotUsed", func() plugintypes.AuditLogWriter {
+	plugins.RegisterAuditLogWriter("serial", func() plugintypes.AuditLogWriter {
 		return &wasmSerial{}
 	})
 }
@@ -44,8 +42,8 @@ func (s *wasmSerial) Write(al plugintypes.AuditLog) error {
 	if len(bts) == 0 {
 		return nil
 	}
-
-	proxywasm.LogInfo(string(bts))
+	// Print the audit log to the proxy-wasm log as an info message adding an "AuditLog:" prefix.
+	proxywasm.LogInfo("AuditLog:" + string(bts))
 	return nil
 }
 
