@@ -136,7 +136,6 @@ jobs:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta-busybox.outputs.tags }}
-          platforms: linux/amd64,linux/arm64
           labels: ${{ steps.meta-busybox.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
