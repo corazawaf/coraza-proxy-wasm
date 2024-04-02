@@ -11,9 +11,9 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 )
 
-// This function overrides the default "Serial" audit log writer (see https://github.com/corazawaf/coraza/blob/main/internal/auditlog/init_tinygo.go)
+// RegisterProxyWasmSerialWriter overrides the default "Serial" audit log writer (see https://github.com/corazawaf/coraza/blob/main/internal/auditlog/init_tinygo.go)
 // in order to print audit logs to the proxy-wasm log as info messages with a prefix to differentiate them from other logs.
-func RegisterWasmSerialWriter() {
+func RegisterProxyWasmSerialWriter() {
 	plugins.RegisterAuditLogWriter("serial", func() plugintypes.AuditLogWriter {
 		return &wasmSerial{}
 	})

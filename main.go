@@ -13,6 +13,6 @@ import (
 
 func main() {
 	operators.Register()
-	auditlog.RegisterWasmSerialWriter()
+	auditlog.RegisterProxyWasmSerialWriter()
 	proxywasm.SetVMContext(wasmplugin.NewVMContext())
 }
