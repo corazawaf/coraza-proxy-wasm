@@ -1413,7 +1413,7 @@ func vmTest(t *testing.T, f func(*testing.T, types.VMContext)) {
 	t.Helper()
 
 	t.Run("go", func(t *testing.T) {
-		auditlog.RegisterWasmSerialWriter()
+		auditlog.RegisterProxyWasmSerialWriter()
 		f(t, wasmplugin.NewVMContext())
 	})
 
