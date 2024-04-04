@@ -89,9 +89,12 @@ jobs:
           name: ftw-envoy-logs
           path: build/ftw-envoy.log
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         if: ${{ matrix.multiphase_eval=='true' }}
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Docker meta
         if: ${{ matrix.multiphase_eval=='true' }}
@@ -131,7 +134,7 @@ jobs:
 
       - name: Build and push busybox based image
         if: ${{ matrix.multiphase_eval=='true' }}
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
@@ -145,7 +148,7 @@ jobs:
 
       - name: Build and push
         if: ${{ matrix.multiphase_eval=='true' }}
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
