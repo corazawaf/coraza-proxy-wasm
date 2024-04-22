@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -281,23 +282,6 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 	tx.ProcessConnection(srcIP, srcPort, dstIP, dstPort)
 
-	// Note the pseudo-header :path includes the query.
-	// See https://httpwg.org/specs/rfc9113.html#rfc.section.8.3.1
-	uri, err := proxywasm.GetHttpRequestHeader(":path")
-	if err != nil {
-		ctx.logger.Error().
-			Err(err).
-			Msg("Failed to get :path")
-		propPathRaw, propPathErr := proxywasm.GetProperty([]string{"request", "path"})
-		if propPathErr != nil {
-			ctx.logger.Error().
-				Err(propPathErr).
-				Msg("Failed to get property of path of the request")
-			return types.ActionContinue
-		}
-		uri = string(propPathRaw)
-	}
-
 	method, err := proxywasm.GetHttpRequestHeader(":method")
 	if err != nil {
 		ctx.logger.Error().
@@ -311,6 +295,26 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 			return types.ActionContinue
 		}
 		method = string(propMethodRaw)
+	}
+
+	uri := ""
+	if method != http.MethodConnect { // CONNECT requests does not have a path
+		// Note the pseudo-header :path includes the query.
+		// See https://httpwg.org/specs/rfc9113.html#rfc.section.8.3.1
+		uri, err = proxywasm.GetHttpRequestHeader(":path")
+		if err != nil {
+			ctx.logger.Error().
+				Err(err).
+				Msg("Failed to get :path")
+			propPathRaw, propPathErr := proxywasm.GetProperty([]string{"request", "path"})
+			if propPathErr != nil {
+				ctx.logger.Error().
+					Err(propPathErr).
+					Msg("Failed to get property of path of the request")
+				return types.ActionContinue
+			}
+			uri = string(propPathRaw)
+		}
 	}
 
 	protocol, err := proxywasm.GetProperty([]string{"request", "protocol"})
