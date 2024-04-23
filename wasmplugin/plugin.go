@@ -298,7 +298,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	}
 
 	uri := ""
-	if method != http.MethodConnect { // CONNECT requests does not have a path
+	if method != http.MethodConnect { // CONNECT requests does not have a path, see https://httpwg.org/specs/rfc9110#CONNECT
 		// Note the pseudo-header :path includes the query.
 		// See https://httpwg.org/specs/rfc9113.html#rfc.section.8.3.1
 		uri, err = proxywasm.GetHttpRequestHeader(":path")
