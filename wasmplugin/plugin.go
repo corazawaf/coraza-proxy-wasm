@@ -77,9 +77,11 @@ type corazaPlugin struct {
 	// Embed the default plugin context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultPluginContext
-	perAuthorityWAFs wafMap
-	metricLabelsKV   []string
-	metrics          *wafMetrics
+	perAuthorityWAFs   wafMap
+	metricLabelsKV     []string
+	transactionID      bool
+	exportMatchedRules bool
+	metrics            *wafMetrics
 }
 
 func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
@@ -170,6 +172,15 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 	for k, v := range config.metricLabels {
 		ctx.metricLabelsKV = append(ctx.metricLabelsKV, k, v)
 	}
+
+	for k, v := range config.metricFlags {
+		if k == "transaction_id" && v {
+			ctx.transactionID = true
+		}
+		if k == "export_matched_rules" && v {
+			ctx.exportMatchedRules = true
+		}
+	}
 	ctx.metrics = NewWAFMetrics()
 
 	return types.OnPluginStartStatusOK
@@ -177,10 +188,12 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 	return &httpContext{
-		contextID:        contextID,
-		metrics:          ctx.metrics,
-		metricLabelsKV:   ctx.metricLabelsKV,
-		perAuthorityWAFs: ctx.perAuthorityWAFs,
+		contextID:          contextID,
+		metrics:            ctx.metrics,
+		metricLabelsKV:     ctx.metricLabelsKV,
+		transactionID:      ctx.transactionID,
+		exportMatchedRules: ctx.exportMatchedRules,
+		perAuthorityWAFs:   ctx.perAuthorityWAFs,
 	}
 }
 
@@ -201,7 +214,7 @@ func (p interruptionPhase) String() string {
 	case interruptionPhaseHttpResponseBody:
 		return "http_response_body"
 	default:
-		return "no interruption yet"
+		return "no_interruption_yet"
 	}
 }
 
@@ -228,6 +241,8 @@ type httpContext struct {
 	interruptedAt         interruptionPhase
 	logger                debuglog.Logger
 	metricLabelsKV        []string
+	transactionID         bool
+	exportMatchedRules    bool
 }
 
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
@@ -335,7 +350,12 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	}
 
 	interruption := tx.ProcessRequestHeaders()
+	matchedRules := tx.MatchedRules()
+
 	if interruption != nil {
+		if ctx.exportMatchedRules {
+			ctx.ExportRuleID(interruptionPhaseHttpRequestHeaders, matchedRules)
+		}
 		return ctx.handleInterruption(interruptionPhaseHttpRequestHeaders, interruption)
 	}
 
@@ -372,12 +392,16 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		// ProcessRequestBody is still performed for phase 2 rules, checking already populated variables
 		ctx.processedRequestBody = true
 		interruption, err := tx.ProcessRequestBody()
+		matchedRules := tx.MatchedRules()
 		if err != nil {
 			ctx.logger.Error().Err(err).Msg("Failed to process request body")
 			return types.ActionContinue
 		}
 
 		if interruption != nil {
+			if ctx.exportMatchedRules {
+				ctx.ExportRuleID(interruptionPhaseHttpRequestBody, matchedRules)
+			}
 			return ctx.handleInterruption(interruptionPhaseHttpRequestBody, interruption)
 		}
 
@@ -402,11 +426,15 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 			ctx.logger.Warn().Int("read_chunk_size", readchunkSize).Int("chunk_size", chunkSize).Msg("Request chunk size read is different from the computed one")
 		}
 		interruption, writtenBytes, err := tx.WriteRequestBody(bodyChunk)
+		matchedRules := tx.MatchedRules()
 		if err != nil {
 			ctx.logger.Error().Err(err).Msg("Failed to write request body")
 			return types.ActionContinue
 		}
 		if interruption != nil {
+			if ctx.exportMatchedRules {
+				ctx.ExportRuleID(interruptionPhaseHttpRequestBody, matchedRules)
+			}
 			return ctx.handleInterruption(interruptionPhaseHttpRequestBody, interruption)
 		}
 
@@ -426,6 +454,7 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 		ctx.processedRequestBody = true
 		ctx.bodyReadIndex = 0 // cleaning for further usage
 		interruption, err := tx.ProcessRequestBody()
+		matchedRules := tx.MatchedRules()
 		if err != nil {
 			ctx.logger.Error().
 				Err(err).
@@ -433,6 +462,9 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 			return types.ActionContinue
 		}
 		if interruption != nil {
+			if ctx.exportMatchedRules {
+				ctx.ExportRuleID(interruptionPhaseHttpRequestBody, matchedRules)
+			}
 			return ctx.handleInterruption(interruptionPhaseHttpRequestBody, interruption)
 		}
 
@@ -472,12 +504,16 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 	if !ctx.processedRequestBody {
 		ctx.processedRequestBody = true
 		interruption, err := tx.ProcessRequestBody()
+		matchedRules := tx.MatchedRules()
 		if err != nil {
 			ctx.logger.Error().
 				Err(err).Msg("Failed to process request body")
 			return types.ActionContinue
 		}
 		if interruption != nil {
+			if ctx.exportMatchedRules {
+				ctx.ExportRuleID(interruptionPhaseHttpResponseHeaders, matchedRules)
+			}
 			return ctx.handleInterruption(interruptionPhaseHttpResponseHeaders, interruption)
 		}
 	}
@@ -514,7 +550,11 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 	}
 
 	interruption := tx.ProcessResponseHeaders(code, ctx.httpProtocol)
+	matchedRules := tx.MatchedRules()
 	if interruption != nil {
+		if ctx.exportMatchedRules {
+			ctx.ExportRuleID(interruptionPhaseHttpResponseHeaders, matchedRules)
+		}
 		return ctx.handleInterruption(interruptionPhaseHttpResponseHeaders, interruption)
 	}
 
@@ -557,6 +597,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		// ProcessResponseBody is performed for phase 4 rules, checking already populated variables
 		if !ctx.processedResponseBody {
 			interruption, err := tx.ProcessResponseBody()
+			matchedRules := tx.MatchedRules()
 			if err != nil {
 				ctx.logger.Error().Err(err).Msg("Failed to process response body")
 				return types.ActionContinue
@@ -566,6 +607,9 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 				// Proxy-wasm can not anymore deny the response. The best interruption is emptying the body
 				// Coraza Multiphase evaluation will help here avoiding late interruptions
 				ctx.bodyReadIndex = bodySize // hacky: bodyReadIndex stores the body size that has to be replaced
+				if ctx.exportMatchedRules {
+					ctx.ExportRuleID(interruptionPhaseHttpResponseBody, matchedRules)
+				}
 				return ctx.handleInterruption(interruptionPhaseHttpResponseBody, interruption)
 			}
 		}
@@ -590,6 +634,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 			ctx.logger.Warn().Int("read_chunk_size", readchunkSize).Int("chunk_size", chunkSize).Msg("Response chunk size read is different from the computed one")
 		}
 		interruption, writtenBytes, err := tx.WriteResponseBody(bodyChunk)
+		matchedRules := tx.MatchedRules()
 		if err != nil {
 			ctx.logger.Error().Err(err).Msg("Failed to write response body")
 			return types.ActionContinue
@@ -598,6 +643,9 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		// it is internally needed to replace the full body if the transaction is interrupted
 		ctx.bodyReadIndex += readchunkSize
 		if interruption != nil {
+			if ctx.exportMatchedRules {
+				ctx.ExportRuleID(interruptionPhaseHttpResponseBody, matchedRules)
+			}
 			return ctx.handleInterruption(interruptionPhaseHttpResponseBody, interruption)
 		}
 		// If not the whole chunk has been written, it implicitly means that we reached the waf response body limit,
@@ -615,6 +663,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 		// The error will also be logged by Coraza.
 		ctx.processedResponseBody = true
 		interruption, err := tx.ProcessResponseBody()
+		matchedRules := tx.MatchedRules()
 		if err != nil {
 			ctx.logger.Error().
 				Err(err).
@@ -622,6 +671,9 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 			return types.ActionContinue
 		}
 		if interruption != nil {
+			if ctx.exportMatchedRules {
+				ctx.ExportRuleID(interruptionPhaseHttpResponseBody, matchedRules)
+			}
 			return ctx.handleInterruption(interruptionPhaseHttpResponseBody, interruption)
 		}
 		return types.ActionContinue
@@ -693,6 +745,13 @@ func (ctx *httpContext) handleInterruption(phase interruptionPhase, interruption
 
 	// SendHttpResponse must be followed by ActionPause in order to stop malicious content
 	return types.ActionPause
+}
+
+func (ctx *httpContext) ExportRuleID(phase interruptionPhase, matchedRule []ctypes.MatchedRule) {
+	// Exporting all triggered rules for the current transaction
+	for _, rule := range matchedRule {
+		ctx.metrics.CountTXMatchedRules(phase.String(), rule.Rule().ID(), rule.TransactionID(), ctx.metricLabelsKV, ctx.transactionID)
+	}
 }
 
 func logError(error ctypes.MatchedRule) {
