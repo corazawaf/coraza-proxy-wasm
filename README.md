@@ -226,4 +226,3 @@ waf_filter_tx_interruptions{phase="http_request_headers_identifier",rule_id="949
 # TYPE waf_filter_tx_total counter
 waf_filter_tx_total{} 11
 ```
-If the matched rules metric is active, more results will be shown in the previous command. 
