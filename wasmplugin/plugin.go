@@ -656,7 +656,10 @@ func (ctx *httpContext) OnHttpStreamDone() {
 		// Internally, if the engine is off, no log phase rules are evaluated
 		ctx.tx.ProcessLogging()
 
-		_ = ctx.tx.Close()
+		err := ctx.tx.Close()
+		if err != nil {
+			ctx.logger.Error().Err(err).Msg("Failed to close transaction")
+		}
 		ctx.logger.Info().Msg("Finished")
 		logMemStats()
 	}
