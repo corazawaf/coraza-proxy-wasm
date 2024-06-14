@@ -615,6 +615,13 @@ func TestBadRequest(t *testing.T) {
 			},
 			msg: "Failed to get :method",
 		},
+		{
+			name: "missing method and path",
+			reqHdrs: [][2]string{
+				{":authority", "localhost"},
+			},
+			msg: "Failed to get :method",
+		},
 	}
 
 	vmTest(t, func(t *testing.T, vm types.VMContext) {
@@ -1326,6 +1333,48 @@ func TestParseServerName(t *testing.T) {
 				}
 				action := host.CallOnRequestHeaders(id, reqHdrs, false)
 				require.Equal(t, types.ActionPause, action)
+			})
+		}
+	})
+}
+
+func TestHttpConnectRequest(t *testing.T) {
+	tests := []struct {
+		name     string
+		reqHdrs  [][2]string
+		logCount int
+	}{
+		{
+			name: "CONNECT",
+			reqHdrs: [][2]string{
+				{":method", "CONNECT"},
+				{":authority", "localhost"},
+			},
+			logCount: 0,
+		},
+	}
+
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+		for _, tc := range tests {
+			tt := tc
+			t.Run(tt.name, func(t *testing.T) {
+				conf := `{"directives_map": {"default": []}, "default_directives": "default"}`
+				opt := proxytest.
+					NewEmulatorOption().
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte(conf))
+
+				host, reset := proxytest.NewHostEmulator(opt)
+				defer reset()
+
+				require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+
+				id := host.InitializeHttpContext()
+
+				action := host.CallOnRequestHeaders(id, tt.reqHdrs, false)
+				require.Equal(t, types.ActionContinue, action)
+
+				require.Equal(t, len(host.GetErrorLogs()), tt.logCount)
 			})
 		}
 	})
