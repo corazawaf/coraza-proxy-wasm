@@ -410,15 +410,15 @@ SecDefaultAction "phase:2,log,auditlog,pass"
 # does not get evaluated if the request is being blocked early. So when you
 # disabled early blocking again at some point in the future, then new alerts
 # from phase 2 might pop up.
-#SecAction \
-#    "id:900120,\
-#    phase:1,\
-#    pass,\
-#    t:none,\
-#    nolog,\
-#    tag:'OWASP_CRS',\
-#    ver:'OWASP_CRS/4.3.0',\
-#    setvar:tx.early_blocking=1"
+ SecAction \
+     "id:900120,\
+     phase:1,\
+     pass,\
+     t:none,\
+     nolog,\
+     tag:'OWASP_CRS',\
+     ver:'OWASP_CRS/4.3.0',\
+     setvar:tx.early_blocking=1"
 
 
 #
