@@ -1,15 +1,16 @@
 # Copyright 2022 The OWASP Coraza contributors
 # SPDX-License-Identifier: Apache-2.0
 
+# Stick with go-ftw:0.6.4 until CRS tests new format is merged (https://github.com/coreruleset/coreruleset/pull/3369)
 FROM ghcr.io/coreruleset/go-ftw:0.6.4
 
 RUN apk update && apk add curl
 
 WORKDIR /workspace
 
-# TODO update when new CRS version is tagged: https://github.com/coreruleset/coreruleset/archive/refs/tags/v4.0.0-rc2.tar.gz
-ADD https://github.com/coreruleset/coreruleset/tarball/1d95422bb31983a5290720b7fb662ce3dd51f753 /workspace/coreruleset/
-RUN cd coreruleset && tar -xf 1d95422bb31983a5290720b7fb662ce3dd51f753 --strip-components 1
+# Keep this CRS version aligned with the one embedded in wasmplugin/rules
+ADD https://github.com/coreruleset/coreruleset/archive/refs/tags/v4.3.0.tar.gz /workspace/coreruleset/
+RUN cd coreruleset && tar -xf v4.3.0.tar.gz --strip-components 1
 
 COPY ftw.yml /workspace/ftw.yml
 COPY tests.sh /workspace/tests.sh
