@@ -352,7 +352,7 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response body accepted",
 			inlineRules: `
-			SecRuleEngine On\nSecResponseBodyAccess On\nSecRule RESPONSE_BODY \"@contains pooh\" \"id:101,phase:4,t:lowercase,deny\"
+			SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyMimeType text/plain\nSecRule RESPONSE_BODY \"@contains pooh\" \"id:101,phase:4,t:lowercase,deny\"
 			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
@@ -385,7 +385,7 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response body accepted, no response body access",
 			inlineRules: `
-			SecRuleEngine On\nSecResponseBodyAccess Off\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
+			SecRuleEngine On\nSecResponseBodyAccess Off\nSecResponseBodyMimeType text/plain\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
 			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
@@ -396,7 +396,7 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response body accepted, payload above process partial",
 			inlineRules: `
-			SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyLimit 2\nSecResponseBodyLimitAction ProcessPartial\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
+			SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyLimit 2\nSecResponseBodyLimitAction ProcessPartial\nSecResponseBodyMimeType text/plain\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
 			`,
 			requestHdrsAction:  types.ActionContinue,
 			requestBodyAction:  types.ActionContinue,
@@ -407,7 +407,7 @@ func TestLifecycle(t *testing.T) {
 		{
 			name: "response body denied, above limits",
 			inlineRules: `
-			SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyLimit 2\nSecResponseBodyLimitAction Reject\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
+			SecRuleEngine On\nSecResponseBodyAccess On\nSecResponseBodyLimit 2\nSecResponseBodyLimitAction Reject\nSecResponseBodyMimeType text/plain\nSecRule RESPONSE_BODY \"@contains hello\" \"id:101,phase:4,t:lowercase,deny\"
 			`,
 			requestHdrsAction:                   types.ActionContinue,
 			requestBodyAction:                   types.ActionContinue,
@@ -796,38 +796,66 @@ func TestPerAuthorityDirectives(t *testing.T) {
 }
 
 func TestEmptyBody(t *testing.T) {
-	vmTest(t, func(t *testing.T, vm types.VMContext) {
-		opt := proxytest.
-			NewEmulatorOption().
-			WithVMContext(vm).
-			WithPluginConfiguration([]byte(`{"directives_map": {"default": [ "SecRequestBodyAccess On", "SecResponseBodyAccess On" ]}, "default_directives": "default"}`))
+	testCases := []struct {
+		title                 string
+		isRespBodyProcessable bool
+	}{
+		{
+			title:                 "Response body processable",
+			isRespBodyProcessable: true,
+		},
+		{
+			title:                 "Response body NOT processable",
+			isRespBodyProcessable: false,
+		},
+	}
 
-		host, reset := proxytest.NewHostEmulator(opt)
-		defer reset()
+	for _, tc := range testCases {
+		t.Run(tc.title, func(t *testing.T) {
+			vmTest(t, func(t *testing.T, vm types.VMContext) {
+				opt := proxytest.
+					NewEmulatorOption().
+					WithVMContext(vm).
+					WithPluginConfiguration([]byte(`{"directives_map": {"default": [ "SecRequestBodyAccess On", "SecResponseBodyAccess On", "SecResponseBodyMimeType text/plain"]}, "default_directives": "default"}`))
 
-		require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+				host, reset := proxytest.NewHostEmulator(opt)
+				defer reset()
 
-		id := host.InitializeHttpContext()
+				require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
 
-		host.CallOnRequestHeaders(id, [][2]string{
-			{":path", "/hello"},
-			{":method", "GET"},
-			{":authority", "localhost"},
-		}, false)
+				id := host.InitializeHttpContext()
+				host.CallOnRequestHeaders(id, [][2]string{
+					{":path", "/hello"},
+					{":method", "GET"},
+					{":authority", "localhost"},
+				}, false)
+				action := host.CallOnRequestBody(id, []byte{}, false)
+				require.Equal(t, types.ActionPause, action)
+				action = host.CallOnRequestBody(id, []byte{}, true)
+				require.Equal(t, types.ActionContinue, action)
 
-		action := host.CallOnRequestBody(id, []byte{}, false)
-		require.Equal(t, types.ActionPause, action)
-		action = host.CallOnRequestBody(id, []byte{}, true)
-		require.Equal(t, types.ActionContinue, action)
+				if tc.isRespBodyProcessable {
+					host.CallOnResponseHeaders(id, [][2]string{
+						{":status", "200"},
+						{"content-length", "0"},
+						{"content-type", "text/plain"}}, false)
 
-		action = host.CallOnResponseBody(id, []byte{}, false)
-		require.Equal(t, types.ActionPause, action)
-		action = host.CallOnResponseBody(id, []byte{}, true)
-		require.Equal(t, types.ActionContinue, action)
-
-		logs := strings.Join(host.GetCriticalLogs(), "\n")
-		require.Empty(t, logs)
-	})
+					action = host.CallOnResponseBody(id, []byte{}, false)
+					require.Equal(t, types.ActionPause, action)
+					action = host.CallOnResponseBody(id, []byte{}, true)
+					require.Equal(t, types.ActionContinue, action)
+				} else {
+					// If the ResponseBodyMimeType is not matched, we should just continue and not store the body
+					action = host.CallOnResponseBody(id, []byte{}, false)
+					require.Equal(t, types.ActionContinue, action)
+					action = host.CallOnResponseBody(id, []byte{}, true)
+					require.Equal(t, types.ActionContinue, action)
+				}
+				logs := strings.Join(host.GetCriticalLogs(), "\n")
+				require.Empty(t, logs)
+			})
+		})
+	}
 }
 
 func TestLogError(t *testing.T) {
