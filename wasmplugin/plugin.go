@@ -559,8 +559,10 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	}
 
 	// Do not perform any action related to response body data if SecResponseBodyAccess is set to false
-	if !tx.IsResponseBodyAccessible() {
-		ctx.logger.Debug().Msg("Skipping response body inspection, SecResponseBodyAccess is off.")
+	if !tx.IsResponseBodyAccessible() || !tx.IsResponseBodyProcessable() {
+		ctx.logger.Debug().Bool("SecResponseBodyAccess", tx.IsResponseBodyAccessible()).
+			Bool("IsResponseBodyProcessable", tx.IsResponseBodyProcessable()).
+			Msg("Skipping response body inspection")
 		// ProcessResponseBody is performed for phase 4 rules, checking already populated variables
 		if !ctx.processedResponseBody {
 			interruption, err := tx.ProcessResponseBody()
