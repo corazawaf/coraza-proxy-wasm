@@ -216,7 +216,7 @@ func Build() error {
 		}
 	}
 
-	// TODO: from tinygo 0.32.0 -target=wasi is replaced by GOOS=wasip1
+	// TODO: from tinygo 0.32.0 -target=wasi is replaced by GOOS=wasip1. See https://github.com/tinygo-org/tinygo/pull/3861
 	if err := sh.RunV("tinygo", "build", "-gc=custom", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", buildTagArg); err != nil {
 		return err
 	}
