@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"math"
 	"net"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -298,7 +297,9 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 	}
 
 	uri := ""
-	if method == http.MethodConnect { // CONNECT requests does not have a path, see https://httpwg.org/specs/rfc9110#CONNECT
+	// TODO: use http.MethodConnect instead of "CONNECT" when we move to Go 1.21.
+	// Go 1.20 fails with 'tinygo/0.31.2/src/net/http/request.go:56:48: undefined: errors.ErrUnsupported'
+	if method == "CONNECT" { // CONNECT requests does not have a path, see https://httpwg.org/specs/rfc9110#CONNECT
 		// Populate uri with authority to build a proper request line
 		uri = authority
 	} else {
