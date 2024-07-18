@@ -18,6 +18,7 @@ import (
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/proxytest"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 
+	"github.com/corazawaf/coraza-proxy-wasm/internal/auditlog"
 	"github.com/corazawaf/coraza-proxy-wasm/wasmplugin"
 )
 
@@ -1412,6 +1413,7 @@ func vmTest(t *testing.T, f func(*testing.T, types.VMContext)) {
 	t.Helper()
 
 	t.Run("go", func(t *testing.T) {
+		auditlog.RegisterProxyWasmSerialWriter()
 		f(t, wasmplugin.NewVMContext())
 	})
 
