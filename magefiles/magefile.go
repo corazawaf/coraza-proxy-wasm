@@ -19,11 +19,11 @@ import (
 	"github.com/tetratelabs/wabin/wasm"
 )
 
-var minGoVersion = "1.20"
+var minGoVersion = "1.21"
 var minTinygoVersion = "0.31.2"
 var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
-var golangCILintVer = "v1.54.2"                                    // https://github.com/golangci/golangci-lint/releases
-var gosImportsVer = "v0.3.1"                                       // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
+var golangCILintVer = "v1.59.1"                                    // https://github.com/golangci/golangci-lint/releases
+var gosImportsVer = "v0.3.8"                                       // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
 
 var errCommitFormatting = errors.New("files not formatted, please commit formatting changes")
 
