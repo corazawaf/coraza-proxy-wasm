@@ -5,21 +5,21 @@ linters:
   disable-all: true
   enable:
     # Enabled by default, see https://golangci-lint.run/usage/linters#enabled-by-default
-    - deadcode
+    # - deadcode  # deprecated (since v1.49.0) due to: The owner seems to have abandoned the linter.
     - errcheck
     - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - structcheck
+    # - structcheck # deprecated (since v1.49.0) due to: The owner seems to have abandoned the linter.
     - typecheck
     - unused
-    - varcheck
+    # - varcheck # deprecated (since v1.49.0) due to: The owner seems to have abandoned the linter.
     - goimports
     - gofmt
     - gocritic
-issues:
-  exclude-rules:
-    - path: magefile\.go
-      linters:
-        - deadcode
+# issues:
+#   exclude-rules:
+#     - path: magefile\.go
+#       linters:
+#         - deadcode
