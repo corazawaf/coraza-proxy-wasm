@@ -449,6 +449,24 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 	return types.ActionPause
 }
 
+func (ctx *httpContext) OnHttpRequestTrailers(numTrailers int) types.Action {
+	defer logTime("OnHttpRequestTrailers", currentTime())
+
+	// If no payload was collected so far, then there is nothing to do.
+	if ctx.bodyReadIndex == 0 {
+		return types.ActionContinue
+	}
+
+	// The end_of_stream parameter from OnHttpRequestBody is never set to true
+	// in HTTP2 if the trailers are available. In all other cases, the end_of_stream
+	// indicates that the payload has been collected. In HTTP2 request with trailers,
+	// the call of OnHttpRequestTrailers indicate that the payload was collected.
+	//
+	// Without that, it is possible to bypass request body inspection by adding
+	// any random trailer to HTTP2 request.
+	return ctx.OnHttpRequestBody(ctx.bodyReadIndex, true)
+}
+
 func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) types.Action {
 	defer logTime("OnHttpResponseHeaders", currentTime())
 
