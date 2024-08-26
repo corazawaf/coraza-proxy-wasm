@@ -1,8 +1,7 @@
 # Copyright 2022 The OWASP Coraza contributors
 # SPDX-License-Identifier: Apache-2.0
 
-# Stick with go-ftw:0.6.4 until CRS tests new format is merged (https://github.com/coreruleset/coreruleset/pull/3369)
-FROM ghcr.io/coreruleset/go-ftw:0.6.4
+FROM ghcr.io/coreruleset/go-ftw:1.0.3
 
 RUN apk update && apk add curl
 
