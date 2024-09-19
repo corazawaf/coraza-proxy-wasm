@@ -13,7 +13,7 @@ on:
 
 env:
   GO_VERSION: '1.21'
-  TINYGO_VERSION: 0.32.0
+  TINYGO_VERSION: 0.33.0
   # Run e2e tests against latest two releases and latest dev
   ENVOY_IMAGES: >
     envoyproxy/envoy:v1.30-latest
