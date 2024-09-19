@@ -20,7 +20,7 @@ import (
 )
 
 var minGoVersion = "1.21"
-var minTinygoVersion = "0.31.2"
+var minTinygoVersion = "0.33.0"
 var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
 var golangCILintVer = "v1.59.1"                                    // https://github.com/golangci/golangci-lint/releases
 var gosImportsVer = "v0.3.8"                                       // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
@@ -216,8 +216,7 @@ func Build() error {
 		}
 	}
 
-	// TODO: from tinygo 0.32.0 -target=wasi is replaced by GOOS=wasip1. See https://github.com/tinygo-org/tinygo/pull/3861
-	if err := sh.RunV("tinygo", "build", "-gc=custom", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasi", buildTagArg); err != nil {
+	if err := sh.RunV("tinygo", "build", "-gc=custom", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasip1", buildTagArg); err != nil {
 		return err
 	}
 
