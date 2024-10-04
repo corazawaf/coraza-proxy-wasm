@@ -3,9 +3,11 @@ stats_config:
     # Envoy extracts the first matching group as a value.
     # See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#config-metrics-v3-statsconfig.
     - tag_name: phase
-      regex: "(_phase=([a-z_]+))"
+      regex: "(_phase=([a-z_]+)(?:_[a-z]+=|$))"
     - tag_name: rule_id
       regex: "(_ruleid=([0-9]+))"
+    - tag_name: transaction_id
+      regex: "(_transactionid=([a-zA-Z]+))"
     - tag_name: identifier
       regex: "(_identifier=([0-9a-z.:]+))"
     - tag_name: owner
@@ -79,6 +81,10 @@ static_resources:
                               "metric_labels": {
                                 "owner": "coraza",
                                 "identifier": "global"
+                              },
+                              "metric_flags": {
+                                "transaction_id": true,
+                                "export_matched_rules": true
                               },
                               "per_authority_directives":{
                                   "foo.example.com":"rs2",
