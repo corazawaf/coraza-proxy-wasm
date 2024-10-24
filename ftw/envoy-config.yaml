@@ -70,5 +70,5 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: httpbin
+                      address: albedo
                       port_value: 8080

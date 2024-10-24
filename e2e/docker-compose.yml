@@ -1,13 +1,13 @@
 services:
   httpbin:
-    image: mccutchen/go-httpbin:v2.9.0
+    image: mccutchen/go-httpbin:v2.15.0
     command: [ "/bin/go-httpbin", "-port", "8081" ]
     ports:
       - 8081:8081
   envoy:
     depends_on:
       - httpbin
-    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.28-latest}
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.31-latest}
     # Entryoint is explicited in order to make the ENVOY_IMAGE compatible also with istio/proxyv2 images
     # The latter has as default entrypoint pilot-agent instead of envoy
     # See https://github.com/tetratelabs/proxy-wasm-go-sdk/blob/main/.github/workflows/workflow.yaml#L104
