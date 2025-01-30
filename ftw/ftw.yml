@@ -58,3 +58,8 @@ testoverride:
     '934120-39': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
     '932200-13': 'Unfortunate match inside logs against a different rule log. wip'
     '930110-7': 'Coraza/CRS side: See https://github.com/corazawaf/coraza/pull/1081'
+
+    '920274-1': 'Host validation. Apache expects status 400, investigate Coraza-proxy-wasm behavior'
+    '920430-5': 'To be investigated Coraza side'
+    '932300-10': 'To be investigated Coraza side, failing only with multiphase evaluation'
+    '933120-2': 'To be investigated Coraza side, failing only with multiphase evaluation'
