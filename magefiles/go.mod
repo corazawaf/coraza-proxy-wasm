@@ -1,6 +1,6 @@
 module github.com/corazawaf/coraza-proxy-wasm/magefiles
 
-go 1.23
+go 1.23.7
 
 require (
 	fortio.org/fortio v1.66.0
