@@ -87,7 +87,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
-          name: ftw-envoy-logs
+          name: ftw-envoy-logs-multiphase-${{ matrix.multiphase_eval }}
           path: build/ftw-envoy.log
 
       - name: Set up QEMU
