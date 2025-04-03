@@ -216,7 +216,21 @@ func Build() error {
 		}
 	}
 
-	if err := sh.RunV("tinygo", "build", "-gc=custom", "-opt=2", "-o", filepath.Join("build", "mainraw.wasm"), "-scheduler=none", "-target=wasip1", buildTagArg); err != nil {
+	buildArgs := []string{
+		"build",
+		"-gc=custom",
+		"-opt=2",
+		"-o", filepath.Join("build", "mainraw.wasm"),
+		"-scheduler=none",
+		"-target=wasip1",
+		buildTagArg,
+	}
+
+	if interpTimeout, ok := os.LookupEnv("INTERP_TIMEOUT"); ok {
+		buildArgs = append(buildArgs, "-interp-timeout="+interpTimeout)
+	}
+
+	if err := sh.RunV("tinygo", buildArgs...); err != nil {
 		return err
 	}
 
