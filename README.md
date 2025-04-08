@@ -32,7 +32,7 @@ Targets:
 Building the filter requires:
 
 - [Go](https://go.dev/doc/install)
-- [TinyGo](https://tinygo.org/getting-started/install/)
+- [TinyGo](https://tinygo.org/getting-started/install/) `0.34.0`. Note: higher versions are currently not supported.
 
 Up to date required versions can be found looking at [`minGoVersion` and `tinygoMinorVersion` variables](./magefiles/magefile.go).
 

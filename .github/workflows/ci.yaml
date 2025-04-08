@@ -12,15 +12,16 @@ on:
   workflow_dispatch:
 
 env:
-  GO_VERSION: '1.22'
-  TINYGO_VERSION: 0.33.0
+  GO_VERSION: '1.23'
+  TINYGO_VERSION: 0.34.0
   # Run e2e tests against latest two releases and latest dev
   ENVOY_IMAGES: >
-    envoyproxy/envoy:v1.31-latest
-    envoyproxy/envoy:v1.30-latest
+    envoyproxy/envoy:v1.33-latest
+    envoyproxy/envoy:v1.32-latest
     envoyproxy/envoy-dev:latest
-    istio/proxyv2:1.23.3
-    istio/proxyv2:1.22.6
+    istio/proxyv2:1.25.0
+    istio/proxyv2:1.24.3
+    istio/proxyv2:1.23.5
 
 jobs:
   build:
