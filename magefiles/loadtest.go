@@ -14,7 +14,7 @@ import (
 	"github.com/magefile/mage/sh"
 )
 
-// LoadTest runs load tests against the ftw deployment.
+// LoadTest runs load tests against the ftw deployment. Requires docker
 func LoadTest() error {
 	for _, threads := range []int{1, 2, 4} {
 		for _, payloadSize := range []int{0, 100, 1000, 10000} {
@@ -42,14 +42,14 @@ func doLoadTest(conf string, payloadSize int, threads int) error {
 	}
 
 	// Wait for Envoy to start.
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		if resp, err := http.Get("http://localhost:8080/anything"); err != nil {
-			continue
 		} else {
 			if resp.Body != nil {
 				resp.Body.Close()
 			}
 			if resp.StatusCode == http.StatusOK {
+				fmt.Println("Envoy ready")
 				break
 			}
 		}

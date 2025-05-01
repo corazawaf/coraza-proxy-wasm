@@ -1,0 +1,19 @@
+services:
+  httpbin:
+    image: mccutchen/go-httpbin:v2.15.0
+    command: [ "/bin/go-httpbin", "-port", "8081" ]
+    ports:
+      - 8081:8081
+  envoy:
+    depends_on:
+      - httpbin
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.31-latest}
+    entrypoint: /usr/local/bin/envoy
+    command:
+      - -c
+      - /conf/envoy-config.yaml
+    volumes:
+      - ../../build:/build
+      - .:/conf
+    ports:
+    - 8080:8080

@@ -451,19 +451,11 @@ func (ctx *httpContext) OnHttpRequestBody(bodySize int, endOfStream bool) types.
 
 func (ctx *httpContext) OnHttpRequestTrailers(numTrailers int) types.Action {
 	defer logTime("OnHttpRequestTrailers", currentTime())
-
-	// If no payload was collected so far, then there is nothing to do.
-	if ctx.bodyReadIndex == 0 {
-		return types.ActionContinue
-	}
-
-	// The end_of_stream parameter from OnHttpRequestBody is never set to true
-	// in HTTP2 if the trailers are available. In all other cases, the end_of_stream
-	// indicates that the payload has been collected. In HTTP2 request with trailers,
-	// the call of OnHttpRequestTrailers indicate that the payload was collected.
-	//
-	// Without that, it is possible to bypass request body inspection by adding
-	// any random trailer to HTTP2 request.
+	// The end_of_stream parameter from OnHttpRequestBody is never set to true in HTTP2 if trailers are available.
+	// Ref: https://github.com/envoyproxy/envoy/blob/121a541dd3fadef7131963f23e42a41e0c93e102/envoy/http/filter.h#L913
+	// We therefore need to enforce phase 2 rules execution here, in order to avoid sending the request body upstream
+	// prior to being inspected.
+	ctx.logger.Debug().Msg("Enforced request body processing at OnHttpRequestTrailers")
 	return ctx.OnHttpRequestBody(ctx.bodyReadIndex, true)
 }
 
@@ -656,6 +648,12 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	// Wait until we see the entire body. It has to be buffered in order to check that it is fully legit
 	// before sending it downstream (to the client)
 	return types.ActionPause
+}
+
+func (ctx *httpContext) OnHttpResponseTrailers(numTrailers int) types.Action {
+	defer logTime("OnHttpRequestTrailers", currentTime())
+	ctx.logger.Debug().Msg("Enforced response body processing at OnHttpResponseTrailers")
+	return ctx.OnHttpResponseBody(ctx.bodyReadIndex, true)
 }
 
 func (ctx *httpContext) OnHttpStreamDone() {
