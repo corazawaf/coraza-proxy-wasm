@@ -22,6 +22,7 @@ func main() {
 		url,
 		strings.NewReader(
 			"{\"foo\": \"<script foo>\"}",
+			//"{\"foo\": \"bar\"}",
 		),
 	)
 	if err != nil {

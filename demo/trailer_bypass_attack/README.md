@@ -149,3 +149,22 @@ Now build the WASM binary with the fix applied and redo the steps.
 
 This time, the behaviour should not change for requests with trailers
 and for requests with no trailers.
+
+# My Demo
+Server:
+    ```bash
+    python3 -m venv .venv
+    source .venv/bin/activate
+    pip3 install -r server/requirements.txt
+    python3 server/server.py
+    ```
+Envoy: relies on docker-compose.yml, the macos local envoy does not support wasm. The docker-compose requires network_mode: "host" to interact with the server that is the lolcalhost.
+    ```
+    docker compose --file docker-compose.yml up envoy
+    ```
+Third terminal:
+    ```bash
+    cd client
+    go run client.go // see nothing in the server log
+    go run client.go -a // see script foo in the server log
+    ```

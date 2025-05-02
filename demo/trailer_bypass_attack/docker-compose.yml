@@ -1,0 +1,20 @@
+services:
+  envoy:
+    network_mode: "host"
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.31-latest}
+    # Entryoint is explicited in order to make the ENVOY_IMAGE compatible also with istio/proxyv2 images
+    # The latter has as default entrypoint pilot-agent instead of envoy
+    # See https://github.com/tetratelabs/proxy-wasm-go-sdk/blob/main/.github/workflows/workflow.yaml#L104
+    entrypoint: /usr/local/bin/envoy
+    command:
+      - -c
+      - /conf/envoy-config.yaml
+      - --log-level
+      - info
+      - --component-log-level
+      - wasm:debug
+    volumes:
+      - ../../build:/build
+      - .:/conf
+    ports:
+    - 8080:8080
