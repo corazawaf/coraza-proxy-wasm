@@ -222,7 +222,8 @@ func Build() error {
 		"-opt=2",
 		"-o", filepath.Join("build", "mainraw.wasm"),
 		"-scheduler=none",
-		"-target=wasip1",
+		"-target=wasi",
+		"-buildmode=wasi-legacy",
 		buildTagArg,
 	}
 
