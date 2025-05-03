@@ -20,7 +20,7 @@ services:
       - --service-node # required to export metrics
       - envoy
     volumes:
-      - ../build:/build
+      - ../../build:/build
       - .:/conf
     ports:
     - 8080:8080
