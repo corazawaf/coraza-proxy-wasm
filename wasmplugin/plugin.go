@@ -651,7 +651,7 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 }
 
 func (ctx *httpContext) OnHttpResponseTrailers(numTrailers int) types.Action {
-	defer logTime("OnHttpRequestTrailers", currentTime())
+	defer logTime("OnHttpResponseTrailers", currentTime())
 	ctx.logger.Debug().Msg("Enforced response body processing at OnHttpResponseTrailers")
 	return ctx.OnHttpResponseBody(ctx.bodyReadIndex, true)
 }
