@@ -1,6 +1,6 @@
 services:
   albedo:
-    image: ghcr.io/coreruleset/albedo:0.1.0
+    image: ghcr.io/coreruleset/albedo:0.2.0
   chown:
     image: alpine:3.16
     command:
