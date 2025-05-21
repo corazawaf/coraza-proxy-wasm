@@ -1,0 +1,78 @@
+static_resources:
+  listeners:
+    - address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 8080
+      filter_chains:
+        - transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              common_tls_context:
+                alpn_protocols: [ "h2,http/1.1" ]
+                tls_certificates:
+                  - certificate_chain:
+                      filename: "/conf/server.crt"
+                    private_key:
+                      filename: "/conf/server.key"
+          filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                codec_type: http2
+                http2_protocol_options: {}
+                route_config:
+                  virtual_hosts:
+                    - name: local_route
+                      domains:
+                        - "*"
+                      routes:
+                        - match:
+                            prefix: "/"
+                          route:
+                            cluster: local_server
+                http_filters:
+                  - name: envoy.filters.http.wasm
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+                      config:
+                        name: "coraza-filter"
+                        root_id: ""
+                        configuration:
+                          "@type": "type.googleapis.com/google.protobuf.StringValue"
+                          value: |
+                            {
+                              "directives_map": {
+                                  "defaultrs": [
+                                    "Include @demo-conf",
+                                    "SecDebugLogLevel 3",
+                                    "SecRule ARGS_POST \"@rx script\" \"id:100,phase:2,deny\""
+                                  ]
+                              },
+                              "default_directives": "defaultrs"
+                            }
+                        vm_config:
+                          runtime: "envoy.wasm.runtime.v8"
+                          vm_id: "my_vm_id"
+                          code:
+                            local:
+                              filename: "build/main.wasm"
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+  clusters:
+    - name: local_server
+      connect_timeout: 6000s
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: local_server
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: httpbin
+                      port_value: 8081
