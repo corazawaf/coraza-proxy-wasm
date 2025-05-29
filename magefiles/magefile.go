@@ -237,33 +237,6 @@ func Build() error {
 	return patchWasm(filepath.Join("build", "mainraw.wasm"), filepath.Join("build", "main.wasm"), initialPages)
 }
 
-// E2e runs e2e tests with a built plugin against the example deployment. Requires docker.
-func E2e() error {
-	var err error
-	if err = sh.RunV("docker", "compose", "--file", "e2e/docker-compose.yml", "up", "-d", "envoy"); err != nil {
-		return err
-	}
-	defer func() {
-		_ = sh.RunV("docker", "compose", "--file", "e2e/docker-compose.yml", "down", "-v")
-	}()
-
-	envoyHost := os.Getenv("ENVOY_HOST")
-	if envoyHost == "" {
-		envoyHost = "localhost:8080"
-	}
-	httpbinHost := os.Getenv("HTTPBIN_HOST")
-	if httpbinHost == "" {
-		httpbinHost = "localhost:8081"
-	}
-
-	// --nulled-body is needed because coraza-proxy-wasm returns a 200 OK with a nulled body when if the interruption happens after phase 3
-	if err = sh.RunV("go", "run", "github.com/corazawaf/coraza/v3/http/e2e/cmd/httpe2e@main", "--proxy-hostport",
-		"http://"+envoyHost, "--httpbin-hostport", "http://"+httpbinHost, "--nulled-body"); err != nil {
-		sh.RunV("docker", "compose", "-f", "e2e/docker-compose.yml", "logs", "envoy")
-	}
-	return err
-}
-
 // Ftw runs ftw tests with a built plugin and Envoy. Requires docker.
 func Ftw() error {
 	if err := sh.RunV("docker", "compose", "--file", "ftw/docker-compose.yml", "build", "--pull"); err != nil {
