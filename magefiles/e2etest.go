@@ -44,7 +44,7 @@ func runCorazaE2e(envoyHost, httpbinHost string) error {
 	}()
 
 	// --nulled-body is needed because coraza-proxy-wasm returns a 200 OK with a nulled body when if the interruption happens after phase 3
-	if err = sh.RunV("go", "run", "github.com/corazawaf/coraza/v3/http/e2e/cmd/httpe2e@main", "--proxy-hostport",
+	if err = sh.RunV("go", "run", "github.com/corazawaf/coraza/v3/http/e2e/cmd/httpe2e@add-testcase-for-streamed-responses", "--proxy-hostport",
 		"http://"+envoyHost, "--httpbin-hostport", "http://"+httpbinHost, "--nulled-body"); err != nil {
 		sh.RunV("docker", "compose", "-f", dockerComposeFilePath, "logs", "envoy")
 	}
