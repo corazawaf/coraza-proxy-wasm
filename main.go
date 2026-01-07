@@ -4,7 +4,7 @@
 package main
 
 import (
-	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
+	"github.com/proxy-wasm/proxy-wasm-go-sdk/proxywasm"
 
 	"github.com/corazawaf/coraza-proxy-wasm/internal/auditlog"
 	"github.com/corazawaf/coraza-proxy-wasm/internal/operators"
@@ -14,5 +14,8 @@ import (
 func main() {
 	operators.Register()
 	auditlog.RegisterProxyWasmSerialWriter()
+}
+
+func init() {
 	proxywasm.SetVMContext(wasmplugin.NewVMContext())
 }

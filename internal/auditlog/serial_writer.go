@@ -8,7 +8,7 @@ import (
 
 	"github.com/corazawaf/coraza/v3/experimental/plugins"
 	"github.com/corazawaf/coraza/v3/experimental/plugins/plugintypes"
-	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
+	"github.com/proxy-wasm/proxy-wasm-go-sdk/proxywasm"
 )
 
 // RegisterProxyWasmSerialWriter overrides the default "Serial" audit log writer (see https://github.com/corazawaf/coraza/blob/main/internal/auditlog/init_tinygo.go)
