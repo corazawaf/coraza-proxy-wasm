@@ -7,7 +7,7 @@ import (
 	"io"
 
 	"github.com/corazawaf/coraza/v3/debuglog"
-	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
+	"github.com/proxy-wasm/proxy-wasm-go-sdk/proxywasm"
 )
 
 type logger struct {

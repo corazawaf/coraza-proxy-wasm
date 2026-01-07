@@ -8,7 +8,7 @@ package wasmplugin
 import (
 	"runtime"
 
-	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
+	"github.com/proxy-wasm/proxy-wasm-go-sdk/proxywasm"
 )
 
 func logMemStats() {

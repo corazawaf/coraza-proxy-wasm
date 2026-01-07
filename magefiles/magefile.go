@@ -19,8 +19,7 @@ import (
 	"github.com/tetratelabs/wabin/wasm"
 )
 
-var minGoVersion = "1.23"
-var minTinygoVersion = "0.34.0"
+var minGoVersion = "1.24"
 var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
 var golangCILintVer = "v1.64.8"                                    // https://github.com/golangci/golangci-lint/releases
 var gosImportsVer = "v0.3.8"                                       // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
@@ -32,7 +31,6 @@ func init() {
 		lang       string
 		minVersion string
 	}{
-		{"tinygo", minTinygoVersion},
 		{"go", minGoVersion},
 	} {
 		if err := checkVersion(check.lang, check.minVersion); err != nil {
@@ -60,20 +58,6 @@ func checkVersion(lang string, minVersion string) error {
 		compare = goVersionRegex.FindStringSubmatch(v)
 		if len(compare) != 4 {
 			return fmt.Errorf("unexpected go semver: %q", v)
-		}
-	case "tinygo":
-		tinygoVersionRegex := regexp.MustCompile("tinygo version ([0-9]+).([0-9]+).?([0-9]+)?")
-		v, err := sh.Output("tinygo", "version")
-		if err != nil {
-			return fmt.Errorf("unexpected tinygo error: %v", err)
-		}
-		// Assume a dev build is valid.
-		if strings.Contains(v, "-dev") {
-			return nil
-		}
-		compare = tinygoVersionRegex.FindStringSubmatch(v)
-		if len(compare) != 4 {
-			return fmt.Errorf("unexpected tinygo semver: %q", v)
 		}
 	default:
 		return fmt.Errorf("unexpected language: %s", lang)
@@ -188,8 +172,6 @@ func Build() error {
 	}
 
 	buildTags := []string{
-		"custommalloc",     // https://github.com/wasilibs/nottinygc#usage
-		"nottinygc_envoy",  // https://github.com/wasilibs/nottinygc#using-with-envoy
 		"no_fs_access",     // https://github.com/corazawaf/coraza#build-tags
 		"memoize_builders", // https://github.com/corazawaf/coraza#build-tags
 	}
@@ -203,8 +185,12 @@ func Build() error {
 	if os.Getenv("MEMSTATS") == "true" {
 		buildTags = append(buildTags, "memstats")
 	}
+	// By default coraza wasilibs is enabled
+	if os.Getenv("WASILIBS") != "false" {
+		buildTags = append(buildTags, "wasilibs")
+	}
 
-	buildTagArg := fmt.Sprintf("-tags='%s'", strings.Join(buildTags, " "))
+	buildTagArg := fmt.Sprintf("-tags=%s", strings.Join(buildTags, ","))
 
 	// ~100MB initial heap
 	initialPages := 2100
@@ -218,19 +204,19 @@ func Build() error {
 
 	buildArgs := []string{
 		"build",
-		"-gc=custom",
-		"-opt=2",
+		"-buildmode=c-shared",
+		"-ldflags=-s -w",
+		"-trimpath",
 		"-o", filepath.Join("build", "mainraw.wasm"),
-		"-scheduler=none",
-		"-target=wasip1",
 		buildTagArg,
 	}
 
-	if interpTimeout, ok := os.LookupEnv("INTERP_TIMEOUT"); ok {
-		buildArgs = append(buildArgs, "-interp-timeout="+interpTimeout)
+	envVars := map[string]string{
+		"GOOS":   "wasip1",
+		"GOARCH": "wasm",
 	}
 
-	if err := sh.RunV("tinygo", buildArgs...); err != nil {
+	if err := sh.RunWithV(envVars, "go", buildArgs...); err != nil {
 		return err
 	}
 
@@ -288,16 +274,6 @@ func patchWasm(inPath, outPath string, initialPages int) error {
 	}
 
 	mod.MemorySection.Min = uint32(initialPages)
-
-	for _, imp := range mod.ImportSection {
-		switch {
-		case imp.Name == "fd_filestat_get":
-			imp.Name = "fd_fdstat_get"
-		case imp.Name == "path_filestat_get":
-			imp.Module = "env"
-			imp.Name = "proxy_get_header_map_value"
-		}
-	}
 
 	out := binary.EncodeModule(mod)
 	if err = os.WriteFile(outPath, out, 0644); err != nil {
