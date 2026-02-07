@@ -261,7 +261,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 		if !isDefault {
 			ctx.metricLabelsKV = append(ctx.metricLabelsKV, "authority", authority)
-				}
+		}
 	} else {
 		proxywasm.LogWarnf("Failed to resolve WAF for authority %q: %v", authority, resolveWAFErr)
 		return types.ActionContinue
