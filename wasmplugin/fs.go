@@ -7,6 +7,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"path/filepath"
 	"strings"
 )
 
@@ -44,6 +45,7 @@ func (r rulesFS) Open(name string) (fs.File, error) {
 }
 
 func (r rulesFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	name = normalizePath(name)
 	for a, dst := range r.dirsMapping {
 		if a == name {
 			return fs.ReadDir(r.fs, dst)
@@ -62,6 +64,7 @@ func (r rulesFS) ReadFile(name string) ([]byte, error) {
 }
 
 func (r rulesFS) mapPath(p string) string {
+	p = normalizePath(p)
 	if strings.IndexByte(p, '/') != -1 {
 		// is not in root, hence we can do dir mapping
 		for a, dst := range r.dirsMapping {
@@ -79,4 +82,8 @@ func (r rulesFS) mapPath(p string) string {
 	}
 
 	return p
+}
+
+func normalizePath(p string) string {
+	return filepath.ToSlash(p)
 }

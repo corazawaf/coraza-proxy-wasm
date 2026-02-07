@@ -180,7 +180,7 @@ func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 	return &httpContext{
 		contextID:        contextID,
 		metrics:          ctx.metrics,
-		metricLabelsKV:   ctx.metricLabelsKV,
+		metricLabelsKV:   append([]string{}, ctx.metricLabelsKV...),
 		perAuthorityWAFs: ctx.perAuthorityWAFs,
 	}
 }
@@ -261,7 +261,7 @@ func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) t
 
 		if !isDefault {
 			ctx.metricLabelsKV = append(ctx.metricLabelsKV, "authority", authority)
-		}
+				}
 	} else {
 		proxywasm.LogWarnf("Failed to resolve WAF for authority %q: %v", authority, resolveWAFErr)
 		return types.ActionContinue
