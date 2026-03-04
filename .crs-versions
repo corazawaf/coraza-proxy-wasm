@@ -1,4 +1,4 @@
-CRS_VERSION=4.14.0
+CRS_VERSION=4.24.0
 plugin:EsadCetiner/iredadmin-rule-exclusions-plugin=v1.0.1
 plugin:EsadCetiner/plausible-rule-exclusions-plugin=v1.0.0
 plugin:EsadCetiner/roundcube-rule-exclusions-plugin=v1.0.4
