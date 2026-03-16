@@ -3,6 +3,8 @@ on:
   schedule:
     - cron: "30 1 * * *"
 
+permissions: {}
+
 jobs:
   close-issues:
     runs-on: ubuntu-latest
@@ -10,7 +12,7 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: actions/stale@v3
+      - uses: actions/stale@98ed4cb500039dbcccf4bd9bedada4d0187f2757 # v3
         with:
           days-before-issue-stale: 30
           days-before-issue-close: 14
