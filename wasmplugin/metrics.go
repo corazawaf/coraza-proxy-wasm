@@ -50,3 +50,28 @@ func (m *wafMetrics) CountTXInterruption(phase string, ruleID int, metricLabelsK
 	fqn := sb.String()
 	m.incrementCounter(fqn)
 }
+
+func (m *wafMetrics) CountTXMatchedRules(phase string, ruleID int, transactionID string, metricLabelsKV []string, flagTransactionID bool) {
+	// Using the same logic as Count TXInterruption, but with this metric we want to:
+	// - record the number of times a rule was triggered in a specific phase of the specified transaction
+	// - record the phase where the rule was triggered
+	// - record the rule ID
+	// - record the transaction ID of matched rule. This is a unique identifier for the transaction.
+	// - record the labels that were used to identify the rule.
+	// This is metric is processed as:
+	// waf_filter_tx_matchedrules{phase="http_request_body",rule_id="100",transaction_id="SJNBEaBHutzVixMcVRi",identifier="global"}.
+	var sb strings.Builder
+
+	if flagTransactionID {
+		sb.WriteString(fmt.Sprintf("waf_filter.tx.matchedrules_ruleid=%d_transactionid=%s_phase=%s", ruleID, transactionID, phase))
+	} else {
+		sb.WriteString(fmt.Sprintf("waf_filter.tx.matchedrules_ruleid=%d_phase=%s", ruleID, phase))
+	}
+
+	for i := 0; i < len(metricLabelsKV); i += 2 {
+		sb.WriteString(fmt.Sprintf("_%s=%s", metricLabelsKV[i], metricLabelsKV[i+1]))
+	}
+
+	fqn := sb.String()
+	m.incrementCounter(fqn)
+}

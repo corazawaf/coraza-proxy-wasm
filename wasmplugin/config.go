@@ -14,6 +14,7 @@ import (
 type pluginConfiguration struct {
 	directivesMap          DirectivesMap
 	metricLabels           map[string]string
+	metricFlags            map[string]bool
 	defaultDirectives      string
 	perAuthorityDirectives map[string]string
 }
@@ -53,6 +54,12 @@ func parsePluginConfiguration(data []byte, infoLogger func(string)) (pluginConfi
 	config.metricLabels = make(map[string]string)
 	jsonData.Get("metric_labels").ForEach(func(key, value gjson.Result) bool {
 		config.metricLabels[key.String()] = value.String()
+		return true
+	})
+
+	config.metricFlags = make(map[string]bool)
+	jsonData.Get("metric_flags").ForEach(func(key, value gjson.Result) bool {
+		config.metricFlags[key.String()] = value.Bool()
 		return true
 	})
 
