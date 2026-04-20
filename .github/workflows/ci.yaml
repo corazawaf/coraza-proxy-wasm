@@ -9,7 +9,11 @@ on:
       - "**/*.md"
       - "LICENSE"
   pull_request:
+    branches:
+      - main
   workflow_dispatch:
+
+permissions: {}
 
 env:
   GO_VERSION: '1.24'
