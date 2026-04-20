@@ -16,7 +16,6 @@ on:
 permissions: {}
 
 env:
-  GO_VERSION: '1.26'
   TINYGO_VERSION: 0.40.1
   # Run e2e tests against latest two releases and latest dev
   ENVOY_IMAGES: >
