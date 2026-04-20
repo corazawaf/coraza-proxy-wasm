@@ -16,8 +16,8 @@ on:
 permissions: {}
 
 env:
-  GO_VERSION: '1.24'
-  TINYGO_VERSION: 0.39.0
+  GO_VERSION: '1.26'
+  TINYGO_VERSION: 0.40.1
   # Run e2e tests against latest two releases and latest dev
   ENVOY_IMAGES: >
     envoyproxy/envoy:v1.33-latest
@@ -49,7 +49,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # ratchet:actions/setup-go@v6
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: 'go.mod'
           cache: true
 
       - name: Install TinyGo
