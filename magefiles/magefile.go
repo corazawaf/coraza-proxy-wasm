@@ -19,7 +19,7 @@ import (
 	"github.com/tetratelabs/wabin/wasm"
 )
 
-var minGoVersion = "1.26"
+var minGoVersion = "1.25"
 var minTinygoVersion = "0.40.1"
 var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
 var golangCILintVer = "v1.64.8"                                    // https://github.com/golangci/golangci-lint/releases
