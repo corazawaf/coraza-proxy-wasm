@@ -16,8 +16,7 @@ on:
 permissions: {}
 
 env:
-  GO_VERSION: '1.23'
-  TINYGO_VERSION: 0.34.0
+  TINYGO_VERSION: 0.41.0
   # Run e2e tests against latest two releases and latest dev
   ENVOY_IMAGES: >
     envoyproxy/envoy:v1.33-latest
@@ -30,26 +29,26 @@ env:
 jobs:
   build:
     name: "Build (multiphase evaluation: ${{ matrix.multiphase_eval }})"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       packages: write
     strategy:
       fail-fast: false # ftw runs are flaky, let's keep the two jobs running reducing re-runs
       matrix:
-        multiphase_eval: ["true","false"]
+        multiphase_eval: ["true", "false"]
     env:
       MULTIPHASE_EVAL: ${{ matrix.multiphase_eval }}
     steps:
       - name: Check out code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-        with:  # Ensure release_notes.sh can see prior commits
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
+        with: # Ensure release_notes.sh can see prior commits
           fetch-depth: 0
 
       - name: Install Go
-        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88eb36e1604f7633e # v3
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # ratchet:actions/setup-go@v6
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: 'go.mod'
           cache: true
 
       - name: Install TinyGo
@@ -61,7 +60,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache TinyGo build
-        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # ratchet:actions/cache@v5
         with:
           path: |
             ~/.cache/tinygo
@@ -89,23 +88,23 @@ jobs:
       - name: Run regression tests (ftw)
         run: go run mage.go ftw
 
-      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # ratchet:actions/upload-artifact@v7
         if: success() || failure()
         with:
           name: ftw-envoy-logs-multiphase-${{ matrix.multiphase_eval }}
           path: build/ftw-envoy.log
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # ratchet:docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
         if: ${{ matrix.multiphase_eval=='true' }}
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # ratchet:docker/setup-buildx-action@v4
 
       - name: Docker meta
         if: ${{ matrix.multiphase_eval=='true' }}
         id: meta
-        uses: docker/metadata-action@818d4b7b91585d195f67373fd9cb0332e31a7175 # v4
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # ratchet:docker/metadata-action@v6
         with:
           images: |
             ghcr.io/${{ github.repository }}
@@ -118,7 +117,7 @@ jobs:
       - name: Docker meta busybox
         if: ${{ matrix.multiphase_eval=='true' }}
         id: meta-busybox
-        uses: docker/metadata-action@818d4b7b91585d195f67373fd9cb0332e31a7175 # v4
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # ratchet:docker/metadata-action@v6
         with:
           images: |
             ghcr.io/${{ github.repository }}
@@ -132,7 +131,7 @@ jobs:
 
       - name: Login to GHCR
         if: ${{ matrix.multiphase_eval=='true' }}
-        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # ratchet:docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -140,7 +139,7 @@ jobs:
 
       - name: Build and push busybox based image
         if: ${{ matrix.multiphase_eval=='true' }}
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # ratchet:docker/build-push-action@v7
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
@@ -154,7 +153,7 @@ jobs:
 
       - name: Build and push
         if: ${{ matrix.multiphase_eval=='true' }}
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # ratchet:docker/build-push-action@v7
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
@@ -176,6 +175,7 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
       - name: Push build artifact to release
         # Triggered only on tag creation
