@@ -226,6 +226,47 @@ func TestParsePluginConfiguration(t *testing.T) {
 				perAuthorityDirectives: map[string]string{},
 			},
 		},
+		{
+			name: "with blocking page template",
+			config: `
+			{
+				"directives_map": {
+					"default": ["SecRuleEngine On"]
+				},
+				"default_directives": "default",
+				"blocking_page": "<html><body><h1>{status_code}</h1><p>Blocked: {tx_id}</p></body></html>"
+			}
+			`,
+			expectConfig: pluginConfiguration{
+				directivesMap: DirectivesMap{
+					"default": []string{"SecRuleEngine On"},
+				},
+				metricLabels:           map[string]string{},
+				defaultDirectives:      "default",
+				perAuthorityDirectives: map[string]string{},
+				blockingPageTemplate:   "<html><body><h1>{status_code}</h1><p>Blocked: {tx_id}</p></body></html>",
+			},
+		},
+		{
+			name: "without blocking page (defaults to empty)",
+			config: `
+			{
+				"directives_map": {
+					"default": ["SecRuleEngine On"]
+				},
+				"default_directives": "default"
+			}
+			`,
+			expectConfig: pluginConfiguration{
+				directivesMap: DirectivesMap{
+					"default": []string{"SecRuleEngine On"},
+				},
+				metricLabels:           map[string]string{},
+				defaultDirectives:      "default",
+				perAuthorityDirectives: map[string]string{},
+				blockingPageTemplate:   "",
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -238,6 +279,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 				assert.Equal(t, testCase.expectConfig.metricLabels, cfg.metricLabels)
 				assert.Equal(t, testCase.expectConfig.defaultDirectives, cfg.defaultDirectives)
 				assert.Equal(t, testCase.expectConfig.perAuthorityDirectives, cfg.perAuthorityDirectives)
+				assert.Equal(t, testCase.expectConfig.blockingPageTemplate, cfg.blockingPageTemplate)
 			}
 		})
 	}

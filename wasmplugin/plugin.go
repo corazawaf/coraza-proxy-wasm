@@ -78,9 +78,10 @@ type corazaPlugin struct {
 	// Embed the default plugin context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultPluginContext
-	perAuthorityWAFs wafMap
-	metricLabelsKV   []string
-	metrics          *wafMetrics
+	perAuthorityWAFs     wafMap
+	metricLabelsKV       []string
+	metrics              *wafMetrics
+	blockingPageTemplate string
 }
 
 func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
@@ -172,16 +173,18 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		ctx.metricLabelsKV = append(ctx.metricLabelsKV, k, v)
 	}
 	ctx.metrics = NewWAFMetrics()
+	ctx.blockingPageTemplate = config.blockingPageTemplate
 
 	return types.OnPluginStartStatusOK
 }
 
 func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 	return &httpContext{
-		contextID:        contextID,
-		metrics:          ctx.metrics,
-		metricLabelsKV:   ctx.metricLabelsKV,
-		perAuthorityWAFs: ctx.perAuthorityWAFs,
+		contextID:            contextID,
+		metrics:              ctx.metrics,
+		metricLabelsKV:       ctx.metricLabelsKV,
+		perAuthorityWAFs:     ctx.perAuthorityWAFs,
+		blockingPageTemplate: ctx.blockingPageTemplate,
 	}
 }
 
@@ -214,6 +217,11 @@ const (
 	interruptionPhaseHttpResponseBody    = iota
 )
 
+// The "blocking_page" JSON config field accepts an HTML template with these placeholders:
+//   - {tx_id}       → transaction ID
+//   - {status_code} → HTTP status code
+// When not set, the original behavior is preserved (empty body, status code only).
+
 type httpContext struct {
 	// Embed the default http context here,
 	// so that we don't need to reimplement all the methods.
@@ -229,6 +237,7 @@ type httpContext struct {
 	interruptedAt         interruptionPhase
 	logger                debuglog.Logger
 	metricLabelsKV        []string
+	blockingPageTemplate  string
 }
 
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
@@ -542,11 +551,18 @@ func (ctx *httpContext) OnHttpResponseBody(bodySize int, endOfStream bool) types
 	defer logTime("OnHttpResponseBody", currentTime())
 
 	if ctx.interruptedAt.isInterrupted() {
+		// If the interruption was already handled in an earlier phase (request headers/body),
+		// we already sent a custom response via SendHttpResponse. In that case, we should NOT
+		// replace the body - just continue to avoid interfering with the already-sent response.
+		// The replaceResponseBodyWhenInterrupted is only for interruptions during response body phase.
+		if ctx.interruptedAt != interruptionPhaseHttpResponseBody {
+			ctx.logger.Debug().
+				Str("interruption_handled_phase", ctx.interruptedAt.String()).
+				Msg("Interruption already handled in earlier phase, skipping body replacement")
+			return types.ActionContinue
+		}
 		// At response body phase, proxy-wasm currently relies on emptying the response body as a way of
 		// interruption the response. See https://github.com/corazawaf/coraza-proxy-wasm/issues/26.
-		// If OnHttpResponseBody is called again and an interruption has already been raised, it means that
-		// we have to keep going with the sanitization of the response, emptying it.
-		// Sending the crafted HttpResponse with empty body, we don't expect to trigger OnHttpResponseBody
 		ctx.logger.Debug().
 			Str("interruption_handled_phase", ctx.interruptedAt.String()).
 			Msg("Response body interruption already handled, keeping replacing the body")
@@ -715,8 +731,23 @@ func (ctx *httpContext) handleInterruption(phase interruptionPhase, interruption
 	if statusCode == 0 {
 		statusCode = defaultInterruptionStatusCode
 	}
-	if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, noGRPCStream); err != nil {
-		panic(err)
+	// If a blocking page template is configured, send it with placeholder replacement.
+	// Otherwise, use the original behavior: empty body with status code only.
+	if ctx.blockingPageTemplate != "" {
+		headers := [][2]string{
+			{"Content-Type", "text/html; charset=utf-8"},
+		}
+		txID := ctx.tx.ID()
+		statusCodeStr := strconv.Itoa(statusCode)
+		blockingPage := bytes.ReplaceAll([]byte(ctx.blockingPageTemplate), []byte("{tx_id}"), []byte(txID))
+		blockingPage = bytes.ReplaceAll(blockingPage, []byte("{status_code}"), []byte(statusCodeStr))
+		if err := proxywasm.SendHttpResponse(uint32(statusCode), headers, blockingPage, noGRPCStream); err != nil {
+			panic(err)
+		}
+	} else {
+		if err := proxywasm.SendHttpResponse(uint32(statusCode), nil, nil, noGRPCStream); err != nil {
+			panic(err)
+		}
 	}
 
 	// SendHttpResponse must be followed by ActionPause in order to stop malicious content

@@ -16,6 +16,7 @@ type pluginConfiguration struct {
 	metricLabels           map[string]string
 	defaultDirectives      string
 	perAuthorityDirectives map[string]string
+	blockingPageTemplate   string
 }
 
 type DirectivesMap map[string][]string
@@ -93,6 +94,11 @@ func parsePluginConfiguration(data []byte, infoLogger func(string)) (pluginConfi
 			})
 			config.directivesMap["default"] = directive
 		}
+	}
+
+	blockingPage := jsonData.Get("blocking_page")
+	if blockingPage.Exists() {
+		config.blockingPageTemplate = blockingPage.String()
 	}
 
 	return config, nil
