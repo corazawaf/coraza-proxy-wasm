@@ -218,17 +218,18 @@ type httpContext struct {
 	// Embed the default http context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultHttpContext
-	contextID             uint32
-	perAuthorityWAFs      wafMap
-	tx                    ctypes.Transaction
-	httpProtocol          string
-	processedRequestBody  bool
-	processedResponseBody bool
-	bodyReadIndex         int
-	metrics               *wafMetrics
-	interruptedAt         interruptionPhase
-	logger                debuglog.Logger
-	metricLabelsKV        []string
+	contextID                uint32
+	perAuthorityWAFs         wafMap
+	tx                       ctypes.Transaction
+	httpProtocol             string
+	processedRequestBody     bool
+	processedResponseHeaders bool
+	processedResponseBody    bool
+	bodyReadIndex            int
+	metrics                  *wafMetrics
+	interruptedAt            interruptionPhase
+	logger                   debuglog.Logger
+	metricLabelsKV           []string
 }
 
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
@@ -531,6 +532,7 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 	}
 
 	interruption := tx.ProcessResponseHeaders(code, ctx.httpProtocol)
+	ctx.processedResponseHeaders = true
 	if interruption != nil {
 		return ctx.handleInterruption(interruptionPhaseHttpResponseHeaders, interruption)
 	}
@@ -665,7 +667,10 @@ func (ctx *httpContext) OnHttpStreamDone() {
 			// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
 			// phase that still need to be executed. If they haven't been executed yet, and there has not been a previous
 			// interruption, now is the time.
-			if !ctx.processedResponseBody {
+			// Only flush when the response headers phase actually ran: streams that ended without it (local
+			// replies, redirects, upstream errors) would otherwise trigger ProcessResponseBody out of order,
+			// which coraza rejects with "anomalous call to ProcessResponseBody ... before response headers evaluation".
+			if !ctx.processedResponseBody && ctx.processedResponseHeaders {
 				ctx.logger.Info().Msg("Running ProcessResponseBody in OnHttpStreamDone, triggered actions will not be enforced. Further logs are for detection only purposes")
 				ctx.processedResponseBody = true
 				_, err := tx.ProcessResponseBody()
