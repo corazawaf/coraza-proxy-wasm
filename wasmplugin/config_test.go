@@ -238,6 +238,11 @@ func TestParsePluginConfiguration(t *testing.T) {
 				assert.Equal(t, testCase.expectConfig.metricLabels, cfg.metricLabels)
 				assert.Equal(t, testCase.expectConfig.defaultDirectives, cfg.defaultDirectives)
 				assert.Equal(t, testCase.expectConfig.perAuthorityDirectives, cfg.perAuthorityDirectives)
+				if testCase.expectConfig.ruleLogFormat == "" {
+					assert.Equal(t, ruleLogFormatBracket, cfg.ruleLogFormat)
+				} else {
+					assert.Equal(t, testCase.expectConfig.ruleLogFormat, cfg.ruleLogFormat)
+				}
 			}
 		})
 	}

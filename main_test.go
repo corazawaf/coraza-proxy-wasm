@@ -6,6 +6,7 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -857,6 +858,57 @@ func TestEmptyBody(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestLogErrorJSONFormat(t *testing.T) {
+	reqHdrs := [][2]string{
+		{":path", "/hello"},
+		{":method", "GET"},
+		{":authority", "localhost"},
+		{"X-CRS-Test", "for the win!"},
+	}
+
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+		conf := `{
+			"rule_log_format": "json",
+			"directives_map": {
+				"default": [
+					"SecRule REQUEST_HEADERS:X-CRS-Test \"@rx ^.*$\" \"id:999999,phase:1,log,severity:4,msg:'%{MATCHED_VAR}',pass,t:none\""
+				]
+			},
+			"default_directives": "default"
+		}`
+
+		opt := proxytest.
+			NewEmulatorOption().
+			WithVMContext(vm).
+			WithPluginConfiguration([]byte(strings.TrimSpace(conf)))
+
+		host, reset := proxytest.NewHostEmulator(opt)
+		defer reset()
+
+		require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+
+		id := host.InitializeHttpContext()
+		action := host.CallOnRequestHeaders(id, reqHdrs, false)
+		require.Equal(t, types.ActionContinue, action)
+
+		logs := strings.Join(host.GetWarnLogs(), "\n")
+		require.NotContains(t, logs, "[client ")
+		require.Contains(t, logs, `"type":"coraza_rule_match"`)
+		require.Contains(t, logs, `"id":999999`)
+		require.Contains(t, logs, "for the win!")
+
+		var entry struct {
+			Type string `json:"type"`
+			Rule struct {
+				ID int `json:"id"`
+			} `json:"rule"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(logs), &entry))
+		require.Equal(t, "coraza_rule_match", entry.Type)
+		require.Equal(t, 999999, entry.Rule.ID)
+	})
 }
 
 func TestLogError(t *testing.T) {

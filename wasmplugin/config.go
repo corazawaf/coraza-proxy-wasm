@@ -16,12 +16,15 @@ type pluginConfiguration struct {
 	metricLabels           map[string]string
 	defaultDirectives      string
 	perAuthorityDirectives map[string]string
+	ruleLogFormat          ruleLogFormat
 }
 
 type DirectivesMap map[string][]string
 
 func parsePluginConfiguration(data []byte, infoLogger func(string)) (pluginConfiguration, error) {
-	config := pluginConfiguration{}
+	config := pluginConfiguration{
+		ruleLogFormat: ruleLogFormatBracket,
+	}
 
 	data = bytes.TrimSpace(data)
 	if len(data) == 0 {
@@ -76,6 +79,15 @@ func parsePluginConfiguration(data []byte, infoLogger func(string)) (pluginConfi
 		if _, ok := config.directivesMap[directiveName]; !ok {
 			return config, fmt.Errorf("directive map not found for authority %s: %q", authority, directiveName)
 		}
+	}
+
+	ruleLogFormat := jsonData.Get("rule_log_format")
+	if ruleLogFormat.Exists() {
+		format, err := parseRuleLogFormat(ruleLogFormat.String())
+		if err != nil {
+			return config, err
+		}
+		config.ruleLogFormat = format
 	}
 
 	if len(config.directivesMap) == 0 {
