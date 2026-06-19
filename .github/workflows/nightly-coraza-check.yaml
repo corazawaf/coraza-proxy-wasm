@@ -10,13 +10,12 @@ on:
 permissions: {}
 
 env:
-  GO_VERSION: '1.23'
-  TINYGO_VERSION: 0.34.0
+  TINYGO_VERSION: 0.41.1
 
 jobs:
   test:
     name: "Test (multiphase evaluation: ${{ matrix.multiphase_eval }})"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     strategy:
@@ -26,12 +25,12 @@ jobs:
       MULTIPHASE_EVAL: ${{ matrix.multiphase_eval }}
     steps:
       - name: Check out code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install Go
-        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88eb36e1604f7633e # v3
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: 'go.mod'
           cache: true
 
       - name: Install TinyGo
@@ -43,7 +42,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache TinyGo build
-        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.cache/tinygo
