@@ -1421,7 +1421,7 @@ func vmTest(t *testing.T, f func(*testing.T, types.VMContext)) {
 		buildPath := filepath.Join("build", "mainraw.wasm")
 		wasm, err := os.ReadFile(buildPath)
 		if err != nil {
-			t.Fatal("wasm not found")
+			t.Skipf("wasm not found at %s, run mage build to generate it", buildPath)
 		}
 		v, err := proxytest.NewWasmVMContext(wasm)
 		require.NoError(t, err)

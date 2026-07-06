@@ -180,7 +180,7 @@ func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 	return &httpContext{
 		contextID:        contextID,
 		metrics:          ctx.metrics,
-		metricLabelsKV:   ctx.metricLabelsKV,
+		metricLabelsKV:   append([]string{}, ctx.metricLabelsKV...),
 		perAuthorityWAFs: ctx.perAuthorityWAFs,
 	}
 }
@@ -660,33 +660,47 @@ func (ctx *httpContext) OnHttpStreamDone() {
 	defer logTime("OnHttpStreamDone", currentTime())
 	tx := ctx.tx
 
-	if tx != nil {
-		if !tx.IsRuleEngineOff() && !ctx.interruptedAt.isInterrupted() {
-			// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
-			// phase that still need to be executed. If they haven't been executed yet, and there has not been a previous
-			// interruption, now is the time.
-			if !ctx.processedResponseBody {
-				ctx.logger.Info().Msg("Running ProcessResponseBody in OnHttpStreamDone, triggered actions will not be enforced. Further logs are for detection only purposes")
-				ctx.processedResponseBody = true
-				_, err := tx.ProcessResponseBody()
-				if err != nil {
-					ctx.logger.Error().
-						Err(err).
-						Msg("Failed to process response body")
-				}
+	if tx == nil {
+		return
+	}
+
+	logger := ctx.logger
+
+	defer func() {
+		// Ensure logging and transaction close always run so TinyGo can release allocations.
+		tx.ProcessLogging()
+		if err := tx.Close(); err != nil {
+			if logger != nil {
+				logger.Error().Err(err).Msg("Failed to close transaction")
+			} else {
+				proxywasm.LogErrorf("Failed to close transaction: %v", err)
 			}
 		}
-
-		// ProcessLogging is still called even if RuleEngine is off for potential logs generated before the engine is turned off.
-		// Internally, if the engine is off, no log phase rules are evaluated
-		ctx.tx.ProcessLogging()
-
-		err := ctx.tx.Close()
-		if err != nil {
-			ctx.logger.Error().Err(err).Msg("Failed to close transaction")
+		if logger != nil {
+			logger.Info().Msg("Finished")
 		}
-		ctx.logger.Info().Msg("Finished")
+		// Drop last reference so the GC can reclaim the transaction promptly.
+		ctx.tx = nil
 		logMemStats()
+	}()
+
+	if tx.IsRuleEngineOff() || ctx.interruptedAt.isInterrupted() || ctx.processedResponseBody {
+		return
+	}
+
+	// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
+	// phase that still need to be executed. If they haven't been executed yet, and there has not been a previous
+	// interruption, now is the time.
+	if logger != nil {
+		logger.Info().Msg("Running ProcessResponseBody in OnHttpStreamDone, triggered actions will not be enforced. Further logs are for detection only purposes")
+	}
+	ctx.processedResponseBody = true
+	if _, err := tx.ProcessResponseBody(); err != nil {
+		if logger != nil {
+			logger.Error().Err(err).Msg("Failed to process response body")
+		} else {
+			proxywasm.LogErrorf("Failed to process response body: %v", err)
+		}
 	}
 }
 

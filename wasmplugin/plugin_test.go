@@ -72,3 +72,21 @@ func TestRetrieveAddressInfo(t *testing.T) {
 		})
 	}
 }
+
+func TestNewHttpContextMetricLabelsCopy(t *testing.T) {
+	plugin := &corazaPlugin{
+		metricLabelsKV: []string{"foo", "bar"},
+		metrics:        NewWAFMetrics(),
+	}
+
+	ctx1 := plugin.NewHttpContext(1).(*httpContext)
+	require.Equal(t, []string{"foo", "bar"}, plugin.metricLabelsKV)
+	require.Equal(t, []string{"foo", "bar"}, ctx1.metricLabelsKV)
+
+	ctx1.metricLabelsKV = append(ctx1.metricLabelsKV, "authority", "example.com")
+	require.Equal(t, []string{"foo", "bar"}, plugin.metricLabelsKV)
+	require.Equal(t, []string{"foo", "bar", "authority", "example.com"}, ctx1.metricLabelsKV)
+
+	ctx2 := plugin.NewHttpContext(2).(*httpContext)
+	require.Equal(t, []string{"foo", "bar"}, ctx2.metricLabelsKV)
+}
