@@ -124,7 +124,7 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 		// First we initialize our waf and our seclang parser
 		conf := coraza.NewWAFConfig().
-			WithErrorCallback(logError).
+			WithErrorCallback(newRuleLogCallback(config.ruleLogFormat)).
 			WithDebugLogger(debuglog.DefaultWithPrinterFactory(logPrinterFactory)).
 			// TODO(anuraaga): Make this configurable in plugin configuration.
 			// WithRequestBodyLimit(1024 * 1024 * 1024).
@@ -726,28 +726,6 @@ func (ctx *httpContext) handleInterruption(phase interruptionPhase, interruption
 
 	// SendHttpResponse must be followed by ActionPause in order to stop malicious content
 	return types.ActionPause
-}
-
-func logError(error ctypes.MatchedRule) {
-	msg := error.ErrorLog()
-	switch error.Rule().Severity() {
-	case ctypes.RuleSeverityEmergency:
-		proxywasm.LogCritical(msg)
-	case ctypes.RuleSeverityAlert:
-		proxywasm.LogCritical(msg)
-	case ctypes.RuleSeverityCritical:
-		proxywasm.LogCritical(msg)
-	case ctypes.RuleSeverityError:
-		proxywasm.LogError(msg)
-	case ctypes.RuleSeverityWarning:
-		proxywasm.LogWarn(msg)
-	case ctypes.RuleSeverityNotice:
-		proxywasm.LogInfo(msg)
-	case ctypes.RuleSeverityInfo:
-		proxywasm.LogInfo(msg)
-	case ctypes.RuleSeverityDebug:
-		proxywasm.LogDebug(msg)
-	}
 }
 
 // retrieveAddressInfo retrieves address properties from the proxy
