@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -20,7 +21,7 @@ import (
 )
 
 var minGoVersion = "1.23"
-var minTinygoVersion = "0.34.0"
+var minTinygoVersion = "0.39.0"
 var addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
 var golangCILintVer = "v1.64.8"                                    // https://github.com/golangci/golangci-lint/releases
 var gosImportsVer = "v0.3.8"                                       // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
@@ -188,8 +189,9 @@ func Build() error {
 	}
 
 	buildTags := []string{
-		"custommalloc",     // https://github.com/wasilibs/nottinygc#usage
-		"nottinygc_envoy",  // https://github.com/wasilibs/nottinygc#using-with-envoy
+		// nottinygc's custommalloc/nottinygc_envoy tags were dropped with the
+		// TinyGo 0.34 -> 0.39 migration; -gc=boehm below is TinyGo's built-in
+		// replacement for nottinygc's bdwgc allocator.
 		"no_fs_access",     // https://github.com/corazawaf/coraza#build-tags
 		"memoize_builders", // https://github.com/corazawaf/coraza#build-tags
 	}
@@ -218,10 +220,16 @@ func Build() error {
 
 	buildArgs := []string{
 		"build",
-		"-gc=custom",
+		// -gc=boehm (built into TinyGo >= 0.38) replaces the dropped nottinygc.
+		"-gc=boehm",
 		"-opt=2",
 		"-o", filepath.Join("build", "mainraw.wasm"),
 		"-scheduler=none",
+		// TinyGo 0.35 made WASI modules call proc_exit after main() returns
+		// (tinygo#4721), killing a long-lived proxy-wasm module at _start under
+		// Envoy. -buildmode=wasi-legacy (0.36, tinygo#4734, needs scheduler=none)
+		// restores persist-after-main. Paired with registration in init() (main.go).
+		"-buildmode=wasi-legacy",
 		"-target=wasip1",
 		buildTagArg,
 	}
@@ -234,7 +242,55 @@ func Build() error {
 		return err
 	}
 
-	return patchWasm(filepath.Join("build", "mainraw.wasm"), filepath.Join("build", "main.wasm"), initialPages)
+	if err := patchWasm(filepath.Join("build", "mainraw.wasm"), filepath.Join("build", "main.wasm"), initialPages); err != nil {
+		return err
+	}
+
+	// Guard the wasm's import surface. A C-wasm archive that leaves a symbol
+	// unresolved (e.g. env.cre2_*) is silently turned into a host import by
+	// wasm-ld, so the wasm "links" and only fails at Envoy load. Fail the build
+	// instead. The forked Rust/C archives are the reason this matters here.
+	return checkImports(filepath.Join("build", "main.wasm"))
+}
+
+const (
+	wasiImportModule = "wasi_snapshot_preview1"
+	hostImportModule = "env"
+	proxyImportPfx   = "proxy_"
+)
+
+// checkImports fails if the wasm imports anything outside the proxy-wasm ABI
+// (module "env", names prefixed "proxy_") or WASI ("wasi_snapshot_preview1").
+// Run on the patched wasm, since patchWasm renames the wasi imports Envoy lacks.
+func checkImports(path string) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	mod, err := binary.DecodeModule(raw, wasm.CoreFeaturesV2)
+	if err != nil {
+		return err
+	}
+	var violations []string
+	for _, imp := range mod.ImportSection {
+		if imp.Type != wasm.ExternTypeFunc {
+			violations = append(violations, fmt.Sprintf("%s.%s (non-func import)", imp.Module, imp.Name))
+			continue
+		}
+		switch {
+		case imp.Module == wasiImportModule:
+		case imp.Module == hostImportModule && strings.HasPrefix(imp.Name, proxyImportPfx):
+		default:
+			violations = append(violations, imp.Module+"."+imp.Name)
+		}
+	}
+	if len(violations) > 0 {
+		sort.Strings(violations)
+		return fmt.Errorf("checkimports: wasm imports Envoy's proxy-wasm host does not provide:\n  %s",
+			strings.Join(violations, "\n  "))
+	}
+	fmt.Printf("checkimports: %d imports, all within proxy-wasm ABI + WASI\n", len(mod.ImportSection))
+	return nil
 }
 
 // Ftw runs ftw tests with a built plugin and Envoy. Requires docker.

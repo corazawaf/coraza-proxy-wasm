@@ -1,6 +1,9 @@
 module github.com/corazawaf/coraza-proxy-wasm
 
-go 1.23.8
+// Bumped 1.23.8 -> 1.25.0 with the TinyGo 0.34 -> 0.39 migration. TinyGo 0.34
+// capped the host Go at 1.23, pinning the plugin to an EOL stdlib; 0.39 raises
+// the ceiling so CVE-driven bumps (e.g. golang.org/x/net) are unblocked.
+go 1.25.0
 
 require (
 	github.com/corazawaf/coraza-wasilibs v0.2.0
@@ -8,8 +11,23 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/tetratelabs/proxy-wasm-go-sdk v0.24.0
 	github.com/tidwall/gjson v1.18.0
-	github.com/wasilibs/nottinygc v0.7.1
 )
+
+// The wasilibs operator backends are re-pointed at local forks so @rx/@pm/@detectXSS
+// keep their C-wasm speed under TinyGo 0.39, whose newer wasi-libc the frozen 0.34-era
+// archives no longer link against. coraza-wasilibs still drives registration; only the
+// compiled archives change. See each fork's TIGERA-FORK.md.
+//   - go-re2: libcre2.a is rebuilt from the Rust `regex` crate behind a cre2-shaped C ABI
+//     (buildtools/cre2). Non-recursive, so it kills the stdlib-regexp compile stack-overflow
+//     that blocks a pure-Go @rx at CRS scale. The aho-corasick C ABI backing @pm is folded
+//     INTO this one archive -- two Rust staticlibs clash on std panic symbols and TinyGo
+//     0.39's wasm-ld has no --allow-multiple-definition.
+//   - go-libinjection: libinjection.a rebuilt for wasm32-wasip1 with wasi-sdk-24.
+replace github.com/wasilibs/go-re2 => ./third_party/go-re2
+
+replace github.com/wasilibs/go-aho-corasick => ./third_party/go-aho-corasick
+
+replace github.com/wasilibs/go-libinjection => ./third_party/go-libinjection
 
 require (
 	github.com/corazawaf/libinjection-go v0.2.2 // indirect

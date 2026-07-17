@@ -1,0 +1,35 @@
+[package]
+name = "cre2"
+version = "0.1.0"
+edition = "2021"
+description = "cre2-shaped C ABI backed by the Rust regex crate, for loading @rx from TinyGo wasm"
+license = "Apache-2.0"
+
+[lib]
+# staticlib -> libcre2.a, linked into the TinyGo wasm via cgo LDFLAGS -lcre2.
+crate-type = ["staticlib"]
+name = "cre2"
+
+[dependencies]
+# bytes::Regex: byte-oriented matching so cre2_match can return byte offsets
+# straight into the caller's text buffer (what go-re2's readMatch expects).
+# regex-syntax's parser uses an explicit heap stack (non-recursive) + nest_limit,
+# so deeply nested CRS patterns error cleanly instead of overflowing the wasm
+# stack -- the exact failure that killed the stdlib-regexp spike (B').
+regex = "1"
+# aho-corasick backs @pm / @pmFromFile (src/ahocorasick.rs). It rides in THIS
+# crate on purpose: it is a SECOND Rust staticlib, and linking two Rust archives
+# into one TinyGo wasm collides on std's panic runtime symbols (rust_eh_personality,
+# std::panicking::EMPTY_PANIC) -- wasm-ld (LLVM 19) has no --allow-multiple-definition.
+# Merging it here means ONE Rust archive, one std, no clash. `regex` already pulls
+# aho-corasick transitively, so this is a re-export of an already-compiled dep.
+aho-corasick = "1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+# Unwinding across the C ABI into TinyGo's runtime is UB on wasm. Abort instead;
+# every extern fn below is written to avoid panics on the compile/match paths.
+panic = "abort"
+strip = true

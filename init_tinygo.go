@@ -1,4 +1,5 @@
 // Copyright The OWASP Coraza contributors
+// Modifications Copyright (c) 2026 Tigera, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build tinygo
@@ -7,9 +8,12 @@ package main
 
 import (
 	"unsafe"
-
-	_ "github.com/wasilibs/nottinygc"
 )
+
+// Dropped the `_ "github.com/wasilibs/nottinygc"` blank import with the TinyGo
+// 0.34 -> 0.39 migration. nottinygc v0.7.1 (archived Mar 2024) is locked to
+// TinyGo 0.34's wasi-libc, so its archive no longer links; TinyGo's built-in
+// -gc=boehm (since 0.38) provides the same bdwgc allocator. See magefiles Build().
 
 // Some host functions that are not implemented by Envoy end up getting imported anyways
 // by code that gets compiled but not executed at runtime. Because we know they are not
