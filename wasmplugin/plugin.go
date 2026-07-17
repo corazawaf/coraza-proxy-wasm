@@ -747,6 +747,11 @@ func logError(error ctypes.MatchedRule) {
 		proxywasm.LogInfo(msg)
 	case ctypes.RuleSeverityDebug:
 		proxywasm.LogDebug(msg)
+	default:
+		// Rules without an explicit severity action report it as unset rather than
+		// defaulting to RuleSeverityEmergency, so route them to critical explicitly
+		// instead of silently dropping the message.
+		proxywasm.LogCritical(msg)
 	}
 }
 
