@@ -47,7 +47,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Go
-        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88eb36e1604f7633e # v3
+        uses: actions/setup-go@be3c94b385c4f180051c996d336f57a34c397495 # v3
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
