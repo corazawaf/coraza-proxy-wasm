@@ -25,6 +25,23 @@ static_resources:
               typed_config:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 stat_prefix: ingress_http
+                access_log:
+                  - name: envoy.access_loggers.stdout
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                      log_format:
+                        json_format:
+                          timestamp: "%START_TIME%"
+                          method: "%REQ(:METHOD)%"
+                          path: "%REQ(:PATH)%"
+                          status: "%RESPONSE_CODE%"
+                          # Extract Filter State set by Coraza
+                          rule_id: "%FILTER_STATE(wasm.io.coraza.waf.rule_id:PLAIN)%"
+                          action: "%FILTER_STATE(wasm.io.coraza.waf.action:PLAIN)%"
+                          phase: "%FILTER_STATE(wasm.io.coraza.waf.phase:PLAIN)%"
+                          waf_status: "%FILTER_STATE(wasm.io.coraza.waf.status:PLAIN)%"
+                          severity: "%FILTER_STATE(wasm.io.coraza.waf.severity:PLAIN)%"
+                          category: "%FILTER_STATE(wasm.io.coraza.waf.category:PLAIN)%"
                 codec_type: auto
                 route_config:
                   # A custom response header is added for e2e testing purposes. A local response, triggered by an interruption,
@@ -76,6 +93,7 @@ static_resources:
                                   ]
                               },
                               "default_directives": "rs1",
+                              "enable_filter_state_logs": true,
                               "metric_labels": {
                                 "owner": "coraza",
                                 "identifier": "global"

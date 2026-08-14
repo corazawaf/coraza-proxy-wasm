@@ -78,9 +78,10 @@ type corazaPlugin struct {
 	// Embed the default plugin context here,
 	// so that we don't need to reimplement all the methods.
 	types.DefaultPluginContext
-	perAuthorityWAFs wafMap
-	metricLabelsKV   []string
-	metrics          *wafMetrics
+	perAuthorityWAFs      wafMap
+	metricLabelsKV        []string
+	metrics               *wafMetrics
+	enableFilterStateLogs bool
 }
 
 func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPluginStartStatus {
@@ -94,6 +95,8 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 		proxywasm.LogCriticalf("Failed to parse plugin configuration: %v", err)
 		return types.OnPluginStartStatusFailed
 	}
+
+	ctx.enableFilterStateLogs = config.enableFilterStateLogs
 
 	// directivesAuthoritesMap is a map of directives name to the list of
 	// authorities that reference those directives. This is used to
@@ -178,10 +181,11 @@ func (ctx *corazaPlugin) OnPluginStart(pluginConfigurationSize int) types.OnPlug
 
 func (ctx *corazaPlugin) NewHttpContext(contextID uint32) types.HttpContext {
 	return &httpContext{
-		contextID:        contextID,
-		metrics:          ctx.metrics,
-		metricLabelsKV:   ctx.metricLabelsKV,
-		perAuthorityWAFs: ctx.perAuthorityWAFs,
+		contextID:             contextID,
+		metrics:               ctx.metrics,
+		metricLabelsKV:        ctx.metricLabelsKV,
+		perAuthorityWAFs:      ctx.perAuthorityWAFs,
+		enableFilterStateLogs: ctx.enableFilterStateLogs,
 	}
 }
 
@@ -230,6 +234,7 @@ type httpContext struct {
 	interruptedAt            interruptionPhase
 	logger                   debuglog.Logger
 	metricLabelsKV           []string
+	enableFilterStateLogs    bool
 }
 
 func (ctx *httpContext) OnHttpRequestHeaders(numHeaders int, endOfStream bool) types.Action {
@@ -712,6 +717,12 @@ func (ctx *httpContext) handleInterruption(phase interruptionPhase, interruption
 		Msg("Transaction interrupted")
 
 	ctx.interruptedAt = phase
+
+	if ctx.enableFilterStateLogs {
+		// Issue the Envoy filter state for further logging
+		ctx.filterStateLog(phase, interruption)
+	}
+
 	if phase == interruptionPhaseHttpResponseBody {
 		return replaceResponseBodyWhenInterrupted(ctx.logger, ctx.bodyReadIndex)
 	}
