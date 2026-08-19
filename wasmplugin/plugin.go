@@ -496,7 +496,7 @@ func (ctx *httpContext) OnHttpResponseHeaders(numHeaders int, endOfStream bool) 
 			return types.ActionContinue
 		}
 		if interruption != nil {
-			return ctx.handleInterruption(interruptionPhaseHttpResponseHeaders, interruption)
+			return ctx.handleInterruption(interruptionPhaseHttpRequestBody, interruption)
 		}
 	}
 
