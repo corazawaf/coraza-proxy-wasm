@@ -1065,6 +1065,53 @@ SecRuleEngine On\nSecRule REQUEST_URI \"@streq /hello\" \"id:101,phase:2,t:lower
 	})
 }
 
+// GET requests without a body never call OnHttpRequestBody, so phase-2 rules are deferred and
+// run in OnHttpResponseHeaders instead. The interruption must still be reported as the request
+// body phase, not as the Envoy callback (response headers) it happened to run in. SecAction (not
+// REQUEST_URI) is used so multiphase evaluation does not deny the request earlier, at request headers.
+func TestDeferredPhase2GETWithoutBodyLogsRequestBodyPhase(t *testing.T) {
+	reqHdrs := [][2]string{
+		{":path", "/hello"},
+		{":method", "GET"},
+		{":authority", "localhost"},
+	}
+	respHdrs := [][2]string{
+		{":status", "200"},
+		{"Content-Type", "text/plain"},
+	}
+
+	vmTest(t, func(t *testing.T, vm types.VMContext) {
+		conf := `{"directives_map": {"default": ["SecRuleEngine On\nSecAction \"id:101,phase:2,t:none,log,deny,status:403\""]}, "default_directives": "default"}`
+		opt := proxytest.
+			NewEmulatorOption().
+			WithVMContext(vm).
+			WithPluginConfiguration([]byte(conf))
+
+		host, reset := proxytest.NewHostEmulator(opt)
+		defer reset()
+
+		require.Equal(t, types.OnPluginStartStatusOK, host.StartPlugin())
+
+		id := host.InitializeHttpContext()
+
+		requestHdrsAction := host.CallOnRequestHeaders(id, reqHdrs, false)
+		require.Equal(t, types.ActionContinue, requestHdrsAction)
+
+		responseHdrsAction := host.CallOnResponseHeaders(id, respHdrs, false)
+		require.Equal(t, types.ActionPause, responseHdrsAction)
+
+		pluginResp := host.GetSentLocalResponse(id)
+		require.NotNil(t, pluginResp)
+		require.EqualValues(t, 403, pluginResp.StatusCode)
+
+		infoLogs := strings.Join(host.GetInfoLogs(), "\n")
+		require.Contains(t, infoLogs, `phase="http_request_body"`)
+		require.NotContains(t, infoLogs, `phase="http_response_headers"`)
+
+		host.CompleteHttpContext(id)
+	})
+}
+
 func TestResponseProperties(t *testing.T) {
 	reqHdrs := [][2]string{
 		{"Host", "test.com"},
