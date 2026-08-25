@@ -226,6 +226,27 @@ func TestParsePluginConfiguration(t *testing.T) {
 				perAuthorityDirectives: map[string]string{},
 			},
 		},
+		{
+			name: "enable_filter_state_logs",
+			config: `
+			{
+				"directives_map": {
+					"default": ["SecRuleEngine On"]
+				},
+				"default_directives": "default",
+				"enable_filter_state_logs": true
+			}
+			`,
+			expectConfig: pluginConfiguration{
+				directivesMap: DirectivesMap{
+					"default": []string{"SecRuleEngine On"},
+				},
+				metricLabels:           map[string]string{},
+				defaultDirectives:      "default",
+				perAuthorityDirectives: map[string]string{},
+				enableFilterStateLogs:  true,
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -238,6 +259,7 @@ func TestParsePluginConfiguration(t *testing.T) {
 				assert.Equal(t, testCase.expectConfig.metricLabels, cfg.metricLabels)
 				assert.Equal(t, testCase.expectConfig.defaultDirectives, cfg.defaultDirectives)
 				assert.Equal(t, testCase.expectConfig.perAuthorityDirectives, cfg.perAuthorityDirectives)
+				assert.Equal(t, testCase.expectConfig.enableFilterStateLogs, cfg.enableFilterStateLogs)
 			}
 		})
 	}

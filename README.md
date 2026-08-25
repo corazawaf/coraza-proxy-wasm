@@ -226,3 +226,54 @@ waf_filter_tx_interruptions{phase="http_request_headers_identifier",rule_id="949
 # TYPE waf_filter_tx_total counter
 waf_filter_tx_total{} 11
 ```
+
+### Envoy filter state logging
+
+When `enable_filter_state_logs` is set to `true` in the plugin configuration, every time a request/response is interrupted (blocked) by Coraza, the plugin populates [Envoy filter state](https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#format-strings) with details about the interruption. This is useful to surface WAF block details directly in Envoy's access logs, without needing a separate log sink.
+
+```yaml
+configuration:
+    "@type": "type.googleapis.com/google.protobuf.StringValue"
+    value: |
+      {
+          "directives_map": {
+              "default": [
+                  "SecDebugLogLevel 9",
+                  "SecRuleEngine On",
+                  "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
+              ]
+          },
+          "default_directives": "default",
+          "enable_filter_state_logs": true
+      }
+```
+
+Each field is set as its own filter state key, namespaced under `io.coraza.waf`:
+
+| Filter state key            | Description                                                                 |
+|------------------------------|-------------------------------------------------------------------------------|
+| `io.coraza.waf.event`         | Fixed value `coraza_waf_blocked_request`, useful to filter these log entries. |
+| `io.coraza.waf.rule_id`       | ID of the Coraza rule that triggered the interruption.                        |
+| `io.coraza.waf.phase`         | Processing phase the interruption happened in (e.g. `http_request_headers`).  |
+| `io.coraza.waf.action`        | Coraza interruption action (e.g. `deny`, `drop`).                             |
+| `io.coraza.waf.status`        | HTTP status code associated with the interruption.                            |
+| `io.coraza.waf.severity`      | Severity of the matched rule, when available.                                 |
+| `io.coraza.waf.category`      | Attack category derived from the matched rule's `attack-*` tags (e.g. `sqli`), falls back to `other`. |
+| `io.coraza.waf.matched_data`  | Data that matched the rule, truncated to 256 characters, when available. **May contain sensitive data** (e.g. request bodies, credentials); redact, restrict access to, and apply retention controls on any log sink that captures it. |
+| `io.coraza.waf.client_ip`     | Client IP associated with the matched rule, when available. **Personally identifiable information**; redact, restrict access to, and apply retention controls on any log sink that captures it. |
+
+A filter state key is only set when its value is non-empty; fields such as `severity`, `category`, `matched_data` and `client_ip` are omitted when Coraza cannot resolve the matched rule for the interruption.
+
+These keys can then be referenced in the Envoy access log format. Note that filter state set by a WASM plugin is exposed under the `wasm.` namespace, and must be read with the `:PLAIN` serializer, e.g. `%FILTER_STATE(wasm.io.coraza.waf.rule_id:PLAIN)%` (see [`example/envoy/envoy-config.yaml`](./example/envoy/envoy-config.yaml) for a full working example):
+
+```yaml
+access_log:
+- name: envoy.access_loggers.stdout
+  typed_config:
+    "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+    log_format:
+      json_format:
+        waf_event: "%FILTER_STATE(wasm.io.coraza.waf.event:PLAIN)%"
+        waf_rule_id: "%FILTER_STATE(wasm.io.coraza.waf.rule_id:PLAIN)%"
+        waf_category: "%FILTER_STATE(wasm.io.coraza.waf.category:PLAIN)%"
+```

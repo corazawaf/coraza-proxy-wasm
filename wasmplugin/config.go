@@ -16,6 +16,10 @@ type pluginConfiguration struct {
 	metricLabels           map[string]string
 	defaultDirectives      string
 	perAuthorityDirectives map[string]string
+
+	// enableFilterStateLogs determines if the WASM plugin should set a filter state property on Envoy
+	// containing the interruption details. This is usually used to set specific log format in Envoy.
+	enableFilterStateLogs bool
 }
 
 type DirectivesMap map[string][]string
@@ -93,6 +97,10 @@ func parsePluginConfiguration(data []byte, infoLogger func(string)) (pluginConfi
 			})
 			config.directivesMap["default"] = directive
 		}
+	}
+
+	if filterState := jsonData.Get("enable_filter_state_logs"); filterState.Exists() {
+		config.enableFilterStateLogs = filterState.Bool()
 	}
 
 	return config, nil
